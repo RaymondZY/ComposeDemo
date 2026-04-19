@@ -7,9 +7,9 @@ import zhaoyun.example.composedemo.domain.usecase.TodoUseCases
 /**
  * Todo List Domain 层 Koin Module
  *
- * 绑定纯 Kotlin 的 UseCase；实例内部通过 Koin [inject] 字段注入依赖。
+ * 绑定纯 Kotlin 的 UseCase；依赖通过构造函数注入。
  */
 val todoDomainModule = module {
-    factory { CheckLoginUseCase() }
-    factory { TodoUseCases() }
+    factory { CheckLoginUseCase(get()) }
+    factory { TodoUseCases(get()) }
 }

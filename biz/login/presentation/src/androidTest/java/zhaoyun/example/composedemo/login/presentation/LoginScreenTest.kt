@@ -17,6 +17,7 @@ import org.junit.runner.RunWith
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
+import zhaoyun.example.composedemo.login.presentation.di.loginModules
 import zhaoyun.example.composedemo.service.usercenter.api.UserRepository
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 
@@ -35,6 +36,7 @@ class LoginScreenTest {
     fun setup() {
         startKoin {
             modules(
+                loginModules,
                 module { single<UserRepository> { fakeRepository } }
             )
         }

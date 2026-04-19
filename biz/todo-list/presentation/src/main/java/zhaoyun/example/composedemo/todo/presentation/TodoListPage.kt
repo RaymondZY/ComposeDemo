@@ -35,7 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import android.widget.Toast
-import zhaoyun.example.composedemo.domain.model.TodoEffect
+import zhaoyun.example.composedemo.core.mvi.UiEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -46,45 +46,37 @@ import androidx.compose.ui.unit.dp
 import zhaoyun.example.composedemo.domain.model.TodoEvent
 import zhaoyun.example.composedemo.domain.model.TodoItem
 import zhaoyun.example.composedemo.domain.model.TodoState
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import android.content.Intent
-import zhaoyun.example.composedemo.login.presentation.LoginActivity
 
 /**
  * 完整的 Todo 屏幕 —— 自动创建 ViewModel、收集 State / Effect
  *
  * 该 Composable 属于 Presentation 层，负责：
- * 1. 登录状态检查与登录页面跳转
+ * 1. 登录状态检查与登录页面跳转（通过回调解耦）
  * 2. 平台副作用（Toast）处理
  * 3. 无状态的 [TodoListPage] 组合
  */
 @Composable
 fun TodoListScreen(
+    onNavigateToLogin: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TodoViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val loginLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { _ ->
-        viewModel.onEvent(TodoEvent.CheckLogin)
-    }
-
     LaunchedEffect(Unit) {
         viewModel.onEvent(TodoEvent.CheckLogin)
         viewModel.effect.collect { effect ->
             when (effect) {
-                is TodoEffect.ShowToast -> {
+                is UiEffect.ShowToast -> {
                     Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
                 }
-                is TodoEffect.ClearInput -> {
+                is UiEffect.ClearInput -> {
                     // 输入框清空已通过 State 更新处理
                 }
+                else -> {}
             }
         }
     }
@@ -102,9 +94,7 @@ fun TodoListScreen(
         false -> {
             // 未登录 —— 显示登录提示
             LoginPlaceholder(
-                onLoginClick = {
-                    loginLauncher.launch(Intent(context, LoginActivity::class.java))
-                },
+                onLoginClick = onNavigateToLogin,
                 modifier = modifier
             )
         }

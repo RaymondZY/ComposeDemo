@@ -15,11 +15,10 @@ import org.junit.runner.RunWith
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
-import zhaoyun.example.composedemo.domain.usecase.CheckLoginUseCase
-import zhaoyun.example.composedemo.domain.usecase.TodoUseCases
 import zhaoyun.example.composedemo.service.usercenter.api.UserRepository
 import zhaoyun.example.composedemo.service.usercenter.api.model.UserInfo
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
+import zhaoyun.example.composedemo.todo.presentation.di.todoModules
 
 /**
  * TodoList Compose UI 测试 —— 覆盖登录状态与 Todo 交互
@@ -36,9 +35,8 @@ class TodoListScreenTest {
     fun setup() {
         startKoin {
             modules(
-                module { single<UserRepository> { fakeRepository } },
-                module { single { CheckLoginUseCase() } },
-                module { factory { TodoUseCases() } }
+                todoModules,
+                module { single<UserRepository> { fakeRepository } }
             )
         }
     }
@@ -52,7 +50,7 @@ class TodoListScreenTest {
     @Test
     fun 未登录时显示登录提示() {
         composeTestRule.setContent {
-            TodoListScreen(viewModel = TodoViewModel())
+            TodoListScreen(onNavigateToLogin = {})
         }
 
         composeTestRule.waitForIdle()
@@ -66,7 +64,7 @@ class TodoListScreenTest {
         fakeRepository.setLoggedInUser(UserInfo("u_1", "alice", "Alice"))
 
         composeTestRule.setContent {
-            TodoListScreen(viewModel = TodoViewModel())
+            TodoListScreen(onNavigateToLogin = {})
         }
 
         composeTestRule.waitForIdle()
@@ -80,7 +78,7 @@ class TodoListScreenTest {
         fakeRepository.setLoggedInUser(UserInfo("u_1", "alice", "Alice"))
 
         composeTestRule.setContent {
-            TodoListScreen(viewModel = TodoViewModel())
+            TodoListScreen(onNavigateToLogin = {})
         }
 
         composeTestRule.waitForIdle()

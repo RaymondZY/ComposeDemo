@@ -7,11 +7,12 @@
 ## 1. 模块结构（Multi-Module）
 
 ```
-:app                    — Application 壳（Koin 初始化、Activity 路由、主题）
+:app                    — Application 壳（Koin 初始化、Navigation Host、主题）
+:core:common            — 纯 Kotlin/JVM，通用 MVI 契约与跨模块复用组件
 :biz:<feature>          — 业务特性，每个拆分为 :domain + :presentation
   :biz:todo-list
-    :domain             — 纯 Kotlin/JVM，零 Android 依赖
-    :presentation       — Android Library（Activity / Compose / ViewModel）
+    :domain             — 纯 Kotlin/JVM，零 Android 依赖，零 DI 框架依赖
+    :presentation       — Android Library（Compose / ViewModel）
   :biz:login
     :domain
     :presentation
@@ -24,9 +25,9 @@
 
 ### 依赖方向铁律
 
-- `:biz:*:domain` **只能**依赖 `:service:*:api`，**禁止**依赖 `:service:*:impl`
+- `:biz:*:domain` **只能**依赖 `:service:*:api` 与 `:core:common`，**禁止**依赖 `:service:*:impl` 与任何 DI 框架
 - `:app` 是唯一拉入 `:service:*:impl` 的模块，负责在 Koin 中绑定实现
-- `:biz:*:presentation` 依赖对应的 `:biz:*:domain`，可横向依赖其他 `:biz:*:presentation`
+- `:biz:*:presentation` **禁止**横向依赖其他 `:biz:*:presentation`，跨模块通信通过 `:app` 层路由或回调接口解耦
 
 ---
 
@@ -36,14 +37,14 @@
 
 - **State** — 不可变数据类，描述 UI 完整状态
 - **Event** — 密封类，所有用户意图与系统事件的单向入口
-- **Effect** — 密封类，一次性副作用（Toast、导航、对话框）
-- **UseCase** — 业务状态机，持有 `StateFlow<State>` + `Channel<Effect>`
+- **Effect** — 通用 `UiEffect` 密封类（定义于 `:core:common`），一次性副作用（Toast、导航、对话框）
+- **UseCase** — 业务状态机，持有 `StateFlow<State>` + `Channel<UiEffect>`
 
 ### Presentation 层（Android Library）
 
 - **ViewModel** — 生命周期桥接，仅将 Event 转发给 UseCase，暴露 State/Effect 供 Compose 订阅
-- **Activity** — 纯容器，只负责 `setContent`，不做任何业务判断
 - **Compose UI** — 无状态 Composable（`Page`）+ 有状态屏幕（`Screen`），通过 `testTag` 支持 UI 测试
+- **Activity** — 单 Activity 架构，仅 `:app` 模块持有 Activity，业务模块只暴露 Composable
 
 ---
 
@@ -54,7 +55,7 @@ UI Event ──► ViewModel.onEvent() ──► UseCase.onEvent()
                                               │
                     ┌──────────────────────────┘
                     ▼
-              StateFlow<State>   Channel<Effect>
+              StateFlow<State>   Channel<UiEffect>
                     │                   │
                     ▼                   ▼
             Compose 订阅状态      LaunchedEffect 消费副作用
@@ -62,33 +63,38 @@ UI Event ──► ViewModel.onEvent() ──► UseCase.onEvent()
 
 ### 关键约定
 
-1. **所有 Activity ↔ ViewModel 通信必须通过 Event** — 禁止在 Activity 中直接调用 UseCase
+1. **所有页面间通信必须通过 Navigation 或回调接口** — 禁止在 Composable 中直接引用其他模块的 Activity
 2. **ViewModel 只做转发** — 业务逻辑全部下沉到 UseCase
-3. **Effect 是一次性的** — 用 `Channel` 或 `StateFlow<Effect?>` + `consumeEffect()` 模式
+3. **Effect 是一次性的** — 统一使用 `Channel<UiEffect>` + `receiveAsFlow()`，禁止 `StateFlow<Effect?>` + `consumeEffect()` 模式
 4. **State 不可变** — 只允许通过 `StateFlow.update { it.copy(...) }` 修改
 
 ---
 
-## 4. 依赖注入（Koin + Field Injection）
+## 4. 依赖注入（Koin + Constructor Injection）
 
-本项目统一使用 **Koin Field Injection**，不采用 Constructor Injection。
+本项目统一使用 **Koin Constructor Injection**，Domain 层零 Koin 依赖。
 
 ```kotlin
-// UseCase
-class TodoUseCases : KoinComponent {
-    private val checkLoginUseCase: CheckLoginUseCase by inject()
-}
+// UseCase（纯 Kotlin，无 KoinComponent）
+class TodoUseCases(
+    private val checkLoginUseCase: CheckLoginUseCase
+) { ... }
 
 // ViewModel
-class TodoViewModel : ViewModel(), KoinComponent {
-    private val todoUseCases: TodoUseCases by inject()
+class TodoViewModel(
+    private val todoUseCases: TodoUseCases
+) : ViewModel() { ... }
+
+// Koin Module
+val todoPresentationModule = module {
+    viewModel { TodoViewModel(get()) }
 }
 ```
 
 ### Koin Module 组织
 
 - `:domain` 模块定义 `val xxxDomainModule = module { ... }`
-- `:presentation` 模块定义 `val xxxPresentationModule = module { ... }`
+- `:presentation` 模块定义 `val xxxPresentationModule = module { ... }`，并聚合 `xxxDomainModule` 导出 `val xxxModules = listOf(...)`
 - `:app` 在 `Application.onCreate` 中通过 `startKoin { modules(...) }` 统一组装
 
 ---
@@ -102,17 +108,26 @@ class TodoViewModel : ViewModel(), KoinComponent {
 
 ---
 
-## 6. 测试策略
+## 6. 导航（单 Activity + Navigation Compose）
+
+- `:app` 模块持有唯一 `MainActivity`，内部使用 `NavHost` 管理路由
+- 业务模块只暴露 `@Composable` 页面与回调接口（如 `onLoginSuccess`、`onNavigateToLogin`）
+- 禁止多 Activity 架构，禁止业务模块持有 Activity
+
+---
+
+## 7. 测试策略
 
 ### 单元测试（JVM，`:domain` 与 `:presentation` 的 `src/test`）
 
 | 层级 | 测试目标 | 依赖 |
 |------|---------|------|
-| Domain | UseCase 状态机与 Effect 输出 | 仅 `:service:*:api` + `:service:*:mock` |
-| Presentation | ViewModel 桥接行为 | Koin + FakeRepository |
+| Domain | UseCase 状态机与 Effect 输出 | 仅 `:service:*:api` + `:service:*:mock` + `:core:common` |
+| Presentation | ViewModel 桥接行为 | 直接构造注入依赖，无需启动 Koin |
 
 - **测试方法名统一使用中文描述**，不使用 `uc01_*` 或英文驼峰
-- JVM 测试中通过 `startKoin { modules(...) }` 启动 Koin 上下文，注入 Fake
+- Domain 层测试直接传入 Fake 实例，**无需启动 Koin 容器**
+- UI 测试（`src/androidTest`）通过 `startKoin { modules(xxxModules) }` 启动完整模块并覆盖 Repository
 
 ### UI 测试（Android Instrumentation，`src/androidTest`）
 
@@ -122,7 +137,7 @@ class TodoViewModel : ViewModel(), KoinComponent {
 
 ---
 
-## 7. 技术栈
+## 8. 技术栈
 
 | 组件 | 版本 |
 |------|------|
@@ -135,10 +150,11 @@ class TodoViewModel : ViewModel(), KoinComponent {
 | Coroutines | 1.9.0 |
 | Koin | 3.5.6 |
 | Compose BOM | 2024.09.00 |
+| Navigation Compose | 2.8.0 |
 
 ---
 
-## 8. 文件与命名规范
+## 9. 文件与命名规范
 
 - **测试方法**：中文描述，如 `fun 初始状态为空()`、`fun 添加Todo后状态更新并发送副作用()`
 - **Koin Module**：`xxxDomainModule`、`xxxPresentationModule`，统一导出 `val xxxModules = listOf(...)`

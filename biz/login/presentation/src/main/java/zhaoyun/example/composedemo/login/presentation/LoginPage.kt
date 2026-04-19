@@ -25,8 +25,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import zhaoyun.example.composedemo.login.domain.model.LoginEffect
+import org.koin.androidx.compose.koinViewModel
+import zhaoyun.example.composedemo.core.mvi.UiEffect
 import zhaoyun.example.composedemo.login.domain.model.LoginEvent
 import zhaoyun.example.composedemo.login.domain.model.LoginState
 
@@ -35,18 +35,16 @@ import zhaoyun.example.composedemo.login.domain.model.LoginState
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: LoginViewModel = viewModel()
+    viewModel: LoginViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val effect by viewModel.effect.collectAsStateWithLifecycle()
 
-    LaunchedEffect(effect) {
-        when (effect) {
-            is LoginEffect.NavigateToHome -> {
-                viewModel.consumeEffect()
-                onLoginSuccess()
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is UiEffect.NavigateToHome -> onLoginSuccess()
+                else -> {}
             }
-            else -> {}
         }
     }
 

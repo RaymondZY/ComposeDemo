@@ -1,18 +1,14 @@
 package zhaoyun.example.composedemo.domain.usecase
 
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import zhaoyun.example.composedemo.service.usercenter.api.UserRepository
 import zhaoyun.example.composedemo.service.usercenter.api.model.UserInfo
 
 /**
- * 检查登录状态用例 —— 演示 :biz 通过服务发现框架（Koin）获取 :service API 实例
- *
- * biz 模块只依赖 :service:user-center:api，运行时由 :app 通过 Koin 将 api 绑定到 impl。
+ * 检查登录状态用例 —— 纯 Kotlin，通过构造函数接收依赖
  */
-class CheckLoginUseCase : KoinComponent {
-
-    private val userRepository: UserRepository by inject()
+class CheckLoginUseCase(
+    private val userRepository: UserRepository
+) {
 
     /**
      * 是否已登录

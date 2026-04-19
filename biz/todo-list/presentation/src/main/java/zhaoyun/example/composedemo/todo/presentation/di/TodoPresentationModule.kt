@@ -8,11 +8,11 @@ import zhaoyun.example.composedemo.todo.presentation.TodoViewModel
 /**
  * Todo List Presentation 层 Koin Module
  *
- * 绑定 ViewModel；实例内部通过 Koin [inject] 字段注入依赖。
+ * 绑定 ViewModel；依赖通过构造函数注入。
  * 并聚合 Domain 层的 Module。
  */
 val todoPresentationModule = module {
-    viewModel { TodoViewModel() }
+    viewModel { TodoViewModel(get()) }
 }
 
 /**
