@@ -1,0 +1,16 @@
+.gradle
+/local.properties
+/.idea
+/.kotlin
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+*.iml
+.DS_Store
+**/build
+
+# E2E reports and Python cache
+e2e/reports/
+e2e/__pycache__/
