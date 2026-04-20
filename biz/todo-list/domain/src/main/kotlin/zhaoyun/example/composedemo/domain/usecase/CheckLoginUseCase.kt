@@ -1,22 +1,28 @@
 package zhaoyun.example.composedemo.domain.usecase
 
+import zhaoyun.example.composedemo.domain.model.TodoEffect
+import zhaoyun.example.composedemo.domain.model.TodoEvent
+import zhaoyun.example.composedemo.domain.model.TodoState
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
 import zhaoyun.example.composedemo.service.usercenter.api.UserRepository
-import zhaoyun.example.composedemo.service.usercenter.api.model.UserInfo
 
 /**
- * 检查登录状态用例 —— 纯 Kotlin，通过构造函数接收依赖
+ * 检查登录状态用例 —— 作为独立的 MVI UseCase 运行
+ *
+ * 消费 [TodoEvent.CheckLogin] 并更新 [TodoState.isLoggedIn]。
+ * 与 [TodoUseCases] 共享同一份 State，由 [TodoViewModel] 统一绑定。
  */
 class CheckLoginUseCase(
     private val userRepository: UserRepository
-) {
+) : BaseUseCase<TodoState, TodoEvent, TodoEffect>(TodoState()) {
 
-    /**
-     * 是否已登录
-     */
-    operator fun invoke(): Boolean = userRepository.isLoggedIn()
-
-    /**
-     * 获取当前登录用户信息，未登录时返回 null
-     */
-    fun getCurrentUser(): UserInfo? = userRepository.currentUser.value
+    override suspend fun onEvent(event: TodoEvent) {
+        when (event) {
+            is TodoEvent.CheckLogin -> {
+                val loggedIn = userRepository.isLoggedIn()
+                updateState { it.copy(isLoggedIn = loggedIn) }
+            }
+            else -> { /* 忽略不相关的事件 */ }
+        }
+    }
 }

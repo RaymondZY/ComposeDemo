@@ -11,5 +11,5 @@ import zhaoyun.example.composedemo.domain.usecase.TodoUseCases
  */
 val todoDomainModule = module {
     factory { CheckLoginUseCase(get()) }
-    factory { TodoUseCases(get()) }
+    factory { TodoUseCases() }
 }

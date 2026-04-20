@@ -39,7 +39,7 @@ class TodoListScreenTest {
     }
 
     private fun createViewModel(): TodoViewModel =
-        TodoViewModel(TodoUseCases(CheckLoginUseCase(fakeRepository)))
+        TodoViewModel(TodoUseCases(), CheckLoginUseCase(fakeRepository))
 
     @Test
     fun `未登录时显示登录提示`() {

@@ -34,7 +34,7 @@ class TodoViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        viewModel = TodoViewModel(TodoUseCases(CheckLoginUseCase(fakeRepository)))
+        viewModel = TodoViewModel(TodoUseCases(), CheckLoginUseCase(fakeRepository))
     }
 
     @After
@@ -43,7 +43,7 @@ class TodoViewModelTest {
     }
 
     private fun createViewModelWithEffectCollector(): Pair<TodoViewModel, MutableList<BaseEffect>> {
-        val testViewModel = TodoViewModel(TodoUseCases(CheckLoginUseCase(fakeRepository)))
+        val testViewModel = TodoViewModel(TodoUseCases(), CheckLoginUseCase(fakeRepository))
         val effects = mutableListOf<BaseEffect>()
         val scope = CoroutineScope(Dispatchers.Main)
         scope.launch {

@@ -11,11 +11,8 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
  * Todo 核心用例 —— 纯 Kotlin，不依赖任何平台框架
  *
  * 包含完整的业务状态机：输入验证、增删改查、清除已完成、副作用通知。
- * 依赖通过构造函数传入。
  */
-class TodoUseCases(
-    private val checkLoginUseCase: CheckLoginUseCase
-) : BaseUseCase<TodoState, TodoEvent, TodoEffect>(TodoState()) {
+class TodoUseCases : BaseUseCase<TodoState, TodoEvent, TodoEffect>(TodoState()) {
 
     private var nextId = 1L
 
@@ -25,8 +22,8 @@ class TodoUseCases(
             is TodoEvent.OnAddTodoClicked -> handleAddTodo()
             is TodoEvent.OnTodoCheckedChanged -> handleTodoCheckedChanged(event.id, event.isChecked)
             is TodoEvent.OnTodoDeleteClicked -> handleTodoDeleteClicked(event.id)
-            is TodoEvent.CheckLogin -> handleCheckLogin()
             is TodoEvent.OnClearCompletedClicked -> handleClearCompleted()
+            else -> { /* 忽略其他事件（如 CheckLogin 由 CheckLoginUseCase 处理） */ }
         }
     }
 
@@ -77,11 +74,6 @@ class TodoUseCases(
             )
         }
         sendBaseEffect(BaseEffect.ShowToast("已删除"))
-    }
-
-    private fun handleCheckLogin() {
-        val loggedIn = checkLoginUseCase()
-        updateState { it.copy(isLoggedIn = loggedIn) }
     }
 
     private fun handleClearCompleted() {

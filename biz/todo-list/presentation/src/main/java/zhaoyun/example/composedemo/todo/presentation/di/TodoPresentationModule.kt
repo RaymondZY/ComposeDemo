@@ -12,7 +12,7 @@ import zhaoyun.example.composedemo.todo.presentation.TodoViewModel
  * 并聚合 Domain 层的 Module。
  */
 val todoPresentationModule = module {
-    viewModel { TodoViewModel(get()) }
+    viewModel { TodoViewModel(get(), get()) }
 }
 
 /**

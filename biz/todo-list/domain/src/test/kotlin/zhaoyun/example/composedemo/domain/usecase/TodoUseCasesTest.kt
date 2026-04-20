@@ -18,23 +18,21 @@ import org.junit.Test
 import zhaoyun.example.composedemo.domain.model.TodoEvent
 import zhaoyun.example.composedemo.domain.model.TodoItem
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
-import zhaoyun.example.composedemo.service.usercenter.api.model.UserInfo
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 
 /**
  * TodoUseCases 纯单元测试 —— 完全独立于任何平台框架与 DI 容器
- * 通过发送 Event、验证 State 变化与 Effect 输出，覆盖全部 8 个业务用例
+ * 通过发送 Event、验证 State 变化与 Effect 输出，覆盖全部业务用例
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodoUseCasesTest {
 
-    private val fakeRepository = FakeUserRepository()
     private lateinit var useCase: TodoUseCases
 
     @Before
     fun setup() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        useCase = TodoUseCases(CheckLoginUseCase(fakeRepository))
+        useCase = TodoUseCases()
     }
 
     @After
@@ -43,7 +41,7 @@ class TodoUseCasesTest {
     }
 
     private fun TestScope.createUseCaseWithEffectCollector(): Pair<TodoUseCases, MutableList<BaseEffect>> {
-        val testUseCase = TodoUseCases(CheckLoginUseCase(fakeRepository))
+        val testUseCase = TodoUseCases()
         val effects = mutableListOf<BaseEffect>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             testUseCase.baseEffect.collect { effects.add(it) }
@@ -304,31 +302,4 @@ class TodoUseCasesTest {
         assertEquals(listOf(BaseEffect.ShowToast("添加成功")), effects)
     }
 
-    @Test
-    fun 初始未登录状态检查() = runTest {
-        useCase.onEvent(TodoEvent.CheckLogin)
-
-        assertFalse(useCase.state.value.isLoggedIn!!)
-    }
-
-    @Test
-    fun 登录后状态检查() = runTest {
-        fakeRepository.setLoggedInUser(UserInfo("u_1", "alice", "Alice"))
-
-        useCase.onEvent(TodoEvent.CheckLogin)
-
-        assertTrue(useCase.state.value.isLoggedIn!!)
-    }
-
-    @Test
-    fun 登出后恢复未登录状态() = runTest {
-        fakeRepository.setLoggedInUser(UserInfo("u_1", "alice", "Alice"))
-        useCase.onEvent(TodoEvent.CheckLogin)
-        assertTrue(useCase.state.value.isLoggedIn!!)
-
-        fakeRepository.logout()
-        useCase.onEvent(TodoEvent.CheckLogin)
-
-        assertFalse(useCase.state.value.isLoggedIn!!)
-    }
 }

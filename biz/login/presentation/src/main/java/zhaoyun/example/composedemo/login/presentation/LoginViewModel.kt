@@ -8,4 +8,7 @@ import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
 
 class LoginViewModel(
     useCase: LoginUseCase
-) : BaseViewModel<LoginState, LoginEvent, LoginEffect>(useCase)
+) : BaseViewModel<LoginState, LoginEvent, LoginEffect>(
+    initialState = LoginState(),
+    useCase
+)
