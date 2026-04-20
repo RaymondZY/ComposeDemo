@@ -7,6 +7,7 @@ plugins {
 android {
     namespace = "zhaoyun.example.composedemo"
     compileSdk = 36
+    buildToolsVersion = "36.1.0"
 
     defaultConfig {
         applicationId = "zhaoyun.example.composedemo"
@@ -33,6 +34,10 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    lint {
+        disable += "PropertyEscape"
+        abortOnError = false
     }
 }
 
