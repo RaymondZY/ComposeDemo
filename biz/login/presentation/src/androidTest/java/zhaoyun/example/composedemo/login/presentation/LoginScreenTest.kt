@@ -14,10 +14,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.dsl.module
-import zhaoyun.example.composedemo.login.presentation.di.loginModules
+import zhaoyun.example.composedemo.login.domain.usecase.LoginUseCase
 import zhaoyun.example.composedemo.service.usercenter.api.UserRepository
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 
@@ -34,24 +31,21 @@ class LoginScreenTest {
 
     @Before
     fun setup() {
-        startKoin {
-            modules(
-                loginModules,
-                module { single<UserRepository> { fakeRepository } }
-            )
-        }
+        // 直接构造 ViewModel，无需 Koin
     }
 
     @After
     fun tearDown() {
-        stopKoin()
         fakeRepository.logout()
     }
 
+    private fun createViewModel(): LoginViewModel =
+        LoginViewModel(LoginUseCase(fakeRepository))
+
     @Test
-    fun 初始状态显示输入框和登录按钮() {
+    fun `初始状态显示输入框和登录按钮`() {
         composeTestRule.setContent {
-            LoginScreen(onLoginSuccess = {})
+            LoginScreen(onLoginSuccess = {}, viewModel = createViewModel())
         }
 
         composeTestRule.waitForIdle()
@@ -63,11 +57,14 @@ class LoginScreenTest {
     }
 
     @Test
-    fun 输入正确账号密码登录成功触发回调() {
+    fun `输入正确账号密码登录成功触发回调`() {
         var loginSuccessCalled = false
 
         composeTestRule.setContent {
-            LoginScreen(onLoginSuccess = { loginSuccessCalled = true })
+            LoginScreen(
+                onLoginSuccess = { loginSuccessCalled = true },
+                viewModel = createViewModel()
+            )
         }
 
         composeTestRule.waitForIdle()
@@ -83,9 +80,9 @@ class LoginScreenTest {
     }
 
     @Test
-    fun 输入错误账号密码显示错误信息() {
+    fun `输入错误账号密码显示错误信息`() {
         composeTestRule.setContent {
-            LoginScreen(onLoginSuccess = {})
+            LoginScreen(onLoginSuccess = {}, viewModel = createViewModel())
         }
 
         composeTestRule.waitForIdle()
@@ -101,9 +98,9 @@ class LoginScreenTest {
     }
 
     @Test
-    fun 空输入时显示本地校验错误() {
+    fun `空输入时显示本地校验错误`() {
         composeTestRule.setContent {
-            LoginScreen(onLoginSuccess = {})
+            LoginScreen(onLoginSuccess = {}, viewModel = createViewModel())
         }
 
         composeTestRule.waitForIdle()

@@ -12,13 +12,10 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.dsl.module
-import zhaoyun.example.composedemo.service.usercenter.api.UserRepository
+import zhaoyun.example.composedemo.domain.usecase.CheckLoginUseCase
+import zhaoyun.example.composedemo.domain.usecase.TodoUseCases
 import zhaoyun.example.composedemo.service.usercenter.api.model.UserInfo
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
-import zhaoyun.example.composedemo.todo.presentation.di.todoModules
 
 /**
  * TodoList Compose UI 测试 —— 覆盖登录状态与 Todo 交互
@@ -33,24 +30,21 @@ class TodoListScreenTest {
 
     @Before
     fun setup() {
-        startKoin {
-            modules(
-                todoModules,
-                module { single<UserRepository> { fakeRepository } }
-            )
-        }
+        // 直接构造 ViewModel，无需 Koin
     }
 
     @After
     fun tearDown() {
-        stopKoin()
         fakeRepository.logout()
     }
 
+    private fun createViewModel(): TodoViewModel =
+        TodoViewModel(TodoUseCases(CheckLoginUseCase(fakeRepository)))
+
     @Test
-    fun 未登录时显示登录提示() {
+    fun `未登录时显示登录提示`() {
         composeTestRule.setContent {
-            TodoListScreen(onNavigateToLogin = {})
+            TodoListScreen(onNavigateToLogin = {}, viewModel = createViewModel())
         }
 
         composeTestRule.waitForIdle()
@@ -60,11 +54,11 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun 登录后显示Todo列表页面() {
+    fun `登录后显示Todo列表页面`() {
         fakeRepository.setLoggedInUser(UserInfo("u_1", "alice", "Alice"))
 
         composeTestRule.setContent {
-            TodoListScreen(onNavigateToLogin = {})
+            TodoListScreen(onNavigateToLogin = {}, viewModel = createViewModel())
         }
 
         composeTestRule.waitForIdle()
@@ -74,11 +68,11 @@ class TodoListScreenTest {
     }
 
     @Test
-    fun 登录后添加Todo完整流程() {
+    fun `登录后添加Todo完整流程`() {
         fakeRepository.setLoggedInUser(UserInfo("u_1", "alice", "Alice"))
 
         composeTestRule.setContent {
-            TodoListScreen(onNavigateToLogin = {})
+            TodoListScreen(onNavigateToLogin = {}, viewModel = createViewModel())
         }
 
         composeTestRule.waitForIdle()
