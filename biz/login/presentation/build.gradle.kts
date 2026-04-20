@@ -33,6 +33,7 @@ android {
 
 dependencies {
     api(project(":biz:login:domain"))
+    implementation(project(":scaffold:android"))
 
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.core.ktx)

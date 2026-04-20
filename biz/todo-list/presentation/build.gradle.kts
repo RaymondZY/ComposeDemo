@@ -33,6 +33,7 @@ android {
 
 dependencies {
     api(project(":biz:todo-list:domain"))
+    implementation(project(":scaffold:android"))
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

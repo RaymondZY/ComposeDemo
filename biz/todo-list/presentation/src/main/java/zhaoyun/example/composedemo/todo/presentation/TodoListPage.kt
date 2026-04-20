@@ -15,7 +15,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -29,13 +31,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import org.koin.androidx.compose.koinViewModel
-import android.widget.Toast
-import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -43,11 +38,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import org.koin.androidx.compose.koinViewModel
 import zhaoyun.example.composedemo.domain.model.TodoEvent
 import zhaoyun.example.composedemo.domain.model.TodoItem
 import zhaoyun.example.composedemo.domain.model.TodoState
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import zhaoyun.example.composedemo.scaffold.android.MviScreen
 
 /**
  * 完整的 Todo 屏幕 —— 自动创建 ViewModel、收集 State / Effect
@@ -63,46 +58,34 @@ fun TodoListScreen(
     modifier: Modifier = Modifier,
     viewModel: TodoViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        viewModel.onEvent(TodoEvent.CheckLogin)
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.baseEffect.collect { effect ->
-            when (effect) {
-                is BaseEffect.ShowToast -> {
-                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+    MviScreen(
+        viewModel = viewModel,
+        initEvent = TodoEvent.CheckLogin
+    ) { state, onEvent ->
+        when (state.isLoggedIn) {
+            null -> {
+                // 登录状态检查中
+                Box(
+                    modifier = modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
-        }
-    }
-
-    when (state.isLoggedIn) {
-        null -> {
-            // 登录状态检查中
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+            false -> {
+                // 未登录 —— 显示登录提示
+                LoginPlaceholder(
+                    onLoginClick = onNavigateToLogin,
+                    modifier = modifier
+                )
             }
-        }
-        false -> {
-            // 未登录 —— 显示登录提示
-            LoginPlaceholder(
-                onLoginClick = onNavigateToLogin,
-                modifier = modifier
-            )
-        }
-        true -> {
-            TodoListPage(
-                state = state,
-                onEvent = viewModel::onEvent,
-                modifier = modifier
-            )
+            true -> {
+                TodoListPage(
+                    state = state,
+                    onEvent = onEvent,
+                    modifier = modifier
+                )
+            }
         }
     }
 }

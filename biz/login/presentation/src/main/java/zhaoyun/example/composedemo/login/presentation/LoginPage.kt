@@ -16,22 +16,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import zhaoyun.example.composedemo.login.domain.model.LoginEffect
 import zhaoyun.example.composedemo.login.domain.model.LoginEvent
 import zhaoyun.example.composedemo.login.domain.model.LoginState
-import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
+import zhaoyun.example.composedemo.scaffold.android.MviScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,32 +35,20 @@ fun LoginScreen(
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
+    MviScreen(
+        viewModel = viewModel,
+        onEffect = { effect ->
             when (effect) {
                 is LoginEffect.NavigateToHome -> onLoginSuccess()
             }
         }
+    ) { state, onEvent ->
+        LoginPage(
+            state = state,
+            onEvent = onEvent,
+            modifier = modifier
+        )
     }
-
-    LaunchedEffect(Unit) {
-        viewModel.baseEffect.collect { effect ->
-            when (effect) {
-                is BaseEffect.ShowToast -> {
-                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
-    LoginPage(
-        state = state,
-        onEvent = viewModel::onEvent,
-        modifier = modifier
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
