@@ -7,7 +7,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":service:user-center:api"))
+    api(project(":service:user-center:api"))
     api(project(":core:common"))
     implementation(libs.koin.core)
     implementation(libs.kotlinx.coroutines.core)

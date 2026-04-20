@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import org.koin.android.ext.android.getKoin
+import org.koin.androidx.compose.getKoin
 import zhaoyun.example.composedemo.login.presentation.LoginScreen
 import zhaoyun.example.composedemo.service.usercenter.api.UserRepository
 import zhaoyun.example.composedemo.todo.presentation.TodoListScreen
@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface {
-                    ComposeDemoApp()
+                    AppNavigation()
                 }
             }
         }
@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ComposeDemoApp() {
+fun AppNavigation() {
     val navController = rememberNavController()
     val userRepository: UserRepository = getKoin().get()
     val startDestination = if (userRepository.isLoggedIn()) "todo" else "login"

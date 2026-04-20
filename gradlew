@@ -118,6 +118,15 @@ CLASSPATH="\\\"\\\""
 
 
 # Determine the Java command to use to start the JVM.
+# Read org.gradle.java.home from local.properties
+if [ -f "${APP_HOME}/local.properties" ]; then
+    LOCAL_JAVA_HOME=$(grep '^org.gradle.java.home=' "${APP_HOME}/local.properties" | sed 's/^org.gradle.java.home=//' | tr -d ' \t\r')
+    if [ -n "${LOCAL_JAVA_HOME}" ]; then
+        JAVA_HOME="${LOCAL_JAVA_HOME}"
+        export JAVA_HOME
+    fi
+fi
+
 if [ -n "$JAVA_HOME" ] ; then
     if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
         # IBM's JDK on AIX uses strange locations for the executables
