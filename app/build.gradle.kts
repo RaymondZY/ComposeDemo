@@ -6,8 +6,12 @@ plugins {
 
 android {
     namespace = "zhaoyun.example.composedemo"
-    compileSdk = 36
-    buildToolsVersion = "36.1.0"
+
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "zhaoyun.example.composedemo"

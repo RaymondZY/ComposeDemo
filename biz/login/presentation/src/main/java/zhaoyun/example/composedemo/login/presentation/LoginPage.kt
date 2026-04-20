@@ -24,11 +24,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
-import zhaoyun.example.composedemo.core.mvi.UiEffect
+import zhaoyun.example.composedemo.login.domain.model.LoginEffect
 import zhaoyun.example.composedemo.login.domain.model.LoginEvent
 import zhaoyun.example.composedemo.login.domain.model.LoginState
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,12 +41,22 @@ fun LoginScreen(
     viewModel: LoginViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is UiEffect.NavigateToHome -> onLoginSuccess()
-                else -> {}
+                is LoginEffect.NavigateToHome -> onLoginSuccess()
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.baseEffect.collect { effect ->
+            when (effect) {
+                is BaseEffect.ShowToast -> {
+                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

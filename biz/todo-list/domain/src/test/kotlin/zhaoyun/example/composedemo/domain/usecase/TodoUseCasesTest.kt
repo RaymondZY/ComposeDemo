@@ -1,11 +1,12 @@
 package zhaoyun.example.composedemo.domain.usecase
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -14,9 +15,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import zhaoyun.example.composedemo.core.mvi.UiEffect
 import zhaoyun.example.composedemo.domain.model.TodoEvent
 import zhaoyun.example.composedemo.domain.model.TodoItem
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.service.usercenter.api.model.UserInfo
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 
@@ -41,12 +42,11 @@ class TodoUseCasesTest {
         Dispatchers.resetMain()
     }
 
-    private fun createUseCaseWithEffectCollector(): Pair<TodoUseCases, MutableList<UiEffect>> {
+    private fun TestScope.createUseCaseWithEffectCollector(): Pair<TodoUseCases, MutableList<BaseEffect>> {
         val testUseCase = TodoUseCases(CheckLoginUseCase(fakeRepository))
-        val effects = mutableListOf<UiEffect>()
-        val scope = CoroutineScope(Dispatchers.Main)
-        scope.launch {
-            testUseCase.effect.collect { effects.add(it) }
+        val effects = mutableListOf<BaseEffect>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            testUseCase.baseEffect.collect { effects.add(it) }
         }
         return testUseCase to effects
     }
@@ -62,7 +62,7 @@ class TodoUseCasesTest {
     }
 
     @Test
-    fun 添加Todo后状态更新并发送副作用() {
+    fun 添加Todo后状态更新并发送副作用() = runTest {
         val (testUseCase, effects) = createUseCaseWithEffectCollector()
 
         // 输入 BuyMilk
@@ -78,7 +78,7 @@ class TodoUseCasesTest {
         assertFalse(testUseCase.state.value.todos[0].isCompleted)
         assertEquals("", testUseCase.state.value.inputText)
         assertFalse(testUseCase.state.value.isInputValid)
-        assertEquals(listOf(UiEffect.ShowToast("添加成功")), effects)
+        assertEquals(listOf(BaseEffect.ShowToast("添加成功")), effects)
 
         // 输入 WriteCode
         testUseCase.onEvent(TodoEvent.OnInputTextChanged("WriteCode"))
@@ -88,15 +88,15 @@ class TodoUseCasesTest {
         assertEquals("WriteCode", testUseCase.state.value.todos[1].title)
         assertEquals(
             listOf(
-                UiEffect.ShowToast("添加成功"),
-                UiEffect.ShowToast("添加成功")
+                BaseEffect.ShowToast("添加成功"),
+                BaseEffect.ShowToast("添加成功")
             ),
             effects
         )
     }
 
     @Test
-    fun 输入验证() {
+    fun 输入验证() = runTest {
         // 空输入
         assertFalse(useCase.state.value.isInputValid)
 
@@ -114,7 +114,7 @@ class TodoUseCasesTest {
     }
 
     @Test
-    fun 勾选与取消勾选() {
+    fun 勾选与取消勾选() = runTest {
         val (testUseCase, _) = createUseCaseWithEffectCollector()
 
         // 添加两个 Todo
@@ -138,7 +138,7 @@ class TodoUseCasesTest {
     }
 
     @Test
-    fun 删除单个Todo() {
+    fun 删除单个Todo() = runTest {
         val (testUseCase, effects) = createUseCaseWithEffectCollector()
 
         // 添加两个 Todo
@@ -156,9 +156,9 @@ class TodoUseCasesTest {
         assertEquals("TaskB", testUseCase.state.value.todos[0].title)
         assertEquals(
             listOf(
-                UiEffect.ShowToast("添加成功"),
-                UiEffect.ShowToast("添加成功"),
-                UiEffect.ShowToast("已删除")
+                BaseEffect.ShowToast("添加成功"),
+                BaseEffect.ShowToast("添加成功"),
+                BaseEffect.ShowToast("已删除")
             ),
             effects
         )
@@ -170,17 +170,17 @@ class TodoUseCasesTest {
         assertTrue(testUseCase.state.value.todos.isEmpty())
         assertEquals(
             listOf(
-                UiEffect.ShowToast("添加成功"),
-                UiEffect.ShowToast("添加成功"),
-                UiEffect.ShowToast("已删除"),
-                UiEffect.ShowToast("已删除")
+                BaseEffect.ShowToast("添加成功"),
+                BaseEffect.ShowToast("添加成功"),
+                BaseEffect.ShowToast("已删除"),
+                BaseEffect.ShowToast("已删除")
             ),
             effects
         )
     }
 
     @Test
-    fun 清除所有已完成() {
+    fun 清除所有已完成() = runTest {
         val (testUseCase, effects) = createUseCaseWithEffectCollector()
 
         // 添加三个 Todo
@@ -206,16 +206,16 @@ class TodoUseCasesTest {
         assertFalse(testUseCase.state.value.todos[0].isCompleted)
 
         val expectedEffects = listOf(
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("已清除 2 个已完成任务")
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("已清除 2 个已完成任务")
         )
         assertEquals(expectedEffects, effects)
     }
 
     @Test
-    fun 长文本输入() {
+    fun 长文本输入() = runTest {
         val (testUseCase, effects) = createUseCaseWithEffectCollector()
 
         val longText = (
@@ -228,11 +228,11 @@ class TodoUseCasesTest {
 
         assertEquals(1, testUseCase.state.value.todos.size)
         assertEquals(longText, testUseCase.state.value.todos[0].title)
-        assertEquals(listOf(UiEffect.ShowToast("添加成功")), effects)
+        assertEquals(listOf(BaseEffect.ShowToast("添加成功")), effects)
     }
 
     @Test
-    fun 综合端到端流程() {
+    fun 综合端到端流程() = runTest {
         val (testUseCase, effects) = createUseCaseWithEffectCollector()
 
         // 1. 添加 BuyMilk 和 WriteCode
@@ -276,18 +276,18 @@ class TodoUseCasesTest {
         assertTrue(testUseCase.state.value.todos.isEmpty())
 
         val expectedEffects = listOf(
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("已清除 1 个已完成任务"),
-            UiEffect.ShowToast("已删除"),
-            UiEffect.ShowToast("已删除")
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("已清除 1 个已完成任务"),
+            BaseEffect.ShowToast("已删除"),
+            BaseEffect.ShowToast("已删除")
         )
         assertEquals(expectedEffects, effects)
     }
 
     @Test
-    fun 清除已完成但无已完成任务时不发送副作用() {
+    fun 清除已完成但无已完成任务时不发送副作用() = runTest {
         val (testUseCase, effects) = createUseCaseWithEffectCollector()
 
         // 添加一个未完成的 Todo（会产生"添加成功"副作用）
@@ -301,18 +301,18 @@ class TodoUseCasesTest {
         assertEquals("TaskA", testUseCase.state.value.todos[0].title)
         assertFalse(testUseCase.state.value.todos[0].isCompleted)
         // 只有"添加成功"一个副作用，没有清除相关的副作用
-        assertEquals(listOf(UiEffect.ShowToast("添加成功")), effects)
+        assertEquals(listOf(BaseEffect.ShowToast("添加成功")), effects)
     }
 
     @Test
-    fun 初始未登录状态检查() {
+    fun 初始未登录状态检查() = runTest {
         useCase.onEvent(TodoEvent.CheckLogin)
 
         assertFalse(useCase.state.value.isLoggedIn!!)
     }
 
     @Test
-    fun 登录后状态检查() {
+    fun 登录后状态检查() = runTest {
         fakeRepository.setLoggedInUser(UserInfo("u_1", "alice", "Alice"))
 
         useCase.onEvent(TodoEvent.CheckLogin)
@@ -321,7 +321,7 @@ class TodoUseCasesTest {
     }
 
     @Test
-    fun 登出后恢复未登录状态() {
+    fun 登出后恢复未登录状态() = runTest {
         fakeRepository.setLoggedInUser(UserInfo("u_1", "alice", "Alice"))
         useCase.onEvent(TodoEvent.CheckLogin)
         assertTrue(useCase.state.value.isLoggedIn!!)

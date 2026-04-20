@@ -14,10 +14,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import zhaoyun.example.composedemo.core.mvi.UiEffect
 import zhaoyun.example.composedemo.domain.model.TodoEvent
 import zhaoyun.example.composedemo.domain.usecase.CheckLoginUseCase
 import zhaoyun.example.composedemo.domain.usecase.TodoUseCases
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.service.usercenter.api.model.UserInfo
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 
@@ -42,12 +42,12 @@ class TodoViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModelWithEffectCollector(): Pair<TodoViewModel, MutableList<UiEffect>> {
+    private fun createViewModelWithEffectCollector(): Pair<TodoViewModel, MutableList<BaseEffect>> {
         val testViewModel = TodoViewModel(TodoUseCases(CheckLoginUseCase(fakeRepository)))
-        val effects = mutableListOf<UiEffect>()
+        val effects = mutableListOf<BaseEffect>()
         val scope = CoroutineScope(Dispatchers.Main)
         scope.launch {
-            testViewModel.effect.collect { effects.add(it) }
+            testViewModel.baseEffect.collect { effects.add(it) }
         }
         return testViewModel to effects
     }
@@ -79,7 +79,7 @@ class TodoViewModelTest {
         assertFalse(testViewModel.state.value.todos[0].isCompleted)
         assertEquals("", testViewModel.state.value.inputText)
         assertFalse(testViewModel.state.value.isInputValid)
-        assertEquals(listOf(UiEffect.ShowToast("添加成功")), effects)
+        assertEquals(listOf(BaseEffect.ShowToast("添加成功")), effects)
 
         // 输入 WriteCode
         testViewModel.onEvent(TodoEvent.OnInputTextChanged("WriteCode"))
@@ -89,8 +89,8 @@ class TodoViewModelTest {
         assertEquals("WriteCode", testViewModel.state.value.todos[1].title)
         assertEquals(
             listOf(
-                UiEffect.ShowToast("添加成功"),
-                UiEffect.ShowToast("添加成功")
+                BaseEffect.ShowToast("添加成功"),
+                BaseEffect.ShowToast("添加成功")
             ),
             effects
         )
@@ -157,9 +157,9 @@ class TodoViewModelTest {
         assertEquals("TaskB", testViewModel.state.value.todos[0].title)
         assertEquals(
             listOf(
-                UiEffect.ShowToast("添加成功"),
-                UiEffect.ShowToast("添加成功"),
-                UiEffect.ShowToast("已删除")
+                BaseEffect.ShowToast("添加成功"),
+                BaseEffect.ShowToast("添加成功"),
+                BaseEffect.ShowToast("已删除")
             ),
             effects
         )
@@ -171,10 +171,10 @@ class TodoViewModelTest {
         assertTrue(testViewModel.state.value.todos.isEmpty())
         assertEquals(
             listOf(
-                UiEffect.ShowToast("添加成功"),
-                UiEffect.ShowToast("添加成功"),
-                UiEffect.ShowToast("已删除"),
-                UiEffect.ShowToast("已删除")
+                BaseEffect.ShowToast("添加成功"),
+                BaseEffect.ShowToast("添加成功"),
+                BaseEffect.ShowToast("已删除"),
+                BaseEffect.ShowToast("已删除")
             ),
             effects
         )
@@ -207,10 +207,10 @@ class TodoViewModelTest {
         assertFalse(testViewModel.state.value.todos[0].isCompleted)
 
         val expectedEffects = listOf(
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("已清除 2 个已完成任务")
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("已清除 2 个已完成任务")
         )
         assertEquals(expectedEffects, effects)
     }
@@ -229,7 +229,7 @@ class TodoViewModelTest {
 
         assertEquals(1, testViewModel.state.value.todos.size)
         assertEquals(longText, testViewModel.state.value.todos[0].title)
-        assertEquals(listOf(UiEffect.ShowToast("添加成功")), effects)
+        assertEquals(listOf(BaseEffect.ShowToast("添加成功")), effects)
     }
 
     @Test
@@ -277,12 +277,12 @@ class TodoViewModelTest {
         assertTrue(testViewModel.state.value.todos.isEmpty())
 
         val expectedEffects = listOf(
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("添加成功"),
-            UiEffect.ShowToast("已清除 1 个已完成任务"),
-            UiEffect.ShowToast("已删除"),
-            UiEffect.ShowToast("已删除")
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("添加成功"),
+            BaseEffect.ShowToast("已清除 1 个已完成任务"),
+            BaseEffect.ShowToast("已删除"),
+            BaseEffect.ShowToast("已删除")
         )
         assertEquals(expectedEffects, effects)
     }
@@ -302,6 +302,6 @@ class TodoViewModelTest {
         assertEquals("TaskA", testViewModel.state.value.todos[0].title)
         assertFalse(testViewModel.state.value.todos[0].isCompleted)
         // 只有"添加成功"一个副作用，没有清除相关的副作用
-        assertEquals(listOf(UiEffect.ShowToast("添加成功")), effects)
+        assertEquals(listOf(BaseEffect.ShowToast("添加成功")), effects)
     }
 }

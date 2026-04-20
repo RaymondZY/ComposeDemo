@@ -2,59 +2,28 @@ package zhaoyun.example.composedemo.login.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import zhaoyun.example.composedemo.core.mvi.UiEffect
 import zhaoyun.example.composedemo.login.domain.model.LoginEvent
-import zhaoyun.example.composedemo.login.domain.model.LoginState
 import zhaoyun.example.composedemo.login.domain.usecase.LoginUseCase
-import zhaoyun.example.composedemo.service.usercenter.api.model.LoginResult
 
+/**
+ * Login ViewModel —— 表现层仅负责生命周期管理与平台桥接
+ *
+ * 所有业务逻辑已下沉到 [LoginUseCase]（位于 :domain 模块），
+ * 该 ViewModel **仅**将 UI 事件转发给 UseCase，并暴露状态流供 Compose 订阅。
+ * 依赖通过构造函数注入。
+ */
 class LoginViewModel(
     private val loginUseCase: LoginUseCase
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(LoginState())
-    val state: StateFlow<LoginState> = _state.asStateFlow()
-
-    private val _effect = Channel<UiEffect>(Channel.BUFFERED)
-    val effect = _effect.receiveAsFlow()
+    val state = loginUseCase.state
+    val effect = loginUseCase.effect
+    val baseEffect = loginUseCase.baseEffect
 
     fun onEvent(event: LoginEvent) {
-        when (event) {
-            is LoginEvent.OnUsernameChanged -> {
-                _state.update { it.copy(username = event.username, errorMessage = null) }
-            }
-            is LoginEvent.OnPasswordChanged -> {
-                _state.update { it.copy(password = event.password, errorMessage = null) }
-            }
-            is LoginEvent.OnLoginClicked -> performLogin()
-        }
-    }
-
-    private fun performLogin() {
-        val currentState = _state.value
-        if (currentState.username.isBlank() || currentState.password.isBlank()) {
-            _state.update { it.copy(errorMessage = "用户名和密码不能为空") }
-            return
-        }
-
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
-            when (val result = loginUseCase(currentState.username, currentState.password)) {
-                is LoginResult.Success -> {
-                    _state.update { it.copy(isLoading = false) }
-                    _effect.send(UiEffect.NavigateToHome)
-                }
-                is LoginResult.Failure -> {
-                    _state.update { it.copy(isLoading = false, errorMessage = result.message) }
-                }
-            }
+            loginUseCase.onEvent(event)
         }
     }
 }

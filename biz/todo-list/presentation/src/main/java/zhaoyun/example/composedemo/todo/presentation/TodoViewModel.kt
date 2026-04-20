@@ -19,6 +19,7 @@ class TodoViewModel(
 
     val state = todoUseCases.state
     val effect = todoUseCases.effect
+    val baseEffect = todoUseCases.baseEffect
 
     fun onEvent(event: TodoEvent) {
         viewModelScope.launch {

@@ -7,8 +7,8 @@ kotlin {
 }
 
 dependencies {
+    api(project(":scaffold:core"))
     api(project(":service:user-center:api"))
-    api(project(":core:common"))
     implementation(libs.koin.core)
     implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)

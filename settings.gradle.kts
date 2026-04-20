@@ -20,7 +20,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "ComposeDemo"
 include(":app")
-include(":core:common")
 include(":biz:todo-list:domain")
 include(":biz:todo-list:presentation")
 include(":biz:login:domain")
@@ -28,3 +27,4 @@ include(":biz:login:presentation")
 include(":service:user-center:api")
 include(":service:user-center:impl")
 include(":service:user-center:mock")
+include(":scaffold:core")

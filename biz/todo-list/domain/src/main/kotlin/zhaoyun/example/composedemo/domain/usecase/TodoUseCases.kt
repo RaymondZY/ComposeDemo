@@ -1,15 +1,11 @@
 package zhaoyun.example.composedemo.domain.usecase
 
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
-import zhaoyun.example.composedemo.core.mvi.UiEffect
+import zhaoyun.example.composedemo.domain.model.TodoEffect
 import zhaoyun.example.composedemo.domain.model.TodoEvent
 import zhaoyun.example.composedemo.domain.model.TodoItem
 import zhaoyun.example.composedemo.domain.model.TodoState
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
 
 /**
  * Todo 核心用例 —— 纯 Kotlin，不依赖任何平台框架
@@ -19,17 +15,11 @@ import zhaoyun.example.composedemo.domain.model.TodoState
  */
 class TodoUseCases(
     private val checkLoginUseCase: CheckLoginUseCase
-) {
-
-    private val _state = MutableStateFlow(TodoState())
-    val state: StateFlow<TodoState> = _state.asStateFlow()
-
-    private val _effect = Channel<UiEffect>(Channel.BUFFERED)
-    val effect = _effect.receiveAsFlow()
+) : BaseUseCase<TodoState, TodoEvent, TodoEffect>(TodoState()) {
 
     private var nextId = 1L
 
-    fun onEvent(event: TodoEvent) {
+    override suspend fun onEvent(event: TodoEvent) {
         when (event) {
             is TodoEvent.OnInputTextChanged -> handleInputTextChanged(event.text)
             is TodoEvent.OnAddTodoClicked -> handleAddTodo()
@@ -41,7 +31,7 @@ class TodoUseCases(
     }
 
     private fun handleInputTextChanged(text: String) {
-        _state.update { currentState ->
+        updateState { currentState ->
             currentState.copy(
                 inputText = text,
                 isInputValid = text.isNotBlank()
@@ -50,25 +40,24 @@ class TodoUseCases(
     }
 
     private fun handleAddTodo() {
-        val currentState = _state.value
         if (currentState.isInputValid) {
             val newTodo = TodoItem(
                 id = nextId++,
                 title = currentState.inputText.trim()
             )
-            _state.update { state ->
+            updateState { state ->
                 state.copy(
                     todos = state.todos + newTodo,
                     inputText = "",
                     isInputValid = false
                 )
             }
-            sendEffect(UiEffect.ShowToast("添加成功"))
+            sendBaseEffect(BaseEffect.ShowToast("添加成功"))
         }
     }
 
     private fun handleTodoCheckedChanged(id: Long, isChecked: Boolean) {
-        _state.update { state ->
+        updateState { state ->
             state.copy(
                 todos = state.todos.map { todo ->
                     if (todo.id == id) {
@@ -82,32 +71,28 @@ class TodoUseCases(
     }
 
     private fun handleTodoDeleteClicked(id: Long) {
-        _state.update { state ->
+        updateState { state ->
             state.copy(
                 todos = state.todos.filter { it.id != id }
             )
         }
-        sendEffect(UiEffect.ShowToast("已删除"))
+        sendBaseEffect(BaseEffect.ShowToast("已删除"))
     }
 
     private fun handleCheckLogin() {
         val loggedIn = checkLoginUseCase()
-        _state.update { it.copy(isLoggedIn = loggedIn) }
+        updateState { it.copy(isLoggedIn = loggedIn) }
     }
 
     private fun handleClearCompleted() {
-        val completedCount = _state.value.todos.count { it.isCompleted }
+        val completedCount = currentState.todos.count { it.isCompleted }
         if (completedCount > 0) {
-            _state.update { state ->
+            updateState { state ->
                 state.copy(
                     todos = state.todos.filter { !it.isCompleted }
                 )
             }
-            sendEffect(UiEffect.ShowToast("已清除 $completedCount 个已完成任务"))
+            sendBaseEffect(BaseEffect.ShowToast("已清除 $completedCount 个已完成任务"))
         }
-    }
-
-    private fun sendEffect(effect: UiEffect) {
-        _effect.trySend(effect)
     }
 }

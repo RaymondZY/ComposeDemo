@@ -14,7 +14,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import zhaoyun.example.composedemo.core.mvi.UiEffect
+import zhaoyun.example.composedemo.login.domain.model.LoginEffect
 import zhaoyun.example.composedemo.login.domain.model.LoginEvent
 import zhaoyun.example.composedemo.login.domain.usecase.LoginUseCase
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
@@ -76,7 +76,7 @@ class LoginViewModelTest {
     @Test
     fun `正确账号登录成功并发射导航副作用`() = runTest {
         val viewModel = createViewModel()
-        val effects = mutableListOf<UiEffect>()
+        val effects = mutableListOf<LoginEffect>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.effect.collect { effects.add(it) }
         }
@@ -87,13 +87,13 @@ class LoginViewModelTest {
 
         assertFalse(viewModel.state.value.isLoading)
         assertNull(viewModel.state.value.errorMessage)
-        assertEquals(listOf(UiEffect.NavigateToHome), effects)
+        assertEquals(listOf(LoginEffect.NavigateToHome), effects)
     }
 
     @Test
     fun `错误账号登录失败并显示服务端错误`() = runTest {
         val viewModel = createViewModel()
-        val effects = mutableListOf<UiEffect>()
+        val effects = mutableListOf<LoginEffect>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.effect.collect { effects.add(it) }
         }

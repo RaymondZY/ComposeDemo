@@ -35,7 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import android.widget.Toast
-import zhaoyun.example.composedemo.core.mvi.UiEffect
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -68,15 +68,14 @@ fun TodoListScreen(
 
     LaunchedEffect(Unit) {
         viewModel.onEvent(TodoEvent.CheckLogin)
-        viewModel.effect.collect { effect ->
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.baseEffect.collect { effect ->
             when (effect) {
-                is UiEffect.ShowToast -> {
+                is BaseEffect.ShowToast -> {
                     Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
                 }
-                is UiEffect.ClearInput -> {
-                    // 输入框清空已通过 State 更新处理
-                }
-                else -> {}
             }
         }
     }
