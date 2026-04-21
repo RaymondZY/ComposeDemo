@@ -63,10 +63,11 @@ class GlobalTodoEmbedAndroidTest {
     @Composable
     fun GlobalWithTodoScreen(globalVm: GlobalViewModel, todoVm: TodoViewModel) {
         val globalState by globalVm.state.collectAsStateWithLifecycle()
+        val todoState by todoVm.state.collectAsStateWithLifecycle()
 
         Column {
             Text(text = "Total: ${globalState.todoCount}")
-            TodoListPage(state = todoVm.state.value, onEvent = todoVm::onEvent)
+            TodoListPage(state = todoState, onEvent = todoVm::onEvent)
         }
     }
 

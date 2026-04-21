@@ -46,6 +46,7 @@ dependencies {
     implementation(project(":biz:login:presentation"))
     implementation(project(":service:user-center:api"))
     implementation(project(":service:user-center:impl"))
+    implementation(project(":scaffold:android"))
 
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
@@ -66,6 +67,7 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(project(":service:user-center:mock"))
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
