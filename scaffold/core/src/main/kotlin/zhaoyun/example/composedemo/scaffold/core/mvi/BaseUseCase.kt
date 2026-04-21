@@ -11,12 +11,12 @@ abstract class BaseUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     initialState: S
 ) {
     private val _internalState = MutableStateFlow(initialState)
-    private var _externalState: MutableStateFlow<S>? = null
+    private var _reducer: Reducer<S>? = null
 
-    private val activeState: MutableStateFlow<S>
-        get() = _externalState ?: _internalState
+    private val activeState: StateFlow<S>
+        get() = _reducer?.state ?: _internalState.asStateFlow()
 
-    val state: StateFlow<S> get() = activeState.asStateFlow()
+    val state: StateFlow<S> get() = activeState
 
     private val _effect = Channel<F>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
@@ -27,7 +27,7 @@ abstract class BaseUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     protected val currentState: S get() = activeState.value
 
     protected fun updateState(transform: (S) -> S) {
-        activeState.update(transform)
+        _reducer?.reduce(transform) ?: _internalState.update(transform)
     }
 
     protected fun sendEffect(effect: F) {
@@ -39,11 +39,11 @@ abstract class BaseUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     }
 
     /**
-     * 将该 UseCase 绑定到外部共享的 StateFlow（通常由 ViewModel 提供）。
-     * 绑定后，所有状态读写操作都会路由到 [sharedState]，实现多个 UseCase 共享同一份 State。
+     * 将该 UseCase 绑定到外部 [Reducer]（通常由 [BaseViewModel] 提供）。
+     * 绑定后，所有状态读写操作都会路由到 [reducer]，实现多个 UseCase 共享同一份 State。
      */
-    fun bind(sharedState: MutableStateFlow<S>) {
-        _externalState = sharedState
+    fun bind(reducer: Reducer<S>) {
+        _reducer = reducer
     }
 
     abstract suspend fun onEvent(event: E)

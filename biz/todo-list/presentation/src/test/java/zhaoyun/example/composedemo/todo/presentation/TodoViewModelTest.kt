@@ -53,7 +53,7 @@ class TodoViewModelTest {
     }
 
     @Test
-    fun 初始状态为空() {
+    fun `初始状态为空`() {
         val state = viewModel.state.value
 
         assertTrue(state.todos.isEmpty())
@@ -63,7 +63,7 @@ class TodoViewModelTest {
     }
 
     @Test
-    fun 添加Todo后状态更新并发送副作用() {
+    fun `添加Todo后状态更新并发送副作用`() {
         val (testViewModel, effects) = createViewModelWithEffectCollector()
 
         // 输入 BuyMilk
@@ -97,7 +97,7 @@ class TodoViewModelTest {
     }
 
     @Test
-    fun 输入验证() {
+    fun `输入验证`() {
         // 空输入
         assertFalse(viewModel.state.value.isInputValid)
 
@@ -115,7 +115,7 @@ class TodoViewModelTest {
     }
 
     @Test
-    fun 勾选与取消勾选() {
+    fun `勾选与取消勾选`() {
         val (testViewModel, _) = createViewModelWithEffectCollector()
 
         // 添加两个 Todo
@@ -139,7 +139,7 @@ class TodoViewModelTest {
     }
 
     @Test
-    fun 删除单个Todo() {
+    fun `删除单个Todo`() {
         val (testViewModel, effects) = createViewModelWithEffectCollector()
 
         // 添加两个 Todo
@@ -181,7 +181,7 @@ class TodoViewModelTest {
     }
 
     @Test
-    fun 清除所有已完成() {
+    fun `清除所有已完成`() {
         val (testViewModel, effects) = createViewModelWithEffectCollector()
 
         // 添加三个 Todo
@@ -216,7 +216,7 @@ class TodoViewModelTest {
     }
 
     @Test
-    fun 长文本输入() {
+    fun `长文本输入`() {
         val (testViewModel, effects) = createViewModelWithEffectCollector()
 
         val longText = (
@@ -233,7 +233,7 @@ class TodoViewModelTest {
     }
 
     @Test
-    fun 综合端到端流程() {
+    fun `综合端到端流程`() {
         val (testViewModel, effects) = createViewModelWithEffectCollector()
 
         // 1. 添加 BuyMilk 和 WriteCode
@@ -288,7 +288,7 @@ class TodoViewModelTest {
     }
 
     @Test
-    fun 清除已完成但无已完成任务时不发送副作用() {
+    fun `清除已完成但无已完成任务时不发送副作用`() {
         val (testViewModel, effects) = createViewModelWithEffectCollector()
 
         // 添加一个未完成的 Todo（会产生"添加成功"副作用）
