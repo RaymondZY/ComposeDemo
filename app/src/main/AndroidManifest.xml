@@ -15,6 +15,10 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:theme="@style/Theme.TodoListDemo" />
+        <activity
+            android:name=".feed.FeedActivity"
+            android:exported="true"
             android:theme="@style/Theme.TodoListDemo">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
