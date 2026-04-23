@@ -9,12 +9,9 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
 
 class FeedViewModel(
     useCase: FeedUseCase,
-    private val injectedReducer: Reducer<FeedState>? = null
+    injectedReducer: Reducer<FeedState>? = null
 ) : BaseViewModel<FeedState, FeedEvent, FeedEffect>(
     initialState = FeedState(),
+    injectedReducer,
     useCase
-) {
-    override fun createReducer(initialState: FeedState): Reducer<FeedState> {
-        return injectedReducer ?: super.createReducer(initialState)
-    }
-}
+)

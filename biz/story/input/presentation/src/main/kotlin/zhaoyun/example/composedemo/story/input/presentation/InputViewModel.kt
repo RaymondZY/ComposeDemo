@@ -8,11 +8,9 @@ import zhaoyun.example.composedemo.story.input.domain.InputState
 import zhaoyun.example.composedemo.story.input.domain.InputUseCase
 
 class InputViewModel(
-    private val inputReducer: Reducer<InputState>,
+    inputReducer: Reducer<InputState>,
 ) : BaseViewModel<InputState, InputEvent, InputEffect>(
     InputState(),
+    inputReducer,
     InputUseCase()
-) {
-    override fun createReducer(initialState: InputState): Reducer<InputState> =
-        inputReducer
-}
+)

@@ -8,11 +8,10 @@ import zhaoyun.example.composedemo.story.infobar.domain.InfoBarState
 import zhaoyun.example.composedemo.story.infobar.domain.InfoBarUseCase
 
 class InfoBarViewModel(
-    private val reducer: Reducer<InfoBarState>,
+    reducer: Reducer<InfoBarState>,
     cardId: String,
 ) : BaseViewModel<InfoBarState, InfoBarEvent, InfoBarEffect>(
     InfoBarState(),
+    reducer,
     InfoBarUseCase(cardId)
-) {
-    override fun createReducer(initialState: InfoBarState): Reducer<InfoBarState> = reducer
-}
+)

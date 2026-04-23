@@ -49,8 +49,8 @@ class GlobalTodoEmbedAndroidTest {
 
         fun createTodoReducer(): zhaoyun.example.composedemo.scaffold.core.mvi.Reducer<zhaoyun.example.composedemo.domain.model.TodoState> {
             val todoStateFlow = MutableStateFlow(zhaoyun.example.composedemo.domain.model.TodoState())
-            return BaseViewModel.createDelegateReducer(
-                stateFlow = todoStateFlow,
+            return zhaoyun.example.composedemo.scaffold.core.mvi.DelegateReducer(
+                state = todoStateFlow,
                 onReduce = { transform ->
                     val newTodo = transform(todoStateFlow.value)
                     todoStateFlow.value = newTodo

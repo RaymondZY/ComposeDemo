@@ -11,13 +11,10 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
 class TodoViewModel(
     todoUseCases: TodoUseCases,
     checkLoginUseCase: CheckLoginUseCase,
-    private val injectedReducer: Reducer<TodoState>? = null
+    injectedReducer: Reducer<TodoState>? = null
 ) : BaseViewModel<TodoState, TodoEvent, TodoEffect>(
     initialState = TodoState(),
+    injectedReducer,
     todoUseCases,
     checkLoginUseCase
-) {
-    override fun createReducer(initialState: TodoState): Reducer<TodoState> {
-        return injectedReducer ?: super.createReducer(initialState)
-    }
-}
+)

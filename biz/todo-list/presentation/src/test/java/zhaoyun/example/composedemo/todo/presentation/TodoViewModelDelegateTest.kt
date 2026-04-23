@@ -16,8 +16,8 @@ import org.junit.Test
 import zhaoyun.example.composedemo.domain.model.TodoEvent
 import zhaoyun.example.composedemo.domain.usecase.CheckLoginUseCase
 import zhaoyun.example.composedemo.domain.usecase.TodoUseCases
-import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
+import zhaoyun.example.composedemo.scaffold.core.mvi.DelegateReducer
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 
 /**
@@ -46,8 +46,8 @@ class TodoViewModelDelegateTest {
         )
         val detailState = MutableStateFlow(globalState.value.todo)
 
-        val reducer = BaseViewModel.createDelegateReducer(
-            stateFlow = detailState,
+        val reducer = DelegateReducer(
+            state = detailState,
             onReduce = { transform ->
                 val newTodo = transform(globalState.value.todo)
                 globalState.value = globalState.value.copy(todo = newTodo)
@@ -90,8 +90,8 @@ class TodoViewModelDelegateTest {
             globalState.value.todo.copy(inputText = "[transformed]${globalState.value.todo.inputText}")
         )
 
-        val reducer = BaseViewModel.createDelegateReducer(
-            stateFlow = detailState,
+        val reducer = DelegateReducer(
+            state = detailState,
             onReduce = { transform ->
                 val newTodo = transform(globalState.value.todo)
                 globalState.value = globalState.value.copy(todo = newTodo)

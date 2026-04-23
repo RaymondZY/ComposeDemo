@@ -8,11 +8,9 @@ import zhaoyun.example.composedemo.story.background.domain.BackgroundState
 import zhaoyun.example.composedemo.story.background.domain.BackgroundUseCase
 
 class BackgroundViewModel(
-    private val backgroundReducer: Reducer<BackgroundState>,
+    backgroundReducer: Reducer<BackgroundState>,
 ) : BaseViewModel<BackgroundState, BackgroundEvent, BackgroundEffect>(
     BackgroundState(),
+    backgroundReducer,
     BackgroundUseCase()
-) {
-    override fun createReducer(initialState: BackgroundState): Reducer<BackgroundState> =
-        backgroundReducer
-}
+)

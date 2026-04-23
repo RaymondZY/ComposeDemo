@@ -11,6 +11,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
+import zhaoyun.example.composedemo.scaffold.core.mvi.DelegateReducer
 import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
@@ -37,15 +38,15 @@ class MviScreenReducerIntegrationTest {
 
     class LocalTestViewModel : BaseViewModel<TestState, TestEvent, TestEffect>(
         initialState = TestState("initial"),
+        null,
         TestUseCase()
     )
 
     class DelegateTestViewModel(private val injectedReducer: Reducer<TestState>) : BaseViewModel<TestState, TestEvent, TestEffect>(
         initialState = TestState("initial"),
+        injectedReducer,
         TestUseCase()
-    ) {
-        override fun createReducer(initialState: TestState): Reducer<TestState> = injectedReducer
-    }
+    )
 
     @Composable
     fun TestScreen(state: TestState, onEvent: (TestEvent) -> Unit) {
@@ -73,8 +74,8 @@ class MviScreenReducerIntegrationTest {
     @Test
     fun `DelegateReducer模式下MviScreen正确收集State`() {
         val externalState = MutableStateFlow(TestState("external"))
-        val reducer = BaseViewModel.createDelegateReducer(
-            stateFlow = externalState,
+        val reducer = DelegateReducer(
+            state = externalState,
             onReduce = { transform -> externalState.value = transform(externalState.value) }
         )
         val viewModel = DelegateTestViewModel(reducer)

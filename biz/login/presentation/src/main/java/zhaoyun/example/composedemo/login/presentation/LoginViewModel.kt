@@ -9,12 +9,9 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
 
 class LoginViewModel(
     useCase: LoginUseCase,
-    private val injectedReducer: Reducer<LoginState>? = null
+    injectedReducer: Reducer<LoginState>? = null
 ) : BaseViewModel<LoginState, LoginEvent, LoginEffect>(
     initialState = LoginState(),
+    injectedReducer,
     useCase
-) {
-    override fun createReducer(initialState: LoginState): Reducer<LoginState> {
-        return injectedReducer ?: super.createReducer(initialState)
-    }
-}
+)

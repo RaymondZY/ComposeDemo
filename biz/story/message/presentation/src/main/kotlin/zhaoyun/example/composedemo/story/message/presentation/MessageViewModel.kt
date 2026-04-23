@@ -8,11 +8,9 @@ import zhaoyun.example.composedemo.story.message.domain.MessageState
 import zhaoyun.example.composedemo.story.message.domain.MessageUseCase
 
 class MessageViewModel(
-    private val messageReducer: Reducer<MessageState>,
+    messageReducer: Reducer<MessageState>,
 ) : BaseViewModel<MessageState, MessageEvent, MessageEffect>(
     MessageState(),
+    messageReducer,
     MessageUseCase()
-) {
-    override fun createReducer(initialState: MessageState): Reducer<MessageState> =
-        messageReducer
-}
+)

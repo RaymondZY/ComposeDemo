@@ -30,8 +30,8 @@ class LocalReducer<S>(initial: S) : Reducer<S> {
 /**
  * 代理 Reducer —— 将状态读写代理到外部提供的 [StateFlow] 与 [onReduce] 回调
  *
- * 典型使用场景：GlobalViewModel 通过 [BaseViewModel.createDelegateReducer] 创建实例，
- * 注入给 Detail ViewModel，使 DetailState 成为 GlobalState 的结构性子集。
+ * 典型使用场景：直接创建 [DelegateReducer] 实例注入给 Detail ViewModel，
+ * 使 DetailState 成为 GlobalState 的结构性子集。
  */
 class DelegateReducer<S>(
     override val state: StateFlow<S>,
