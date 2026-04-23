@@ -5,11 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.merge
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
@@ -41,24 +37,13 @@ fun StoryCardPage(
         parametersOf(storyViewModel.backgroundReducer)
     }
 
-    val state by storyViewModel.state.collectAsStateWithLifecycle()
-
     Box(modifier = Modifier.fillMaxSize()) {
-        StoryBackground(state = state.background)
+        StoryBackground(viewModel = backgroundViewModel)
         Column(modifier = Modifier.fillMaxSize()) {
             Spacer(modifier = Modifier.weight(1f))
-            MessageArea(
-                state = state.message,
-                onEvent = { messageViewModel.onEvent(it) },
-            )
-            InfoBarArea(
-                state = state.infoBar,
-                onEvent = { infoBarViewModel.onEvent(it) },
-            )
-            InputArea(
-                state = state.input,
-                onEvent = { inputViewModel.onEvent(it) },
-            )
+            MessageArea(viewModel = messageViewModel)
+            InfoBarArea(viewModel = infoBarViewModel)
+            InputArea(viewModel = inputViewModel)
         }
     }
 }

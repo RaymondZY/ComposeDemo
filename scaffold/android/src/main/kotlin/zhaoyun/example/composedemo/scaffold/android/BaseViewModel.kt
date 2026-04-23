@@ -3,9 +3,12 @@ package zhaoyun.example.composedemo.scaffold.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
@@ -59,13 +62,19 @@ abstract class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
     }
 
     fun <T> createDelegateReducer(childSelector: (S) -> T, parentUpdater: (S, T) -> S): Reducer<T> {
-        val childStateFlow = MutableStateFlow(childSelector(state.value))
+        val childStateFlow = state
+            .map { childSelector(it) }
+            .distinctUntilChanged()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = childSelector(state.value)
+            )
+
         return DelegateReducer(
             state = childStateFlow,
             onReduce = { transform ->
                 val childNewState = transform(childSelector(state.value))
-                childStateFlow.value = childNewState
-
                 val parentNewState = parentUpdater(state.value, childNewState)
                 updateState { parentNewState }
             }

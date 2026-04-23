@@ -6,21 +6,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import zhaoyun.example.composedemo.story.input.domain.InputEvent
-import zhaoyun.example.composedemo.story.input.domain.InputState
 
 @Composable
 fun InputArea(
-    state: InputState,
-    onEvent: (InputEvent) -> Unit,
+    viewModel: InputViewModel,
     modifier: Modifier = Modifier,
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
     Row(
         modifier = modifier
-            .clickable { onEvent(InputEvent.OnInputClicked) }
+            .clickable { viewModel.onEvent(InputEvent.OnInputClicked) }
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

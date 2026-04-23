@@ -8,20 +8,22 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import zhaoyun.example.composedemo.story.message.domain.MessageEvent
-import zhaoyun.example.composedemo.story.message.domain.MessageState
 
 @Composable
 fun MessageArea(
-    state: MessageState,
-    onEvent: (MessageEvent) -> Unit,
+    viewModel: MessageViewModel,
     modifier: Modifier = Modifier,
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
     Card(
         modifier = modifier
-            .clickable { onEvent(MessageEvent.OnDialogueClicked) },
+            .clickable { viewModel.onEvent(MessageEvent.OnDialogueClicked) },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),

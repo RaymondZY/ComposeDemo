@@ -10,18 +10,20 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import zhaoyun.example.composedemo.story.infobar.domain.InfoBarEvent
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarState
 
 @Composable
 fun InfoBarArea(
-    state: InfoBarState,
-    onEvent: (InfoBarEvent) -> Unit,
+    viewModel: InfoBarViewModel,
     modifier: Modifier = Modifier,
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
     Row(
         modifier = modifier.padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -42,25 +44,25 @@ fun InfoBarArea(
         Spacer(modifier = Modifier.width(8.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            IconButton(onClick = { onEvent(InfoBarEvent.OnLikeClicked) }) {
+            IconButton(onClick = { viewModel.onEvent(InfoBarEvent.OnLikeClicked) }) {
                 Text(
                     text = "${if (state.isLiked) "❤️" else "🤍"} ${state.likes}",
                     style = MaterialTheme.typography.labelMedium,
                 )
             }
-            IconButton(onClick = { onEvent(InfoBarEvent.OnShareClicked) }) {
+            IconButton(onClick = { viewModel.onEvent(InfoBarEvent.OnShareClicked) }) {
                 Text(
                     text = "↗️ ${state.shares}",
                     style = MaterialTheme.typography.labelMedium,
                 )
             }
-            IconButton(onClick = { onEvent(InfoBarEvent.OnCommentClicked) }) {
+            IconButton(onClick = { viewModel.onEvent(InfoBarEvent.OnCommentClicked) }) {
                 Text(
                     text = "💬 ${state.comments}",
                     style = MaterialTheme.typography.labelMedium,
                 )
             }
-            IconButton(onClick = { onEvent(InfoBarEvent.OnHistoryClicked) }) {
+            IconButton(onClick = { viewModel.onEvent(InfoBarEvent.OnHistoryClicked) }) {
                 Text(
                     text = "🕐",
                     style = MaterialTheme.typography.labelMedium,
