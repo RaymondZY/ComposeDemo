@@ -4,6 +4,7 @@ import android.app.Application
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import zhaoyun.example.composedemo.login.presentation.di.loginModules
+import zhaoyun.example.composedemo.service.storage.impl.di.storageModule
 import zhaoyun.example.composedemo.service.usercenter.impl.di.userCenterModule
 import zhaoyun.example.composedemo.todo.presentation.di.todoModules
 
@@ -18,7 +19,7 @@ class ComposeDemoApp : Application() {
         super.onCreate()
         startKoin {
             androidContext(this@ComposeDemoApp)
-            modules(userCenterModule + loginModules + todoModules)
+            modules(userCenterModule + storageModule + loginModules + todoModules)
         }
     }
 }

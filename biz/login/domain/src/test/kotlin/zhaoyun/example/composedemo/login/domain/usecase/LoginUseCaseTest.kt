@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import zhaoyun.example.composedemo.login.domain.model.LoginEffect
 import zhaoyun.example.composedemo.login.domain.model.LoginEvent
+import zhaoyun.example.composedemo.service.storage.mock.FakeKeyValueStorage
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 
 /**
@@ -28,12 +29,13 @@ import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 class LoginUseCaseTest {
 
     private val fakeRepository = FakeUserRepository()
+    private val fakeStorage = FakeKeyValueStorage()
     private lateinit var useCase: LoginUseCase
 
     @Before
     fun setup() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        useCase = LoginUseCase(fakeRepository)
+        useCase = LoginUseCase(fakeRepository, fakeStorage)
     }
 
     @After
@@ -57,6 +59,16 @@ class LoginUseCaseTest {
         assertEquals(listOf(LoginEffect.NavigateToHome), effects)
         assertTrue(fakeRepository.isLoggedIn())
         assertEquals("admin", fakeRepository.currentUser.value?.username)
+        assertEquals("admin", fakeStorage.getString("last_username"))
+    }
+
+    @Test
+    fun 登录失败时不应写入storage() = runTest {
+        useCase.onEvent(LoginEvent.OnUsernameChanged("wrong"))
+        useCase.onEvent(LoginEvent.OnPasswordChanged("wrong"))
+        useCase.onEvent(LoginEvent.OnLoginClicked)
+
+        assertFalse(fakeStorage.contains("last_username"))
     }
 
     @Test

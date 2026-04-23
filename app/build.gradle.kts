@@ -46,6 +46,7 @@ dependencies {
     implementation(project(":biz:login:presentation"))
     implementation(project(":service:user-center:api"))
     implementation(project(":service:user-center:impl"))
+    implementation(project(":service:storage:impl"))
     implementation(project(":scaffold:android"))
 
     implementation(libs.koin.android)

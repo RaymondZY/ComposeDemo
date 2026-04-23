@@ -15,6 +15,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import zhaoyun.example.composedemo.login.domain.usecase.LoginUseCase
+import zhaoyun.example.composedemo.service.storage.mock.FakeKeyValueStorage
 import zhaoyun.example.composedemo.service.usercenter.api.UserRepository
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 
@@ -28,6 +29,7 @@ class LoginScreenTest {
     val composeTestRule = createComposeRule()
 
     private val fakeRepository = FakeUserRepository()
+    private val fakeStorage = FakeKeyValueStorage()
 
     @Before
     fun setup() {
@@ -37,10 +39,11 @@ class LoginScreenTest {
     @After
     fun tearDown() {
         fakeRepository.logout()
+        fakeStorage.clear()
     }
 
     private fun createViewModel(): LoginViewModel =
-        LoginViewModel(LoginUseCase(fakeRepository))
+        LoginViewModel(LoginUseCase(fakeRepository, fakeStorage))
 
     @Test
     fun `初始状态显示输入框和登录按钮`() {

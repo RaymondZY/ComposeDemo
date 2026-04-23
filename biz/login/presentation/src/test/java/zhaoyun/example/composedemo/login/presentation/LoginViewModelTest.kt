@@ -17,6 +17,7 @@ import org.junit.Test
 import zhaoyun.example.composedemo.login.domain.model.LoginEffect
 import zhaoyun.example.composedemo.login.domain.model.LoginEvent
 import zhaoyun.example.composedemo.login.domain.usecase.LoginUseCase
+import zhaoyun.example.composedemo.service.storage.mock.FakeKeyValueStorage
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 
 /**
@@ -39,7 +40,8 @@ class LoginViewModelTest {
     }
 
     private val fakeRepository = FakeUserRepository()
-    private fun createViewModel(): LoginViewModel = LoginViewModel(LoginUseCase(fakeRepository))
+    private val fakeStorage = FakeKeyValueStorage()
+    private fun createViewModel(): LoginViewModel = LoginViewModel(LoginUseCase(fakeRepository, fakeStorage))
 
     @Test
     fun `初始状态为空且未加载`() {
