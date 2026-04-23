@@ -38,7 +38,7 @@ class FeedUseCaseTest {
     fun `刷新成功填充数据`() = runTest {
         useCase.onEvent(FeedEvent.OnRefresh)
         val state = useCase.state.value
-        assertEquals(2, state.cards.size)
+        assertEquals(10, state.cards.size)
         assertFalse(state.isRefreshing)
         assertEquals(1, state.currentPage)
     }
@@ -48,14 +48,17 @@ class FeedUseCaseTest {
         useCase.onEvent(FeedEvent.OnRefresh)
         useCase.onEvent(FeedEvent.OnLoadMore)
         val state = useCase.state.value
-        assertEquals(2, state.cards.size)
-        assertFalse(state.hasMore)
+        assertEquals(15, state.cards.size)
+        assertTrue(state.hasMore)
     }
 
     @Test
-    fun `加载更多无数据时hasMore为false`() = runTest {
-        useCase.onEvent(FeedEvent.OnRefresh)
-        useCase.onEvent(FeedEvent.OnLoadMore)
-        assertFalse(useCase.state.value.hasMore)
+    fun `加载更多到第三页hasMore为false`() = runTest {
+        useCase.onEvent(FeedEvent.OnRefresh)      // page 0 -> 10条
+        useCase.onEvent(FeedEvent.OnLoadMore)     // page 1 -> +5条
+        useCase.onEvent(FeedEvent.OnLoadMore)     // page 2 -> 空
+        val state = useCase.state.value
+        assertEquals(15, state.cards.size)
+        assertFalse(state.hasMore)
     }
 }

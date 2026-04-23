@@ -14,13 +14,20 @@ class FakeFeedRepositoryTest {
     fun `fetchFeed返回预定义列表`() = runTest {
         val result = repository.fetchFeed(page = 0, pageSize = 10)
         assertTrue(result.isSuccess)
-        assertEquals(2, result.getOrThrow().size)
+        assertEquals(10, result.getOrThrow().size)
         assertTrue(result.getOrThrow()[0] is StoryCard)
     }
 
     @Test
-    fun `fetchFeed第二页返回空列表`() = runTest {
+    fun `fetchFeed第二页返回剩余5条`() = runTest {
         val result = repository.fetchFeed(page = 1, pageSize = 10)
+        assertTrue(result.isSuccess)
+        assertEquals(5, result.getOrThrow().size)
+    }
+
+    @Test
+    fun `fetchFeed第三页返回空列表`() = runTest {
+        val result = repository.fetchFeed(page = 2, pageSize = 10)
         assertTrue(result.isSuccess)
         assertTrue(result.getOrThrow().isEmpty())
     }
