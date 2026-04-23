@@ -79,6 +79,10 @@ abstract class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
         }
     }
 
+    protected fun updateState(transform: (S) -> S) {
+        ensureReducer().reduce(transform)
+    }
+
     companion object {
         /**
          * 创建代理 [Reducer]，供 GlobalViewModel 注入给 Detail ViewModel 使用。
