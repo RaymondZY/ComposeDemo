@@ -42,8 +42,16 @@ android {
 }
 
 dependencies {
+    implementation(project(":biz:home:presentation"))
+    implementation(project(":biz:feed:presentation"))
+    implementation(project(":biz:story:presentation"))
+    implementation(project(":biz:story:background:presentation"))
+    implementation(project(":biz:story:infobar:presentation"))
+    implementation(project(":biz:story:input:presentation"))
+    implementation(project(":biz:story:message:presentation"))
     implementation(project(":biz:todo-list:presentation"))
     implementation(project(":biz:login:presentation"))
+    implementation(project(":service:feed:mock"))
     implementation(project(":service:user-center:api"))
     implementation(project(":service:user-center:impl"))
     implementation(project(":service:storage:impl"))
