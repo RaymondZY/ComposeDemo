@@ -286,7 +286,7 @@ DelegateStateHolder.onUpdate { transform }
 ```
 
 **为什么不会循环？**
-- 子 reduce → `updateState` 更新父 → `stateIn` 派生新值 → `distinctUntilChanged` 发现值已存在 → **不发射**
+- 子 UseCase 调用 `updateState` 更新父 → `stateIn` 派生新值 → `distinctUntilChanged` 发现值已存在 → **不发射**
 
 **为什么没有泄漏？**
 - `SharingStarted.WhileSubscribed(5000)`：当子 Composable 离开组合后 5 秒自动停止上游收集
