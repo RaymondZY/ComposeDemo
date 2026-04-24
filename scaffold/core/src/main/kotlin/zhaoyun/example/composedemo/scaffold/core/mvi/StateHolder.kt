@@ -11,31 +11,31 @@ import kotlinx.coroutines.flow.update
  * [BaseViewModel] 与 [BaseUseCase] 均面向此接口编程，
  * 从而实现「独立持态」与「代理到外部」两种模式的无感知切换。
  */
-interface Reducer<S> {
+interface StateHolder<S> {
     val state: StateFlow<S>
-    fun reduce(transform: (S) -> S)
+    fun update(transform: (S) -> S)
 }
 
 /**
- * 本地 Reducer —— 内部持有 [MutableStateFlow]，作为独立页面时的默认实现
+ * 本地 StateHolder —— 内部持有 [MutableStateFlow]，作为独立页面时的默认实现
  */
-class LocalReducer<S>(initial: S) : Reducer<S> {
+class LocalStateHolder<S>(initial: S) : StateHolder<S> {
     private val _state = MutableStateFlow(initial)
     override val state: StateFlow<S> = _state.asStateFlow()
-    override fun reduce(transform: (S) -> S) {
+    override fun update(transform: (S) -> S) {
         _state.update(transform)
     }
 }
 
 /**
- * 代理 Reducer —— 将状态读写代理到外部提供的 [StateFlow] 与 [onReduce] 回调
+ * 代理 StateHolder —— 将状态读写代理到外部提供的 [StateFlow] 与 [onUpdate] 回调
  *
- * 典型使用场景：直接创建 [DelegateReducer] 实例注入给 Detail ViewModel，
+ * 典型使用场景：直接创建 [DelegateStateHolder] 实例注入给 Detail ViewModel，
  * 使 DetailState 成为 GlobalState 的结构性子集。
  */
-class DelegateReducer<S>(
+class DelegateStateHolder<S>(
     override val state: StateFlow<S>,
-    private val onReduce: ((S) -> S) -> Unit
-) : Reducer<S> {
-    override fun reduce(transform: (S) -> S) = onReduce(transform)
+    private val onUpdate: ((S) -> S) -> Unit
+) : StateHolder<S> {
+    override fun update(transform: (S) -> S) = onUpdate(transform)
 }
