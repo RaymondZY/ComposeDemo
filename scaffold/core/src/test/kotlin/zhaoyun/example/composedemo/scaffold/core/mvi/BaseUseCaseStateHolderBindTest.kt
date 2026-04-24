@@ -6,7 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class BaseUseCaseReducerBindTest {
+class BaseUseCaseStateHolderBindTest {
 
     data class TestState(val value: Int = 0) : UiState
     object TestEvent : UiEvent
@@ -32,27 +32,27 @@ class BaseUseCaseReducerBindTest {
     }
 
     @Test
-    fun `bind后updateState路由到reducer`() = runTest {
+    fun `bind后updateState路由到stateHolder`() = runTest {
         val useCase = TestUseCase()
-        val reducer = LocalReducer(TestState(100))
+        val stateHolder = LocalStateHolder(TestState(100))
 
-        useCase.bind(reducer)
+        useCase.bind(stateHolder)
         assertEquals(100, useCase.state.value.value)
 
         useCase.increment()
         assertEquals(101, useCase.state.value.value)
-        assertEquals(101, reducer.state.value.value)
+        assertEquals(101, stateHolder.state.value.value)
         assertEquals(101, useCase.getCurrent().value)
     }
 
     @Test
-    fun `bind后多个useCase共享同一个reducer`() = runTest {
-        val reducer = LocalReducer(TestState(0))
+    fun `bind后多个useCase共享同一个stateHolder`() = runTest {
+        val stateHolder = LocalStateHolder(TestState(0))
         val useCaseA = TestUseCase()
         val useCaseB = TestUseCase()
 
-        useCaseA.bind(reducer)
-        useCaseB.bind(reducer)
+        useCaseA.bind(stateHolder)
+        useCaseB.bind(stateHolder)
 
         useCaseA.increment()
         assertEquals(1, useCaseA.state.value.value)

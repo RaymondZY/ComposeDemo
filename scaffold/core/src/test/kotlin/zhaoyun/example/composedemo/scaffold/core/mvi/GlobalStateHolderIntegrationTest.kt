@@ -7,10 +7,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Global与DetailReducer集成测试
+ * Global与DetailStateHolder集成测试
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class GlobalReducerIntegrationTest {
+class GlobalStateHolderIntegrationTest {
 
     data class DetailState(val count: Int, val label: String) : UiState
     data class GlobalState(
@@ -19,38 +19,38 @@ class GlobalReducerIntegrationTest {
     )
 
     @Test
-    fun `DetailReduce通过DelegateReducer正确写回GlobalState`() = runTest {
+    fun `DetailStateHolder通过DelegateStateHolder正确写回GlobalState`() = runTest {
         val globalState = MutableStateFlow(
             GlobalState(detail = DetailState(0, "A"))
         )
 
-        val detailReducer = DelegateReducer(
+        val detailStateHolder = DelegateStateHolder(
             state = MutableStateFlow(globalState.value.detail),
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 globalState.value = globalState.value.copy(
                     detail = transform(globalState.value.detail)
                 )
             }
         )
 
-        detailReducer.reduce { it.copy(count = it.count + 1) }
+        detailStateHolder.update { it.copy(count = it.count + 1) }
         assertEquals(1, globalState.value.detail.count)
         assertEquals("A", globalState.value.detail.label)
 
-        detailReducer.reduce { it.copy(label = "B") }
+        detailStateHolder.update { it.copy(label = "B") }
         assertEquals(1, globalState.value.detail.count)
         assertEquals("B", globalState.value.detail.label)
     }
 
     @Test
-    fun `Reduce拦截器可在Detail更新时同步修改Global其他字段`() = runTest {
+    fun `StateHolder拦截器可在Detail更新时同步修改Global其他字段`() = runTest {
         val globalState = MutableStateFlow(
             GlobalState(detail = DetailState(0, "A"), totalUpdates = 0)
         )
 
-        val detailReducer = DelegateReducer(
+        val detailStateHolder = DelegateStateHolder(
             state = MutableStateFlow(globalState.value.detail),
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 val newDetail = transform(globalState.value.detail)
                 globalState.value = globalState.value.copy(
                     detail = newDetail,
@@ -59,44 +59,44 @@ class GlobalReducerIntegrationTest {
             }
         )
 
-        detailReducer.reduce { it.copy(count = 1) }
+        detailStateHolder.update { it.copy(count = 1) }
         assertEquals(1, globalState.value.totalUpdates)
 
-        detailReducer.reduce { it.copy(count = 2) }
+        detailStateHolder.update { it.copy(count = 2) }
         assertEquals(2, globalState.value.totalUpdates)
 
-        detailReducer.reduce { it.copy(label = "Z") }
+        detailStateHolder.update { it.copy(label = "Z") }
         assertEquals(3, globalState.value.totalUpdates)
     }
 
     @Test
-    fun `多个DetailReducer代理到同一个GlobalState的不同切片`() = runTest {
+    fun `多个DetailStateHolder代理到同一个GlobalState的不同切片`() = runTest {
         data class SliceA(val value: Int) : UiState
         data class SliceB(val value: Int) : UiState
         data class MultiGlobalState(val a: SliceA, val b: SliceB)
 
         val globalState = MutableStateFlow(MultiGlobalState(SliceA(0), SliceB(0)))
 
-        val reducerA = DelegateReducer(
+        val stateHolderA = DelegateStateHolder(
             state = MutableStateFlow(globalState.value.a),
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 globalState.value = globalState.value.copy(
                     a = transform(globalState.value.a)
                 )
             }
         )
 
-        val reducerB = DelegateReducer(
+        val stateHolderB = DelegateStateHolder(
             state = MutableStateFlow(globalState.value.b),
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 globalState.value = globalState.value.copy(
                     b = transform(globalState.value.b)
                 )
             }
         )
 
-        reducerA.reduce { it.copy(value = 10) }
-        reducerB.reduce { it.copy(value = 20) }
+        stateHolderA.update { it.copy(value = 10) }
+        stateHolderB.update { it.copy(value = 20) }
 
         assertEquals(10, globalState.value.a.value)
         assertEquals(20, globalState.value.b.value)
