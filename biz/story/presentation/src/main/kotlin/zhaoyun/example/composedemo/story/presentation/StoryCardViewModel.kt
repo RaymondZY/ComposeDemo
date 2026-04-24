@@ -1,7 +1,7 @@
 package zhaoyun.example.composedemo.story.presentation
 
 import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.story.background.domain.BackgroundState
 import zhaoyun.example.composedemo.story.domain.StoryCardEffect
 import zhaoyun.example.composedemo.story.domain.StoryCardEvent
@@ -16,23 +16,23 @@ class StoryCardViewModel : BaseViewModel<StoryCardState, StoryCardEvent, StoryCa
     null,
     StoryCardUseCase()
 ) {
-    val messageReducer: Reducer<MessageState> by lazy {
-        createDelegateReducer(StoryCardState::message) { storyCardState, state ->
+    val messageStateHolder: StateHolder<MessageState> by lazy {
+        createDelegateStateHolder(StoryCardState::message) { storyCardState, state ->
             storyCardState.copy(message = state)
         }
     }
-    val infoBarReducer: Reducer<InfoBarState> by lazy {
-        createDelegateReducer(StoryCardState::infoBar) { storyCardState, state ->
+    val infoBarStateHolder: StateHolder<InfoBarState> by lazy {
+        createDelegateStateHolder(StoryCardState::infoBar) { storyCardState, state ->
             storyCardState.copy(infoBar = state)
         }
     }
-    val inputReducer: Reducer<InputState> by lazy {
-        createDelegateReducer(StoryCardState::input) { storyCardState, state ->
+    val inputStateHolder: StateHolder<InputState> by lazy {
+        createDelegateStateHolder(StoryCardState::input) { storyCardState, state ->
             storyCardState.copy(input = state)
         }
     }
-    val backgroundReducer: Reducer<BackgroundState> by lazy {
-        createDelegateReducer(StoryCardState::background) { storyCardState, state ->
+    val backgroundStateHolder: StateHolder<BackgroundState> by lazy {
+        createDelegateStateHolder(StoryCardState::background) { storyCardState, state ->
             storyCardState.copy(background = state)
         }
     }

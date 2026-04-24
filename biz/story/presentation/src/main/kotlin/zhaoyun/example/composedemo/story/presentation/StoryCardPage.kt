@@ -25,16 +25,16 @@ fun StoryCardPage(
     val storyViewModel: StoryCardViewModel = koinViewModel()
 
     val messageViewModel: MessageViewModel = koinViewModel {
-        parametersOf(storyViewModel.messageReducer)
+        parametersOf(storyViewModel.messageStateHolder)
     }
     val infoBarViewModel: InfoBarViewModel = koinViewModel {
-        parametersOf(storyViewModel.infoBarReducer, card.cardId)
+        parametersOf(storyViewModel.infoBarStateHolder, card.cardId)
     }
     val inputViewModel: InputViewModel = koinViewModel {
-        parametersOf(storyViewModel.inputReducer)
+        parametersOf(storyViewModel.inputStateHolder)
     }
     val backgroundViewModel: BackgroundViewModel = koinViewModel {
-        parametersOf(storyViewModel.backgroundReducer)
+        parametersOf(storyViewModel.backgroundStateHolder)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
