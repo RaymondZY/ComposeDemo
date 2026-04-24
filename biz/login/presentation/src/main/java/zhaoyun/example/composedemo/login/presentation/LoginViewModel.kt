@@ -5,13 +5,13 @@ import zhaoyun.example.composedemo.login.domain.model.LoginEvent
 import zhaoyun.example.composedemo.login.domain.model.LoginState
 import zhaoyun.example.composedemo.login.domain.usecase.LoginUseCase
 import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 
 class LoginViewModel(
     useCase: LoginUseCase,
-    injectedReducer: Reducer<LoginState>? = null
+    injectedStateHolder: StateHolder<LoginState>? = null
 ) : BaseViewModel<LoginState, LoginEvent, LoginEffect>(
     initialState = LoginState(),
-    injectedReducer,
+    injectedStateHolder,
     useCase
 )

@@ -5,13 +5,13 @@ import org.koin.dsl.module
 import zhaoyun.example.composedemo.home.domain.HomeState
 import zhaoyun.example.composedemo.home.domain.homeDomainModule
 import zhaoyun.example.composedemo.home.presentation.HomeViewModel
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 
 val homePresentationModule = module {
     viewModel { params ->
         HomeViewModel(
             get(),
-            params.getOrNull<Reducer<HomeState>>()
+            params.getOrNull<StateHolder<HomeState>>()
         )
     }
 }

@@ -6,15 +6,15 @@ import zhaoyun.example.composedemo.domain.model.TodoState
 import zhaoyun.example.composedemo.domain.usecase.CheckLoginUseCase
 import zhaoyun.example.composedemo.domain.usecase.TodoUseCases
 import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 
 class TodoViewModel(
     todoUseCases: TodoUseCases,
     checkLoginUseCase: CheckLoginUseCase,
-    injectedReducer: Reducer<TodoState>? = null
+    injectedStateHolder: StateHolder<TodoState>? = null
 ) : BaseViewModel<TodoState, TodoEvent, TodoEffect>(
     initialState = TodoState(),
-    injectedReducer,
+    injectedStateHolder,
     todoUseCases,
     checkLoginUseCase
 )

@@ -5,13 +5,13 @@ import org.koin.dsl.module
 import zhaoyun.example.composedemo.feed.domain.feedDomainModule
 import zhaoyun.example.composedemo.feed.domain.FeedState
 import zhaoyun.example.composedemo.feed.presentation.FeedViewModel
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 
 val feedPresentationModule = module {
     viewModel { params ->
         FeedViewModel(
             get(),
-            params.getOrNull<Reducer<FeedState>>()
+            params.getOrNull<StateHolder<FeedState>>()
         )
     }
 }
