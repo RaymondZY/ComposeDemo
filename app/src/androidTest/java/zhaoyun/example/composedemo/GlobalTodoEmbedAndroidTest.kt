@@ -47,11 +47,11 @@ class GlobalTodoEmbedAndroidTest {
         private val _state = MutableStateFlow(GlobalState())
         val state: StateFlow<GlobalState> = _state.asStateFlow()
 
-        fun createTodoReducer(): zhaoyun.example.composedemo.scaffold.core.mvi.Reducer<zhaoyun.example.composedemo.domain.model.TodoState> {
+        fun createTodoStateHolder(): zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder<zhaoyun.example.composedemo.domain.model.TodoState> {
             val todoStateFlow = MutableStateFlow(zhaoyun.example.composedemo.domain.model.TodoState())
-            return zhaoyun.example.composedemo.scaffold.core.mvi.DelegateReducer(
+            return zhaoyun.example.composedemo.scaffold.core.mvi.DelegateStateHolder(
                 state = todoStateFlow,
-                onReduce = { transform ->
+                onUpdate = { transform ->
                     val newTodo = transform(todoStateFlow.value)
                     todoStateFlow.value = newTodo
                     _state.update { it.copy(todoCount = newTodo.todos.size) }
@@ -76,11 +76,11 @@ class GlobalTodoEmbedAndroidTest {
         fakeRepository.setLoggedInUser(UserInfo("u_1", "alice", "Alice"))
 
         val globalVm = GlobalViewModel()
-        val reducer = globalVm.createTodoReducer()
+        val stateHolder = globalVm.createTodoStateHolder()
         val todoVm = TodoViewModel(
             todoUseCases = TodoUseCases(),
             checkLoginUseCase = CheckLoginUseCase(fakeRepository),
-            injectedReducer = reducer
+            injectedStateHolder = stateHolder
         )
 
         composeTestRule.setContent {

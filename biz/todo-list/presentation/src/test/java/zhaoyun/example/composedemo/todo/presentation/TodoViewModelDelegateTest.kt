@@ -17,11 +17,11 @@ import zhaoyun.example.composedemo.domain.model.TodoEvent
 import zhaoyun.example.composedemo.domain.usecase.CheckLoginUseCase
 import zhaoyun.example.composedemo.domain.usecase.TodoUseCases
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
-import zhaoyun.example.composedemo.scaffold.core.mvi.DelegateReducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.DelegateStateHolder
 import zhaoyun.example.composedemo.service.usercenter.mock.FakeUserRepository
 
 /**
- * TodoViewModel注入DelegateReducer后的集成测试
+ * TodoViewModel注入DelegateStateHolder后的集成测试
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodoViewModelDelegateTest {
@@ -46,9 +46,9 @@ class TodoViewModelDelegateTest {
         )
         val detailState = MutableStateFlow(globalState.value.todo)
 
-        val reducer = DelegateReducer(
+        val stateHolder = DelegateStateHolder(
             state = detailState,
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 val newTodo = transform(globalState.value.todo)
                 globalState.value = globalState.value.copy(todo = newTodo)
                 detailState.value = newTodo
@@ -58,13 +58,13 @@ class TodoViewModelDelegateTest {
         val viewModel = TodoViewModel(
             todoUseCases = TodoUseCases(),
             checkLoginUseCase = CheckLoginUseCase(fakeRepository),
-            injectedReducer = reducer
+            injectedStateHolder = stateHolder
         )
         return viewModel to globalState
     }
 
     @Test
-    fun `注入DelegateReducer后Event经代理更新外部状态`() {
+    fun `注入DelegateStateHolder后Event经代理更新外部状态`() {
         val (viewModel, globalState) = createDelegateViewModel()
 
         assertEquals(globalState.value.todo, viewModel.state.value)
@@ -90,9 +90,9 @@ class TodoViewModelDelegateTest {
             globalState.value.todo.copy(inputText = "[transformed]${globalState.value.todo.inputText}")
         )
 
-        val reducer = DelegateReducer(
+        val stateHolder = DelegateStateHolder(
             state = detailState,
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 val newTodo = transform(globalState.value.todo)
                 globalState.value = globalState.value.copy(todo = newTodo)
                 detailState.value = newTodo.copy(inputText = "[transformed]${newTodo.inputText}")
@@ -102,7 +102,7 @@ class TodoViewModelDelegateTest {
         val viewModel = TodoViewModel(
             todoUseCases = TodoUseCases(),
             checkLoginUseCase = CheckLoginUseCase(fakeRepository),
-            injectedReducer = reducer
+            injectedStateHolder = stateHolder
         )
 
         viewModel.onEvent(TodoEvent.OnInputTextChanged("hello"))
