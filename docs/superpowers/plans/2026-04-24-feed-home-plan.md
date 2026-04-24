@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 构建 4Tab + 中间按钮的首页 Feed 流，作为 Launcher Activity，采用原子 MVI + DelegateReducer 状态共享架构。
+**Goal:** 构建 4Tab + 中间按钮的首页 Feed 流，作为 Launcher Activity，采用原子 MVI + DelegateStateHolder 状态共享架构。
 
-**Architecture:** `:biz:home` / `:biz:feed` / `:biz:story` 独立模块；Story 子模块（message/infobar/input/background）各带独立 ViewModel；`StoryCardViewModel` 作为主状态管理中心，通过 `DelegateReducer` 为子 ViewModel 提供状态切片；FeedUseCase 只管理列表生命周期，不感知 Card 业务细节。
+**Architecture:** `:biz:home` / `:biz:feed` / `:biz:story` 独立模块；Story 子模块（message/infobar/input/background）各带独立 ViewModel；`StoryCardViewModel` 作为主状态管理中心，通过 `DelegateStateHolder` 为子 ViewModel 提供状态切片；FeedUseCase 只管理列表生命周期，不感知 Card 业务细节。
 
 **Tech Stack:** Kotlin, Jetpack Compose, Compose Navigation, Koin DI, MVI (BaseUseCase/BaseViewModel/MviScreen from scaffold)
 
@@ -450,13 +450,13 @@ import zhaoyun.example.composedemo.story.background.domain.BackgroundState
 import zhaoyun.example.composedemo.story.background.domain.BackgroundUseCase
 
 class BackgroundViewModel(
-    backgroundReducer: zhaoyun.example.composedemo.scaffold.core.mvi.Reducer<BackgroundState>,
+    backgroundStateHolder: zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder<BackgroundState>,
 ) : BaseViewModel<BackgroundState, BackgroundEvent, BackgroundEffect>(
     BackgroundState(),
     BackgroundUseCase()
 ) {
-    override fun createReducer(initialState: BackgroundState): zhaoyun.example.composedemo.scaffold.core.mvi.Reducer<BackgroundState> =
-        backgroundReducer
+    override fun createStateHolder(initialState: BackgroundState): zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder<BackgroundState> =
+        backgroundStateHolder
 }
 ```
 
@@ -488,13 +488,13 @@ package zhaoyun.example.composedemo.story.background.presentation.di
 
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.story.background.domain.BackgroundState
 import zhaoyun.example.composedemo.story.background.presentation.BackgroundViewModel
 
 val backgroundPresentationModule = module {
-    viewModel { (reducer: Reducer<BackgroundState>) ->
-        BackgroundViewModel(backgroundReducer = reducer)
+    viewModel { (stateHolder: StateHolder<BackgroundState>) ->
+        BackgroundViewModel(backgroundStateHolder = stateHolder)
     }
 }
 ```
@@ -641,19 +641,19 @@ Follow the same pattern as Task 4 Steps 6-10.
 package zhaoyun.example.composedemo.story.message.presentation
 
 import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.story.message.domain.MessageEffect
 import zhaoyun.example.composedemo.story.message.domain.MessageEvent
 import zhaoyun.example.composedemo.story.message.domain.MessageState
 import zhaoyun.example.composedemo.story.message.domain.MessageUseCase
 
 class MessageViewModel(
-    messageReducer: Reducer<MessageState>,
+    messageStateHolder: StateHolder<MessageState>,
 ) : BaseViewModel<MessageState, MessageEvent, MessageEffect>(
     MessageState(),
     MessageUseCase()
 ) {
-    override fun createReducer(initialState: MessageState): Reducer<MessageState> = messageReducer
+    override fun createStateHolder(initialState: MessageState): StateHolder<MessageState> = messageStateHolder
 }
 ```
 
@@ -848,20 +848,20 @@ Follow same pattern as Task 5.
 package zhaoyun.example.composedemo.story.infobar.presentation
 
 import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.story.infobar.domain.InfoBarEffect
 import zhaoyun.example.composedemo.story.infobar.domain.InfoBarEvent
 import zhaoyun.example.composedemo.story.infobar.domain.InfoBarState
 import zhaoyun.example.composedemo.story.infobar.domain.InfoBarUseCase
 
 class InfoBarViewModel(
-    infoBarReducer: Reducer<InfoBarState>,
+    infoBarStateHolder: StateHolder<InfoBarState>,
     cardId: String,
 ) : BaseViewModel<InfoBarState, InfoBarEvent, InfoBarEffect>(
     InfoBarState(),
     InfoBarUseCase(cardId)
 ) {
-    override fun createReducer(initialState: InfoBarState): Reducer<InfoBarState> = infoBarReducer
+    override fun createStateHolder(initialState: InfoBarState): StateHolder<InfoBarState> = infoBarStateHolder
 }
 ```
 
@@ -1019,19 +1019,19 @@ Follow same pattern as previous tasks.
 package zhaoyun.example.composedemo.story.input.presentation
 
 import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.story.input.domain.InputEffect
 import zhaoyun.example.composedemo.story.input.domain.InputEvent
 import zhaoyun.example.composedemo.story.input.domain.InputState
 import zhaoyun.example.composedemo.story.input.domain.InputUseCase
 
 class InputViewModel(
-    inputReducer: Reducer<InputState>,
+    inputStateHolder: StateHolder<InputState>,
 ) : BaseViewModel<InputState, InputEvent, InputEffect>(
     InputState(),
     InputUseCase()
 ) {
-    override fun createReducer(initialState: InputState): Reducer<InputState> = inputReducer
+    override fun createStateHolder(initialState: InputState): StateHolder<InputState> = inputStateHolder
 }
 ```
 
@@ -1245,13 +1245,13 @@ class StoryCardUseCaseTest {
     }
 
     @Test
-    fun `多个UseCase绑定到同一个Reducer共享状态`() = runTest {
-        val reducer = zhaoyun.example.composedemo.scaffold.core.mvi.LocalReducer(StoryCardState())
+    fun `多个UseCase绑定到同一个StateHolder共享状态`() = runTest {
+        val stateHolder = zhaoyun.example.composedemo.scaffold.core.mvi.LocalStateHolder(StoryCardState())
         val useCaseA = StoryCardUseCase()
         val useCaseB = StoryCardUseCase()
 
-        useCaseA.bind(reducer)
-        useCaseB.bind(reducer)
+        useCaseA.bind(stateHolder)
+        useCaseB.bind(stateHolder)
 
         useCaseA.updateState { it.copy(message = it.message.copy(isExpanded = true)) }
 
@@ -1265,13 +1265,13 @@ Note: The test above uses `updateState` directly which is protected. For actual 
 Alternative test:
 ```kotlin
 @Test
-fun `多个UseCase绑定到同一个Reducer共享状态`() = runTest {
-    val reducer = LocalReducer(StoryCardState())
+fun `多个UseCase绑定到同一个StateHolder共享状态`() = runTest {
+    val stateHolder = LocalStateHolder(StoryCardState())
     val messageUseCase = MessageUseCase()
     val infoBarUseCase = InfoBarUseCase("test")
 
-    messageUseCase.bind(reducer)
-    infoBarUseCase.bind(reducer)
+    messageUseCase.bind(stateHolder)
+    infoBarUseCase.bind(stateHolder)
 
     messageUseCase.onEvent(MessageEvent.OnDialogueClicked)
 
@@ -1279,17 +1279,17 @@ fun `多个UseCase绑定到同一个Reducer共享状态`() = runTest {
 }
 ```
 
-Wait — `InfoBarUseCase` has State type `InfoBarState`, not `StoryCardState`. So it cannot bind to `LocalReducer<StoryCardState>`. This test should use `StoryCardUseCase` instead:
+Wait — `InfoBarUseCase` has State type `InfoBarState`, not `StoryCardState`. So it cannot bind to `LocalStateHolder<StoryCardState>`. This test should use `StoryCardUseCase` instead:
 
 ```kotlin
 @Test
-fun `多个UseCase绑定到同一个Reducer共享状态`() = runTest {
-    val reducer = LocalReducer(StoryCardState())
+fun `多个UseCase绑定到同一个StateHolder共享状态`() = runTest {
+    val stateHolder = LocalStateHolder(StoryCardState())
     val storyUseCase = StoryCardUseCase()
     val storyUseCase2 = StoryCardUseCase()
 
-    storyUseCase.bind(reducer)
-    storyUseCase2.bind(reducer)
+    storyUseCase.bind(stateHolder)
+    storyUseCase2.bind(stateHolder)
 
     storyUseCase.updateState { it.copy(message = it.message.copy(isExpanded = true)) }
 
@@ -1297,7 +1297,7 @@ fun `多个UseCase绑定到同一个Reducer共享状态`() = runTest {
 }
 ```
 
-Again, `updateState` is protected. We need a different approach for the test. We can create a test-only subclass or test through ViewModel level. For simplicity in the plan, let's test at the Reducer level directly:
+Again, `updateState` is protected. We need a different approach for the test. We can create a test-only subclass or test through ViewModel level. For simplicity in the plan, let's test at the StateHolder level directly:
 
 ```kotlin
 @Test
@@ -1381,8 +1381,8 @@ package zhaoyun.example.composedemo.story.presentation
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
-import zhaoyun.example.composedemo.scaffold.core.mvi.LocalReducer
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.LocalStateHolder
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.story.background.domain.BackgroundState
 import zhaoyun.example.composedemo.story.domain.StoryCardEffect
 import zhaoyun.example.composedemo.story.domain.StoryCardEvent
@@ -1396,16 +1396,16 @@ class StoryCardViewModel : BaseViewModel<StoryCardState, StoryCardEvent, StoryCa
     StoryCardState(),
     StoryCardUseCase()
 ) {
-    val messageReducer: Reducer<MessageState> by lazy { createMessageReducer() }
-    val infoBarReducer: Reducer<InfoBarState> by lazy { createInfoBarReducer() }
-    val inputReducer: Reducer<InputState> by lazy { createInputReducer() }
-    val backgroundReducer: Reducer<BackgroundState> by lazy { createBackgroundReducer() }
+    val messageStateHolder: StateHolder<MessageState> by lazy { createMessageStateHolder() }
+    val infoBarStateHolder: StateHolder<InfoBarState> by lazy { createInfoBarStateHolder() }
+    val inputStateHolder: StateHolder<InputState> by lazy { createInputStateHolder() }
+    val backgroundStateHolder: StateHolder<BackgroundState> by lazy { createBackgroundStateHolder() }
 
-    private fun createMessageReducer(): Reducer<MessageState> {
+    private fun createMessageStateHolder(): StateHolder<MessageState> {
         val messageStateFlow = MutableStateFlow(state.value.message)
-        return createDelegateReducer(
+        return createDelegateStateHolder(
             stateFlow = messageStateFlow,
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 val newMessage = transform(state.value.message)
                 updateState { it.copy(message = newMessage) }
                 messageStateFlow.value = newMessage
@@ -1413,11 +1413,11 @@ class StoryCardViewModel : BaseViewModel<StoryCardState, StoryCardEvent, StoryCa
         )
     }
 
-    private fun createInfoBarReducer(): Reducer<InfoBarState> {
+    private fun createInfoBarStateHolder(): StateHolder<InfoBarState> {
         val infoBarStateFlow = MutableStateFlow(state.value.infoBar)
-        return createDelegateReducer(
+        return createDelegateStateHolder(
             stateFlow = infoBarStateFlow,
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 val newInfoBar = transform(state.value.infoBar)
                 updateState { it.copy(infoBar = newInfoBar) }
                 infoBarStateFlow.value = newInfoBar
@@ -1425,11 +1425,11 @@ class StoryCardViewModel : BaseViewModel<StoryCardState, StoryCardEvent, StoryCa
         )
     }
 
-    private fun createInputReducer(): Reducer<InputState> {
+    private fun createInputStateHolder(): StateHolder<InputState> {
         val inputStateFlow = MutableStateFlow(state.value.input)
-        return createDelegateReducer(
+        return createDelegateStateHolder(
             stateFlow = inputStateFlow,
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 val newInput = transform(state.value.input)
                 updateState { it.copy(input = newInput) }
                 inputStateFlow.value = newInput
@@ -1437,11 +1437,11 @@ class StoryCardViewModel : BaseViewModel<StoryCardState, StoryCardEvent, StoryCa
         )
     }
 
-    private fun createBackgroundReducer(): Reducer<BackgroundState> {
+    private fun createBackgroundStateHolder(): StateHolder<BackgroundState> {
         val backgroundStateFlow = MutableStateFlow(state.value.background)
-        return createDelegateReducer(
+        return createDelegateStateHolder(
             stateFlow = backgroundStateFlow,
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 val newBackground = transform(state.value.background)
                 updateState { it.copy(background = newBackground) }
                 backgroundStateFlow.value = newBackground
@@ -1487,16 +1487,16 @@ fun StoryCardPage(
     val storyViewModel: StoryCardViewModel = koinViewModel { parametersOf(card) }
 
     val messageViewModel: MessageViewModel = koinViewModel {
-        parametersOf(storyViewModel.messageReducer)
+        parametersOf(storyViewModel.messageStateHolder)
     }
     val infoBarViewModel: InfoBarViewModel = koinViewModel {
-        parametersOf(storyViewModel.infoBarReducer, card.cardId)
+        parametersOf(storyViewModel.infoBarStateHolder, card.cardId)
     }
     val inputViewModel: InputViewModel = koinViewModel {
-        parametersOf(storyViewModel.inputReducer)
+        parametersOf(storyViewModel.inputStateHolder)
     }
     val backgroundViewModel: BackgroundViewModel = koinViewModel {
-        parametersOf(storyViewModel.backgroundReducer)
+        parametersOf(storyViewModel.backgroundStateHolder)
     }
 
     val state by storyViewModel.state.collectAsStateWithLifecycle()
@@ -1558,7 +1558,7 @@ Expected: BUILD SUCCESSFUL
 
 ```bash
 git add biz/story/domain/ biz/story/presentation/
-git commit -m "feat(story): add StoryCard assembly with DelegateReducer state sharing"
+git commit -m "feat(story): add StoryCard assembly with DelegateStateHolder state sharing"
 ```
 
 ---
@@ -2507,7 +2507,7 @@ git commit -m "test: verify all new modules compile and tests pass" --allow-empt
 - [x] Home 4-tab navigation with badge support → Task 10
 - [x] Feed list with refresh/loadMore/preload → Task 9
 - [x] StoryCard with nested states (Background/Message/InfoBar/Input) → Task 8
-- [x] DelegateReducer state sharing between StoryCardViewModel and child ViewModels → Task 8
+- [x] DelegateStateHolder state sharing between StoryCardViewModel and child ViewModels → Task 8
 - [x] FeedActivity as launcher → Task 12
 - [x] All modules independent with atomic MVI → Tasks 4-10
 

@@ -8,14 +8,14 @@
 - 按项目约定的 MVI 架构开发
 - 遵循开发顺序：状态建模 → UseCase 设计 → UI 展示
 - 每步都有明确的测试用例
-- Story 内部采用原子 MVI 结构，子模块独立且通过 DelegateReducer 共享状态
+- Story 内部采用原子 MVI 结构，子模块独立且通过 DelegateStateHolder 共享状态
 
 ## 2. 架构原则
 
 1. **分层独立 MVI**：Home / Feed / Story 各自有独立的 domain + presentation 模块
 2. **Feed 通用框架化**：FeedUseCase 只管理 refresh / loadMore / preload，不感知 Card 具体业务
 3. **Story 原子 MVI**：Story 内部每个子模块（Message / InfoBar / Input / Background）都有独立的 State / Event / Effect / UseCase / ViewModel
-4. **DelegateReducer 状态共享**：StoryCardViewModel 作为主状态管理中心，为每个子模块创建 DelegateReducer；子 ViewModel 只接收 `Reducer<子State>`，完全解耦于 StoryCardState
+4. **DelegateStateHolder 状态共享**：StoryCardViewModel 作为主状态管理中心，为每个子模块创建 DelegateStateHolder；子 ViewModel 只接收 `StateHolder<子State>`，完全解耦于 StoryCardState
 5. **数据驱动 UI**：UI 统一订阅 `storyViewModel.state`，子 ViewModel 仅用于事件处理和 Effect 发射
 
 ## 3. 模块结构
@@ -419,16 +419,16 @@ class StoryCardViewModel : BaseViewModel<StoryCardState, StoryCardEvent, StoryCa
     StoryCardState(),
     StoryCardUseCase()
 ) {
-    val messageReducer: Reducer<MessageState> by lazy { createMessageReducer() }
-    val infoBarReducer: Reducer<InfoBarState> by lazy { createInfoBarReducer() }
-    val inputReducer: Reducer<InputState> by lazy { createInputReducer() }
-    val backgroundReducer: Reducer<BackgroundState> by lazy { createBackgroundReducer() }
+    val messageStateHolder: StateHolder<MessageState> by lazy { createMessageStateHolder() }
+    val infoBarStateHolder: StateHolder<InfoBarState> by lazy { createInfoBarStateHolder() }
+    val inputStateHolder: StateHolder<InputState> by lazy { createInputStateHolder() }
+    val backgroundStateHolder: StateHolder<BackgroundState> by lazy { createBackgroundStateHolder() }
 
-    private fun createMessageReducer(): Reducer<MessageState> {
+    private fun createMessageStateHolder(): StateHolder<MessageState> {
         val messageStateFlow = MutableStateFlow(state.value.message)
-        return createDelegateReducer(
+        return createDelegateStateHolder(
             stateFlow = messageStateFlow,
-            onReduce = { transform ->
+            onUpdate = { transform ->
                 val newMessage = transform(state.value.message)
                 updateState { it.copy(message = newMessage) }
                 messageStateFlow.value = newMessage
@@ -436,7 +436,7 @@ class StoryCardViewModel : BaseViewModel<StoryCardState, StoryCardEvent, StoryCa
         )
     }
 
-    // createInfoBarReducer / createInputReducer / createBackgroundReducer 同理
+    // createInfoBarStateHolder / createInputStateHolder / createBackgroundStateHolder 同理
 }
 ```
 
@@ -445,42 +445,42 @@ class StoryCardViewModel : BaseViewModel<StoryCardState, StoryCardEvent, StoryCa
 ```kotlin
 // MessageViewModel
 class MessageViewModel(
-    messageReducer: Reducer<MessageState>,
+    messageStateHolder: StateHolder<MessageState>,
 ) : BaseViewModel<MessageState, MessageEvent, MessageEffect>(
     MessageState(),
     MessageUseCase()
 ) {
-    override fun createReducer(initialState: MessageState): Reducer<MessageState> = messageReducer
+    override fun createStateHolder(initialState: MessageState): StateHolder<MessageState> = messageStateHolder
 }
 
 // InfoBarViewModel
 class InfoBarViewModel(
-    infoBarReducer: Reducer<InfoBarState>,
+    infoBarStateHolder: StateHolder<InfoBarState>,
 ) : BaseViewModel<InfoBarState, InfoBarEvent, InfoBarEffect>(
     InfoBarState(),
     InfoBarUseCase()
 ) {
-    override fun createReducer(initialState: InfoBarState): Reducer<InfoBarState> = infoBarReducer
+    override fun createStateHolder(initialState: InfoBarState): StateHolder<InfoBarState> = infoBarStateHolder
 }
 
 // InputViewModel
 class InputViewModel(
-    inputReducer: Reducer<InputState>,
+    inputStateHolder: StateHolder<InputState>,
 ) : BaseViewModel<InputState, InputEvent, InputEffect>(
     InputState(),
     InputUseCase()
 ) {
-    override fun createReducer(initialState: InputState): Reducer<InputState> = inputReducer
+    override fun createStateHolder(initialState: InputState): StateHolder<InputState> = inputStateHolder
 }
 
 // BackgroundViewModel
 class BackgroundViewModel(
-    backgroundReducer: Reducer<BackgroundState>,
+    backgroundStateHolder: StateHolder<BackgroundState>,
 ) : BaseViewModel<BackgroundState, BackgroundEvent, BackgroundEffect>(
     BackgroundState(),
     BackgroundUseCase()
 ) {
-    override fun createReducer(initialState: BackgroundState): Reducer<BackgroundState> = backgroundReducer
+    override fun createStateHolder(initialState: BackgroundState): StateHolder<BackgroundState> = backgroundStateHolder
 }
 ```
 
@@ -488,12 +488,12 @@ class BackgroundViewModel(
 
 | # | 测试名 | 预期行为 |
 |---|--------|----------|
-| 17 | `StoryCardViewModel创建子Reducer成功` | `messageReducer.state.value` 初始值与 `StoryCardState().message` 一致 |
-| 18 | `MessageViewModel通过DelegateReducer写回主状态` | `messageViewModel.onEvent(MessageEvent.OnDialogueClicked)` 后，`storyViewModel.state.value.message.isExpanded == true` |
+| 17 | `StoryCardViewModel创建子StateHolder成功` | `messageStateHolder.state.value` 初始值与 `StoryCardState().message` 一致 |
+| 18 | `MessageViewModel通过DelegateStateHolder写回主状态` | `messageViewModel.onEvent(MessageEvent.OnDialogueClicked)` 后，`storyViewModel.state.value.message.isExpanded == true` |
 | 19 | `InfoBarViewModel点赞切换isLiked并修改计数` | `infoBarViewModel.onEvent(InfoBarEvent.OnLikeClicked)` 后，`storyViewModel.state.value.infoBar.isLiked == true`, `likes` 计数正确 |
 | 20 | `InfoBarViewModel发射Effect` | `infoBarViewModel.onEvent(InfoBarEvent.OnShareClicked)` 后 effects 包含 `InfoBar.ShowShareSheet(cardId)` |
 | 21 | `各子ViewModel忽略非自己命名空间的事件` | `messageViewModel` 收到 `InfoBarEvent`（通过 StoryCardEvent 透传时），`state.message` 不变 |
-| 22 | `多子ViewModel共享主Reducer互不干扰` | `messageViewModel` 更新 `message.isExpanded` 不影响 `infoBarViewModel.state.value.infoBar` |
+| 22 | `多子ViewModel共享主StateHolder互不干扰` | `messageViewModel` 更新 `message.isExpanded` 不影响 `infoBarViewModel.state.value.infoBar` |
 
 ## 7. UI 结构与 Composable 设计
 
@@ -584,16 +584,16 @@ fun StoryCardPage(
     val storyViewModel: StoryCardViewModel = koinViewModel { parametersOf(card) }
 
     val messageViewModel: MessageViewModel = koinViewModel {
-        parametersOf(storyViewModel.messageReducer)
+        parametersOf(storyViewModel.messageStateHolder)
     }
     val infoBarViewModel: InfoBarViewModel = koinViewModel {
-        parametersOf(storyViewModel.infoBarReducer)
+        parametersOf(storyViewModel.infoBarStateHolder)
     }
     val inputViewModel: InputViewModel = koinViewModel {
-        parametersOf(storyViewModel.inputReducer)
+        parametersOf(storyViewModel.inputStateHolder)
     }
     val backgroundViewModel: BackgroundViewModel = koinViewModel {
-        parametersOf(storyViewModel.backgroundReducer)
+        parametersOf(storyViewModel.backgroundStateHolder)
     }
 
     val state by storyViewModel.state.collectAsStateWithLifecycle()
@@ -746,22 +746,22 @@ val storyPresentationModule = module {
 
 // :biz:story:message:presentation
 val messagePresentationModule = module {
-    viewModel { (reducer: Reducer<MessageState>) -> MessageViewModel(reducer) }
+    viewModel { (stateHolder: StateHolder<MessageState>) -> MessageViewModel(stateHolder) }
 }
 
 // :biz:story:infobar:presentation
 val infoBarPresentationModule = module {
-    viewModel { (reducer: Reducer<InfoBarState>) -> InfoBarViewModel(reducer) }
+    viewModel { (stateHolder: StateHolder<InfoBarState>) -> InfoBarViewModel(stateHolder) }
 }
 
 // :biz:story:input:presentation
 val inputPresentationModule = module {
-    viewModel { (reducer: Reducer<InputState>) -> InputViewModel(reducer) }
+    viewModel { (stateHolder: StateHolder<InputState>) -> InputViewModel(stateHolder) }
 }
 
 // :biz:story:background:presentation
 val backgroundPresentationModule = module {
-    viewModel { (reducer: Reducer<BackgroundState>) -> BackgroundViewModel(reducer) }
+    viewModel { (stateHolder: StateHolder<BackgroundState>) -> BackgroundViewModel(stateHolder) }
 }
 ```
 
