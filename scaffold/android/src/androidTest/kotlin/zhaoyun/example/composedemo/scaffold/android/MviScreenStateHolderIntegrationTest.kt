@@ -11,17 +11,17 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
-import zhaoyun.example.composedemo.scaffold.core.mvi.DelegateReducer
-import zhaoyun.example.composedemo.scaffold.core.mvi.Reducer
+import zhaoyun.example.composedemo.scaffold.core.mvi.DelegateStateHolder
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 
 /**
- * MviScreen与Reducer架构集成测试
+ * MviScreen与StateHolder架构集成测试
  */
 @RunWith(AndroidJUnit4::class)
-class MviScreenReducerIntegrationTest {
+class MviScreenStateHolderIntegrationTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
@@ -42,9 +42,9 @@ class MviScreenReducerIntegrationTest {
         TestUseCase()
     )
 
-    class DelegateTestViewModel(private val injectedReducer: Reducer<TestState>) : BaseViewModel<TestState, TestEvent, TestEffect>(
+    class DelegateTestViewModel(private val injectedStateHolder: StateHolder<TestState>) : BaseViewModel<TestState, TestEvent, TestEffect>(
         initialState = TestState("initial"),
-        injectedReducer,
+        injectedStateHolder,
         TestUseCase()
     )
 
@@ -54,7 +54,7 @@ class MviScreenReducerIntegrationTest {
     }
 
     @Test
-    fun `LocalReducer模式下MviScreen正确收集State`() {
+    fun `LocalStateHolder模式下MviScreen正确收集State`() {
         val viewModel = LocalTestViewModel()
 
         composeTestRule.setContent {
@@ -72,13 +72,13 @@ class MviScreenReducerIntegrationTest {
     }
 
     @Test
-    fun `DelegateReducer模式下MviScreen正确收集State`() {
+    fun `DelegateStateHolder模式下MviScreen正确收集State`() {
         val externalState = MutableStateFlow(TestState("external"))
-        val reducer = DelegateReducer(
+        val stateHolder = DelegateStateHolder(
             state = externalState,
-            onReduce = { transform -> externalState.value = transform(externalState.value) }
+            onUpdate = { transform -> externalState.value = transform(externalState.value) }
         )
-        val viewModel = DelegateTestViewModel(reducer)
+        val viewModel = DelegateTestViewModel(stateHolder)
 
         composeTestRule.setContent {
             MviScreen(viewModel = viewModel) { state, onEvent ->
