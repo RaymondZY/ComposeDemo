@@ -3,12 +3,8 @@ package zhaoyun.example.composedemo.scaffold.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
@@ -18,6 +14,7 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
+import zhaoyun.example.composedemo.scaffold.core.mvi.createChild
 
 /**
  * MVI ViewModel 基类 —— 表现层仅负责生命周期管理与平台桥接
@@ -61,23 +58,17 @@ abstract class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
         stateHolder.update(transform)
     }
 
-    fun <T> createDelegateStateHolder(childSelector: (S) -> T, parentUpdater: (S, T) -> S): StateHolder<T> {
-        val childStateFlow = state
-            .map { childSelector(it) }
-            .distinctUntilChanged()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = childSelector(state.value)
-            )
-
-        return DelegateStateHolder(
-            state = childStateFlow,
-            onUpdate = { transform ->
-                val childNewState = transform(childSelector(state.value))
-                val parentNewState = parentUpdater(state.value, childNewState)
-                updateState { parentNewState }
-            }
+    /**
+     * 从当前 [StateHolder] 的状态中切片出子状态，创建 [DelegateStateHolder]。
+     *
+     * 内部调用 [createChild] 扩展函数实现，支持多级嵌套。
+     *
+     * @see zhaoyun.example.composedemo.scaffold.core.mvi.createChild
+     */
+    fun <T> createDelegateStateHolder(childSelector: (S) -> T, parentUpdater: (S, T) -> S): StateHolder<T> =
+        stateHolder.createChild(
+            scope = viewModelScope,
+            selector = childSelector,
+            updater = parentUpdater
         )
-    }
 }
