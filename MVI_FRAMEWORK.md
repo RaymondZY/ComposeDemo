@@ -229,6 +229,59 @@ abstract class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
 - `onEvent` 广播事件到所有 UseCase
 - 暴露 `state` / `effect` / `baseEffect` 供 UI 订阅
 
+### 4.4 ServiceRegistry — UseCase 间服务发现
+
+除了通过共享 [StateHolder] 读写状态、通过 [Effect] 发射副作用之外，
+UseCase 之间还可以通过 **ServiceRegistry** 进行显式的接口调用。
+
+**适用场景：**
+- UseCase A 需要调用 UseCase B 的某个业务方法（如埋点、鉴权）
+- 比共享状态更直接，比 Effect 更同步
+
+**核心接口：**
+
+```kotlin
+interface ServiceRegistry {
+    fun <T : Any> find(clazz: Class<T>): T?
+}
+
+interface ServiceProvider {
+    fun provideServices(registry: MutableServiceRegistry)
+}
+```
+
+**使用方式：**
+
+1. **提供服务：** UseCase 实现 `ServiceProvider`，在 `provideServices` 中注册自己
+2. **消费服务：** UseCase 调用 `findService<T>()` 自动发现同 Screen 内的实现
+
+**查找顺序：**
+
+```
+findService<Analytics>()
+    ├── 同 Screen 的 registry（本地注册）
+    ├── Parent Screen 的 registry（作用域链）
+    └── Koin 全局容器（兜底）
+```
+
+**Screen 级别集成：**
+
+```kotlin
+@Composable
+fun StoryCardPage(card: StoryCard) {
+    ServiceRegistryProvider {
+        val storyVm = screenViewModel<StoryCardViewModel>()
+        val messageVm = screenViewModel<MessageViewModel> {
+            parametersOf(storyVm.messageStateHolder)
+        }
+        // ...
+    }
+}
+```
+
+**向后兼容：**
+未实现 `ServiceProvider` 的 UseCase 不受影响；未使用 `ServiceRegistryProvider` 的 Screen 正常工作。
+
 ---
 
 ## 5. 嵌套状态共享（核心特性）
