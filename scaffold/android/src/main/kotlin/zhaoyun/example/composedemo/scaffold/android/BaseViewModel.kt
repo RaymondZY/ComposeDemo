@@ -10,6 +10,8 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
 import zhaoyun.example.composedemo.scaffold.core.mvi.DelegateStateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.LocalStateHolder
+import zhaoyun.example.composedemo.scaffold.core.mvi.MutableServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.mvi.ServiceProvider
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
@@ -71,4 +73,24 @@ abstract class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
             selector = childSelector,
             updater = parentUpdater
         )
+
+    /**
+     * 将本 ViewModel 的所有 UseCase 注册到指定 [registry]。
+     *
+     * 由 [screenViewModel] 自动调用，业务代码无需手动调用。
+     */
+    fun attachToRegistry(registry: MutableServiceRegistry) {
+        useCases.forEach { it.attachServiceRegistry(registry) }
+        useCases.filterIsInstance<ServiceProvider>()
+              .forEach { it.provideServices(registry) }
+    }
+
+    /**
+     * 从 [registry] 中注销本 ViewModel 的所有服务。
+     */
+    fun detachFromRegistry(registry: MutableServiceRegistry) {
+        useCases.filterIsInstance<ServiceProvider>()
+              .forEach { registry.unregister(it) }
+        useCases.forEach { it.detachServiceRegistry() }
+    }
 }

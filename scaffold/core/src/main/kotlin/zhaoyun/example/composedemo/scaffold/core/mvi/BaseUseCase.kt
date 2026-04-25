@@ -48,13 +48,20 @@ abstract class BaseUseCase<S : UiState, E : UiEvent, F : UiEffect>(
 
     // ========== 新增：服务发现 ==========
 
-    private var serviceRegistry: ServiceRegistry? = null
+    protected var serviceRegistry: ServiceRegistry? = null
 
     /**
      * 由 [BaseViewModel] 在初始化时注入
      */
     fun attachServiceRegistry(registry: ServiceRegistry) {
         this.serviceRegistry = registry
+    }
+
+    /**
+     * 由 [BaseViewModel] 在注销时调用，清除 serviceRegistry 引用
+     */
+    fun detachServiceRegistry() {
+        this.serviceRegistry = null
     }
 
     /**
