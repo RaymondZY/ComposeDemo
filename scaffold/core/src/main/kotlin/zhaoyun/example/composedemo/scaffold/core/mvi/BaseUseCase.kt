@@ -46,5 +46,36 @@ abstract class BaseUseCase<S : UiState, E : UiEvent, F : UiEffect>(
         _stateHolder = stateHolder
     }
 
+    // ========== 新增：服务发现 ==========
+
+    private var serviceRegistry: ServiceRegistry? = null
+
+    /**
+     * 由 [BaseViewModel] 在初始化时注入
+     */
+    fun attachServiceRegistry(registry: ServiceRegistry) {
+        this.serviceRegistry = registry
+    }
+
+    /**
+     * 在所在作用域内查找服务实现。
+     * 找不到时抛异常，提示开发者检查是否忘记实现 [ServiceProvider]。
+     */
+    protected inline fun <reified T : Any> findService(): T {
+        return serviceRegistry?.find<T>()
+            ?: error("Service ${T::class.java.name} not found in current scope. " +
+                     "Did you forget to let the providing UseCase implement ServiceProvider?")
+    }
+
+    /**
+     * 在所在作用域内查找服务实现。
+     * 找不到时返回 null，不抛异常。
+     */
+    protected inline fun <reified T : Any> findServiceOrNull(): T? {
+        return serviceRegistry?.find<T>()
+    }
+
+    // ========== 新增结束 ==========
+
     abstract suspend fun onEvent(event: E)
 }
