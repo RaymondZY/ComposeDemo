@@ -6,8 +6,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
+import zhaoyun.example.composedemo.scaffold.android.ServiceRegistryProvider
+import zhaoyun.example.composedemo.scaffold.android.screenViewModel
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
 import zhaoyun.example.composedemo.story.background.presentation.BackgroundViewModel
 import zhaoyun.example.composedemo.story.background.presentation.StoryBackground
@@ -22,28 +23,32 @@ import zhaoyun.example.composedemo.story.message.presentation.MessageViewModel
 fun StoryCardPage(
     card: StoryCard,
 ) {
-    val storyViewModel: StoryCardViewModel = koinViewModel()
+    // Screen 级别建立 ServiceRegistry 作用域
+    ServiceRegistryProvider {
 
-    val messageViewModel: MessageViewModel = koinViewModel {
-        parametersOf(storyViewModel.messageStateHolder)
-    }
-    val infoBarViewModel: InfoBarViewModel = koinViewModel {
-        parametersOf(storyViewModel.infoBarStateHolder, card.cardId)
-    }
-    val inputViewModel: InputViewModel = koinViewModel {
-        parametersOf(storyViewModel.inputStateHolder)
-    }
-    val backgroundViewModel: BackgroundViewModel = koinViewModel {
-        parametersOf(storyViewModel.backgroundStateHolder)
-    }
+        val storyViewModel: StoryCardViewModel = screenViewModel()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        StoryBackground(viewModel = backgroundViewModel)
-        Column(modifier = Modifier.fillMaxSize()) {
-            Spacer(modifier = Modifier.weight(1f))
-            MessageArea(viewModel = messageViewModel)
-            InfoBarArea(viewModel = infoBarViewModel)
-            InputArea(viewModel = inputViewModel)
+        val messageViewModel: MessageViewModel = screenViewModel {
+            parametersOf(storyViewModel.messageStateHolder)
+        }
+        val infoBarViewModel: InfoBarViewModel = screenViewModel {
+            parametersOf(storyViewModel.infoBarStateHolder, card.cardId)
+        }
+        val inputViewModel: InputViewModel = screenViewModel {
+            parametersOf(storyViewModel.inputStateHolder)
+        }
+        val backgroundViewModel: BackgroundViewModel = screenViewModel {
+            parametersOf(storyViewModel.backgroundStateHolder)
+        }
+
+        Box(modifier = Modifier.fillMaxSize()) {
+            StoryBackground(viewModel = backgroundViewModel)
+            Column(modifier = Modifier.fillMaxSize()) {
+                Spacer(modifier = Modifier.weight(1f))
+                MessageArea(viewModel = messageViewModel)
+                InfoBarArea(viewModel = infoBarViewModel)
+                InputArea(viewModel = inputViewModel)
+            }
         }
     }
 }
