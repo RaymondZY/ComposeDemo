@@ -4,16 +4,16 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 
 /**
- * MVI 通用屏幕包装器 —— 自动完成 State 收集、BaseEffect 处理与自定义 Effect 分发
+ * MVI 通用屏幕包装器 —— 仅负责 [BaseEffect] 的收集与默认处理。
+ *
+ * State 收集、Effect 收集、initEvent 发送均由调用方（Screen 层）自行组装。
  *
  * ### BaseEffect 扩展指南
  * 1. 在 `:scaffold:core` 的 [BaseEffect] 中添加新的 sealed 子类。
@@ -23,56 +23,43 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
  *
  * 使用示例：
  * ```
+ * val state by viewModel.state.collectAsStateWithLifecycle()
+ *
+ * LaunchedEffect(Unit) {
+ *     viewModel.onEvent(LoginEvent.CheckSession)
+ * }
+ *
  * MviScreen(
- *     viewModel = koinViewModel<LoginViewModel>(),
- *     initEvent = LoginEvent.CheckSession,
- *     onEffect = { effect ->
- *         when (effect) {
- *             is LoginEffect.NavigateToHome -> onLoginSuccess()
- *         }
- *     },
+ *     viewModel = viewModel,
  *     onBaseEffect = { effect ->
  *         when (effect) {
  *             is BaseEffect.NavigateBack -> { navController.popBackStack(); true }
- *             else -> false // 未消费，继续走默认处理
+ *             else -> false
  *         }
  *     }
- * ) { state, onEvent ->
- *     LoginPage(state = state, onEvent = onEvent)
+ * ) {
+ *     LoginPage(state = state, onEvent = viewModel::onEvent)
  * }
  * ```
  */
 @Composable
 fun <S : UiState, E : UiEvent, F : UiEffect> MviScreen(
     viewModel: BaseViewModel<S, E, F>,
-    initEvent: E? = null,
-    onEffect: suspend (F) -> Unit = {},
     onBaseEffect: suspend (BaseEffect) -> Boolean = { false },
-    content: @Composable (state: S, onEvent: (E) -> Unit) -> Unit
+    content: @Composable () -> Unit
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        initEvent?.let { viewModel.onEvent(it) }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.baseEffect.collect { effect ->
-            val consumed = onBaseEffect(effect)
-            if (!consumed) {
-                defaultHandleBaseEffect(context, effect)
+    ServiceRegistryProvider {
+        val context = LocalContext.current
+        LaunchedEffect(Unit) {
+            viewModel.baseEffect.collect { effect ->
+                val consumed = onBaseEffect(effect)
+                if (!consumed) {
+                    defaultHandleBaseEffect(context, effect)
+                }
             }
         }
+        content()
     }
-
-    LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
-            onEffect(effect)
-        }
-    }
-
-    content(state, viewModel::onEvent)
 }
 
 /**

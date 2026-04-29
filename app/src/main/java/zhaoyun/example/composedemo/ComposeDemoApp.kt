@@ -7,7 +7,6 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import zhaoyun.example.composedemo.feed.presentation.di.feedModules
 import zhaoyun.example.composedemo.home.presentation.di.homeModules
-import zhaoyun.example.composedemo.login.presentation.di.loginModules
 import zhaoyun.example.composedemo.service.feed.api.FeedRepository
 import zhaoyun.example.composedemo.service.feed.mock.FakeFeedRepository
 import zhaoyun.example.composedemo.service.storage.impl.di.storageModule
@@ -17,7 +16,6 @@ import zhaoyun.example.composedemo.story.infobar.presentation.di.infoBarPresenta
 import zhaoyun.example.composedemo.story.input.presentation.di.inputPresentationModule
 import zhaoyun.example.composedemo.story.message.presentation.di.messagePresentationModule
 import zhaoyun.example.composedemo.story.presentation.di.storyPresentationModule
-import zhaoyun.example.composedemo.todo.presentation.di.todoModules
 
 /**
  * Application 入口 —— 负责初始化 Koin 与服务发现绑定
@@ -40,7 +38,6 @@ class ComposeDemoApp : Application() {
                     inputPresentationModule,
                     backgroundPresentationModule,
                 ) +
-                loginModules + todoModules +
                 listOf(
                     module {
                         single { FakeFeedRepository() } bind FeedRepository::class

@@ -1,5 +1,6 @@
 package zhaoyun.example.composedemo.scaffold.android
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
@@ -41,7 +42,8 @@ abstract class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
     private vararg val useCases: BaseUseCase<S, E, F>
 ) : ViewModel() {
 
-    private val stateHolder: StateHolder<S> = injectedStateHolder ?: LocalStateHolder(initialState)
+    private val stateHolder: StateHolder<S> = decorateWithLog(injectedStateHolder ?: LocalStateHolder(initialState))
+
     val state: StateFlow<S> = stateHolder.state
     val effect: Flow<F> = merge(*useCases.map { it.effect }.toTypedArray())
     val baseEffect: Flow<BaseEffect> = merge(*useCases.map { it.baseEffect }.toTypedArray())
@@ -92,5 +94,22 @@ abstract class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
         useCases.filterIsInstance<ServiceProvider>()
               .forEach { registry.unregister(it) }
         useCases.forEach { it.detachServiceRegistry() }
+    }
+
+    /**
+     * 给原[StateHolder]进行一层装饰的包装，方便在[StateHolder.update]时，输出日志。
+     * Tag 使用继承子类的类名。
+     */
+    private fun decorateWithLog(holder: StateHolder<S>): StateHolder<S> {
+        val tag = this::class.java.simpleName
+        return object : StateHolder<S> {
+            override val state: StateFlow<S> = holder.state
+            override fun update(transform: (S) -> S) {
+                val oldState = state.value
+                holder.update(transform)
+                val newState = state.value
+                Log.d(tag, "State update: $oldState -> $newState")
+            }
+        }
     }
 }
