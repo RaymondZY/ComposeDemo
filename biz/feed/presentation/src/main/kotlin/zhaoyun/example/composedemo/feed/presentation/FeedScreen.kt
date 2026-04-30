@@ -27,7 +27,7 @@ import zhaoyun.example.composedemo.story.presentation.StoryCardViewModel
 @Composable
 fun FeedScreen(
     modifier: Modifier = Modifier,
-    viewModel: FeedViewModel = koinViewModel()
+    viewModel: FeedViewModel = koinViewModel(),
 ) {
     MviScreen(viewModel = viewModel) {
         val state by viewModel.state.collectAsStateWithLifecycle()
@@ -42,7 +42,8 @@ fun FeedScreen(
             if (state.cards.isNotEmpty()) {
                 VerticalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    beyondViewportPageCount = 1
                 ) { page ->
                     val card = state.cards[page]
                     if (card is StoryCard) {
