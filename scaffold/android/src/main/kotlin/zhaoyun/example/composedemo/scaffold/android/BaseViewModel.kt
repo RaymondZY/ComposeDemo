@@ -11,8 +11,10 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
-import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.autoRegister
+import zhaoyun.example.composedemo.scaffold.core.spi.autoUnregister
+import zhaoyun.example.composedemo.scaffold.core.spi.requireServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.usecase.CombineUseCase
 import zhaoyun.example.composedemo.scaffold.core.usecase.UseCaseFactory
 
@@ -22,13 +24,23 @@ open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
 ) : ViewModel(),
     MviFacade<S, E, F> {
 
-    val serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl()
-
     private val combineUseCase = CombineUseCase(
         stateHolder = stateHolder,
         useCaseCreators = useCaseCreators
-    ).apply {
-        attachParent(serviceRegistry)
+    )
+
+    // Cache the Screen-level registry during init so onCleared() can unregister without Stack
+    @PublishedApi
+    internal val screenRegistry: MutableServiceRegistry = requireServiceRegistry()
+
+    @Deprecated(
+        "Accessing serviceRegistry directly is discouraged. Use registerService/unregisterService or the shared Screen registry.",
+        ReplaceWith("")
+    )
+    val serviceRegistry: MutableServiceRegistry get() = screenRegistry
+
+    init {
+        autoRegister(screenRegistry)
     }
 
     override val eventReceiver: EventReceiver<E>
@@ -43,8 +55,12 @@ open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
         }
     }
 
+    @Deprecated(
+        "attachParent is no longer needed. ServiceRegistry is now shared per-Screen via Koin Scope.",
+        ReplaceWith("")
+    )
     fun attachParent(serviceRegistry: ServiceRegistry) {
-        this.serviceRegistry.attachParent(serviceRegistry)
+        // no-op: retained for binary compatibility during migration
     }
 
     fun <T : Any> registerService(
@@ -52,29 +68,32 @@ open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
         instance: T,
         tag: String? = null,
     ) {
-        serviceRegistry.register(clazz, instance, tag)
+        screenRegistry.register(clazz, instance, tag)
     }
 
     inline fun <reified T : Any> registerService(
         instance: T,
         tag: String? = null,
     ) {
-        serviceRegistry.register(T::class.java, instance, tag)
+        screenRegistry.register(T::class.java, instance, tag)
     }
 
     fun unregisterService(
         clazz: Class<*>,
         tag: String? = null,
     ) {
-        serviceRegistry.unregister(clazz, tag)
+        screenRegistry.unregister(clazz, tag)
     }
 
     fun unregisterService(instance: Any) {
-        serviceRegistry.unregister(instance)
+        screenRegistry.unregister(instance)
     }
 
     override fun onCleared() {
-        serviceRegistry.clear()
+        // Unregister the whole tree: children → combine → self
+        combineUseCase.allUseCases().forEach { it.autoUnregister(screenRegistry) }
+        combineUseCase.autoUnregister(screenRegistry)
+        autoUnregister(screenRegistry)
         super.onCleared()
     }
 }

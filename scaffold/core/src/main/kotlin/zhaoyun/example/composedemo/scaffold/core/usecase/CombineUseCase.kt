@@ -34,7 +34,7 @@ class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
 
     override val effectDispatcher: EffectDispatcher<F> = CombineEffectDispatcher(childUseCases)
 
-    internal fun allUseCases(): List<BaseUseCase<*, *, *>> = childUseCases
+    fun allUseCases(): List<BaseUseCase<*, *, *>> = childUseCases
 
     @Deprecated(
         "attachParent is no longer needed. ServiceRegistry is now shared per-Screen via Koin Scope.",
