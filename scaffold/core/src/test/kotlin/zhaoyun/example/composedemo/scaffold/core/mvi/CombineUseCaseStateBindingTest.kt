@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 import zhaoyun.example.composedemo.scaffold.core.usecase.CombineUseCase
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 
 class CombineUseCaseStateBindingTest {
 
@@ -25,9 +26,8 @@ class CombineUseCaseStateBindingTest {
     fun `combine use case builds child use cases from the same shared state holder`() = runTest {
         val sharedStateHolder = StateHolderImpl(CounterState(value = 3))
         val combinedUseCase = CombineUseCase(
-            CounterState(),
+            sharedStateHolder,
             { holder: StateHolder<CounterState> -> IncrementUseCase(stateHolder = holder) },
-            stateHolder = sharedStateHolder,
         )
 
         combinedUseCase.receiveEvent(CounterEvent.Increment)
@@ -49,8 +49,7 @@ class CombineUseCaseStateBindingTest {
     private class IncrementUseCase(
         stateHolder: StateHolder<CounterState>? = null,
     ) : BaseUseCase<CounterState, CounterEvent, CounterEffect>(
-        initialState = CounterState(),
-        stateHolder = stateHolder,
+        stateHolder = stateHolder ?: CounterState().toStateHolder(),
     ) {
         override suspend fun onEvent(event: CounterEvent) {
             when (event) {

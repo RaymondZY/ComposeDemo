@@ -10,13 +10,14 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 
 class BaseUseCaseDynamicRegistrationTest {
 
     @Test
     fun `use case can dynamically register and unregister services in current scope`() = runTest {
         val combineUseCase = CombineUseCase(
-            initialState = DemoState(),
+            DemoState().toStateHolder(),
             { holder: StateHolder<DemoState> -> DynamicProviderUseCase(stateHolder = holder) },
             { holder: StateHolder<DemoState> -> DynamicConsumerUseCase(stateHolder = holder) },
         )
@@ -34,7 +35,7 @@ class BaseUseCaseDynamicRegistrationTest {
     @Test
     fun `find service or null returns null before a dynamic registration happens`() = runTest {
         val combineUseCase = CombineUseCase(
-            initialState = DemoState(),
+            DemoState().toStateHolder(),
             { holder: StateHolder<DemoState> -> DynamicConsumerUseCase(stateHolder = holder) },
         )
 
@@ -76,8 +77,7 @@ class BaseUseCaseDynamicRegistrationTest {
     private class DynamicProviderUseCase(
         stateHolder: StateHolder<DemoState>? = null,
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
-        initialState = DemoState(),
-        stateHolder = stateHolder,
+        stateHolder = stateHolder ?: DemoState().toStateHolder(),
     ) {
         private val service = DynamicServiceImpl("dynamic")
 
@@ -93,8 +93,7 @@ class BaseUseCaseDynamicRegistrationTest {
     private class DynamicConsumerUseCase(
         stateHolder: StateHolder<DemoState>? = null,
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
-        initialState = DemoState(),
-        stateHolder = stateHolder,
+        stateHolder = stateHolder ?: DemoState().toStateHolder(),
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {

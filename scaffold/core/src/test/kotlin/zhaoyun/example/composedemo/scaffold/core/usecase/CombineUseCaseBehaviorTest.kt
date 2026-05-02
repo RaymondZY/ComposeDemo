@@ -10,13 +10,14 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 
 class CombineUseCaseBehaviorTest {
 
     @Test
     fun `combine use case fans a single event out to all child use cases`() = runTest {
         val combineUseCase = CombineUseCase(
-            initialState = DemoState(),
+            DemoState().toStateHolder(),
             { holder: StateHolder<DemoState> -> LeftCounterUseCase(stateHolder = holder) },
             { holder: StateHolder<DemoState> -> RightCounterUseCase(stateHolder = holder) },
         )
@@ -29,7 +30,7 @@ class CombineUseCaseBehaviorTest {
     @Test
     fun `combine use case merges child effects and its own dispatched effects`() = runTest {
         val combineUseCase = CombineUseCase(
-            initialState = DemoState(),
+            DemoState().toStateHolder(),
             { holder: StateHolder<DemoState> -> EffectEmitterUseCase(stateHolder = holder) },
         )
 
@@ -45,7 +46,7 @@ class CombineUseCaseBehaviorTest {
     @Test
     fun `combine use case merges child base effects and its own base effects`() = runTest {
         val combineUseCase = CombineUseCase(
-            initialState = DemoState(),
+            DemoState().toStateHolder(),
             { holder: StateHolder<DemoState> -> EffectEmitterUseCase(stateHolder = holder) },
         )
 
@@ -76,8 +77,7 @@ class CombineUseCaseBehaviorTest {
     private class LeftCounterUseCase(
         stateHolder: StateHolder<DemoState>? = null,
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
-        initialState = DemoState(),
-        stateHolder = stateHolder,
+        stateHolder = stateHolder ?: DemoState().toStateHolder(),
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             if (event == DemoEvent.Count) {
@@ -89,8 +89,7 @@ class CombineUseCaseBehaviorTest {
     private class RightCounterUseCase(
         stateHolder: StateHolder<DemoState>? = null,
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
-        initialState = DemoState(),
-        stateHolder = stateHolder,
+        stateHolder = stateHolder ?: DemoState().toStateHolder(),
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             if (event == DemoEvent.Count) {
@@ -102,8 +101,7 @@ class CombineUseCaseBehaviorTest {
     private class EffectEmitterUseCase(
         stateHolder: StateHolder<DemoState>? = null,
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
-        initialState = DemoState(),
-        stateHolder = stateHolder,
+        stateHolder = stateHolder ?: DemoState().toStateHolder(),
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {
