@@ -12,6 +12,7 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
+import zhaoyun.example.composedemo.scaffold.core.spi.ScreenScopeStack
 import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.autoRegister
 import zhaoyun.example.composedemo.scaffold.core.spi.requireServiceRegistry
@@ -24,8 +25,10 @@ class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     private val childUseCases = useCaseCreators.map { it(this.stateHolder) }
 
     init {
-        childUseCases.forEach { it.autoRegister(requireServiceRegistry()) }
-        autoRegister(requireServiceRegistry())
+        if (ScreenScopeStack.current != null) {
+            childUseCases.forEach { it.autoRegister(requireServiceRegistry()) }
+            autoRegister(requireServiceRegistry())
+        }
     }
 
     override val eventReceiver: EventReceiver<E> = EventReceiverImpl { event ->

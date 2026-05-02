@@ -1,12 +1,12 @@
 package zhaoyun.example.composedemo.scaffold.android
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.AfterClass
 import org.junit.BeforeClass
@@ -17,12 +17,11 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
-import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
-import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
 
 @RunWith(AndroidJUnit4::class)
 class ScreenViewModelTest {
@@ -32,13 +31,12 @@ class ScreenViewModelTest {
 
     companion object {
         private val testModule = module {
-            viewModel { (keyData: String, parentRegistry: ServiceRegistry) ->
-                DefaultScreenViewModel(keyData = keyData, parentRegistrySeen = parentRegistry)
+            viewModel { (keyData: String) ->
+                DefaultScreenViewModel(keyData = keyData)
             }
-            viewModel { (payload: ScreenPayload, parentRegistry: ServiceRegistry, marker: String) ->
+            viewModel { (payload: ScreenPayload, marker: String) ->
                 CustomScreenViewModel(
                     payload = payload,
-                    parentRegistrySeen = parentRegistry,
                     marker = marker,
                 )
             }
@@ -61,12 +59,13 @@ class ScreenViewModelTest {
     }
 
     @Test
-    fun screenViewModel_default_parameters_include_key_data_and_parent_registry() {
-        val registry = MutableServiceRegistryImpl()
+    fun screenViewModel_default_parameters_include_key_data() {
+        val koin = org.koin.core.context.GlobalContext.get()
+        val scope = koin.createScope("test1", named("MviScreenScope"))
         var viewModel: DefaultScreenViewModel? = null
 
         composeRule.setContent {
-            ServiceRegistryProvider(registry = registry) {
+            CompositionLocalProvider(LocalKoinScope provides scope) {
                 val resolved: DefaultScreenViewModel = screenViewModel("story")
                 SideEffect {
                     viewModel = resolved
@@ -77,20 +76,22 @@ class ScreenViewModelTest {
         composeRule.runOnIdle {
             assertNotNull(viewModel)
             assertEquals("story", viewModel?.keyData)
-            assertSame(registry, viewModel?.parentRegistrySeen)
         }
+
+        scope.close()
     }
 
     @Test
-    fun screenViewModel_custom_parameters_receive_parent_registry() {
-        val registry = MutableServiceRegistryImpl()
+    fun screenViewModel_custom_parameters_receive_payload() {
+        val koin = org.koin.core.context.GlobalContext.get()
+        val scope = koin.createScope("test2", named("MviScreenScope"))
         val payload = ScreenPayload("story")
         var viewModel: CustomScreenViewModel? = null
 
         composeRule.setContent {
-            ServiceRegistryProvider(registry = registry) {
-                val resolved: CustomScreenViewModel = screenViewModel(payload) { parentRegistry ->
-                    parametersOf(payload, parentRegistry, "custom")
+            CompositionLocalProvider(LocalKoinScope provides scope) {
+                val resolved: CustomScreenViewModel = screenViewModel(payload) {
+                    parametersOf(payload, "custom")
                 }
                 SideEffect {
                     viewModel = resolved
@@ -101,13 +102,14 @@ class ScreenViewModelTest {
         composeRule.runOnIdle {
             assertNotNull(viewModel)
             assertEquals(payload, viewModel?.payload)
-            assertSame(registry, viewModel?.parentRegistrySeen)
             assertEquals("custom", viewModel?.marker)
         }
+
+        scope.close()
     }
 
     @Test
-    fun screenViewModel_requires_localServiceRegistry() {
+    fun screenViewModel_requires_localKoinScope() {
         assertThrows(IllegalStateException::class.java) {
             composeRule.setContent {
                 screenViewModel<String, DefaultScreenViewModel>("missing")
@@ -127,18 +129,14 @@ class ScreenViewModelTest {
 
     private class DefaultScreenViewModel(
         val keyData: String,
-        val parentRegistrySeen: ServiceRegistry,
     ) : BaseViewModel<ScreenState, ScreenEvent, ScreenEffect>(
-        initialState = ScreenState,
-        parentServiceRegistry = parentRegistrySeen,
+        stateHolder = zhaoyun.example.composedemo.scaffold.core.mvi.StateHolderImpl(ScreenState),
     )
 
     private class CustomScreenViewModel(
         val payload: ScreenPayload,
-        val parentRegistrySeen: ServiceRegistry,
         val marker: String,
     ) : BaseViewModel<ScreenState, ScreenEvent, ScreenEffect>(
-        initialState = ScreenState,
-        parentServiceRegistry = parentRegistrySeen,
+        stateHolder = zhaoyun.example.composedemo.scaffold.core.mvi.StateHolderImpl(ScreenState),
     )
 }

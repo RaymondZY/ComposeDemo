@@ -29,18 +29,19 @@ open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
         useCaseCreators = useCaseCreators
     )
 
-    // Cache the Screen-level registry during init so onCleared() can unregister without Stack
-    @PublishedApi
-    internal val screenRegistry: MutableServiceRegistry = requireServiceRegistry()
-
-    @Deprecated(
-        "Accessing serviceRegistry directly is discouraged. Use registerService/unregisterService or the shared Screen registry.",
-        ReplaceWith("")
-    )
-    val serviceRegistry: MutableServiceRegistry get() = screenRegistry
+    private var screenRegistry: MutableServiceRegistry? = null
 
     init {
-        autoRegister(screenRegistry)
+        screenRegistry = runCatching { requireServiceRegistry() }.getOrNull()
+        screenRegistry?.let { autoRegister(it) }
+    }
+
+    internal fun ensureRegistered(registry: MutableServiceRegistry) {
+        if (screenRegistry != null) return
+        screenRegistry = registry
+        combineUseCase.allUseCases().forEach { it.autoRegister(registry) }
+        combineUseCase.autoRegister(registry)
+        autoRegister(registry)
     }
 
     override val eventReceiver: EventReceiver<E>
@@ -68,32 +69,34 @@ open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
         instance: T,
         tag: String? = null,
     ) {
-        screenRegistry.register(clazz, instance, tag)
+        (screenRegistry ?: error("No screen registry available"))
+            .register(clazz, instance, tag)
     }
 
     inline fun <reified T : Any> registerService(
         instance: T,
         tag: String? = null,
     ) {
-        screenRegistry.register(T::class.java, instance, tag)
+        registerService(T::class.java, instance, tag)
     }
 
     fun unregisterService(
         clazz: Class<*>,
         tag: String? = null,
     ) {
-        screenRegistry.unregister(clazz, tag)
+        screenRegistry?.unregister(clazz, tag)
     }
 
     fun unregisterService(instance: Any) {
-        screenRegistry.unregister(instance)
+        screenRegistry?.unregister(instance)
     }
 
     override fun onCleared() {
-        // Unregister the whole tree: children → combine → self
-        combineUseCase.allUseCases().forEach { it.autoUnregister(screenRegistry) }
-        combineUseCase.autoUnregister(screenRegistry)
-        autoUnregister(screenRegistry)
+        screenRegistry?.let { registry ->
+            combineUseCase.allUseCases().forEach { it.autoUnregister(registry) }
+            combineUseCase.autoUnregister(registry)
+            autoUnregister(registry)
+        }
         super.onCleared()
     }
 }

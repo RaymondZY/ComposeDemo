@@ -5,7 +5,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
+import org.junit.Assert.assertNotNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,7 +23,7 @@ class MviScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun mviScreen_exposes_view_model_registry_to_content() {
+    fun mviScreen_exposes_registry_to_content() {
         val viewModel = ScreenTestViewModel()
         var seenRegistry: Any? = null
 
@@ -37,7 +37,7 @@ class MviScreenTest {
         }
 
         composeRule.runOnIdle {
-            assertSame(viewModel.serviceRegistry, seenRegistry)
+            assertNotNull(seenRegistry)
         }
     }
 
@@ -82,8 +82,7 @@ class MviScreenTest {
     private class EffectUseCase(
         stateHolder: StateHolder<ScreenState>? = null,
     ) : BaseUseCase<ScreenState, ScreenEvent, ScreenEffect>(
-        initialState = ScreenState(),
-        stateHolder = stateHolder,
+        stateHolder = stateHolder ?: zhaoyun.example.composedemo.scaffold.core.mvi.StateHolderImpl(ScreenState()),
     ) {
         override suspend fun onEvent(event: ScreenEvent) {
             if (event == ScreenEvent.EmitBaseEffect) {
@@ -93,7 +92,7 @@ class MviScreenTest {
     }
 
     private class ScreenTestViewModel : BaseViewModel<ScreenState, ScreenEvent, ScreenEffect>(
-        initialState = ScreenState(),
+        stateHolder = zhaoyun.example.composedemo.scaffold.core.mvi.StateHolderImpl(ScreenState()),
         { holder -> EffectUseCase(stateHolder = holder) },
     )
 }

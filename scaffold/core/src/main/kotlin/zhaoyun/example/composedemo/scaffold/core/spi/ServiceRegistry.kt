@@ -13,7 +13,16 @@ inline fun <reified T : Any> ServiceRegistry.find(tag: String? = null): T? =
     find(T::class.java, tag)
 
 interface MutableServiceRegistry : ServiceRegistry {
+    @Deprecated(
+        "attachParent is no longer needed. ServiceRegistry is now shared per-Screen via Koin Scope.",
+        ReplaceWith("")
+    )
     fun attachParent(serviceRegistry: ServiceRegistry)
+
+    @Deprecated(
+        "detachParent is no longer needed.",
+        ReplaceWith("")
+    )
     fun detachParent()
     fun <T : Any> register(clazz: Class<T>, instance: T, tag: String? = null)
     fun unregister(clazz: Class<*>, tag: String? = null)
