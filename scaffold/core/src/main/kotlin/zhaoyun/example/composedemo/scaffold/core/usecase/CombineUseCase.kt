@@ -24,6 +24,7 @@ class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     private val childUseCases = useCaseCreators.map { it(this.stateHolder) }
 
     init {
+        childUseCases.forEach { it.autoRegister(requireServiceRegistry()) }
         autoRegister(requireServiceRegistry())
     }
 

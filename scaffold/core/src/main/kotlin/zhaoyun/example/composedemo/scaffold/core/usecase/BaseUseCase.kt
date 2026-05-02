@@ -12,7 +12,6 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.autoRegister
-import zhaoyun.example.composedemo.scaffold.core.spi.autoUnregister
 import zhaoyun.example.composedemo.scaffold.core.spi.find
 import zhaoyun.example.composedemo.scaffold.core.spi.requireServiceRegistry
 
@@ -27,10 +26,6 @@ abstract class BaseUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     final override val effectDispatcher: EffectDispatcher<F> = EffectDispatcherImpl()
 
     abstract suspend fun onEvent(event: E)
-
-    init {
-        autoRegister(requireServiceRegistry())
-    }
 
     @Deprecated(
         "attachParent is no longer needed. ServiceRegistry is now shared per-Screen via Koin Scope.",
