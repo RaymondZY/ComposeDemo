@@ -20,7 +20,9 @@ import org.koin.androidx.compose.koinViewModel
 import zhaoyun.example.composedemo.feed.domain.FeedEvent
 import zhaoyun.example.composedemo.scaffold.android.MviScreen
 import zhaoyun.example.composedemo.scaffold.android.screenViewModel
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
+import zhaoyun.example.composedemo.story.domain.StoryCardState
 import zhaoyun.example.composedemo.story.presentation.StoryCardPage
 import zhaoyun.example.composedemo.story.presentation.StoryCardViewModel
 
@@ -48,7 +50,7 @@ fun FeedScreen(
                     val card = state.cards[page]
                     if (card is StoryCard) {
                         key(card.cardId) {
-                            val storyViewModel: StoryCardViewModel = screenViewModel(card)
+                            val storyViewModel: StoryCardViewModel = screenViewModel(StoryCardState.from(card).toStateHolder())
                             StoryCardPage(viewModel = storyViewModel, card = card)
                         }
                     }

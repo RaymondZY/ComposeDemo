@@ -4,10 +4,9 @@ import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 
 class InputUseCase(
-    stateHolder: StateHolder<InputState>? = null,
+    stateHolder: StateHolder<InputState>,
 ) : BaseUseCase<InputState, InputEvent, InputEffect>(
-    initialState = InputState(),
-    stateHolder = stateHolder,
+    stateHolder,
 ) {
     override suspend fun onEvent(event: InputEvent) {
         when (event) {

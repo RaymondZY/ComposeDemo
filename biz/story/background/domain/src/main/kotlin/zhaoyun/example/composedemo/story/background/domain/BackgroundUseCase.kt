@@ -1,13 +1,12 @@
 package zhaoyun.example.composedemo.story.background.domain
 
-import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
+import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 
 class BackgroundUseCase(
-    stateHolder: StateHolder<BackgroundState>? = null,
+    stateHolder: StateHolder<BackgroundState>,
 ) : BaseUseCase<BackgroundState, BackgroundEvent, BackgroundEffect>(
-    initialState = BackgroundState(),
-    stateHolder = stateHolder,
+    stateHolder,
 ) {
     override suspend fun onEvent(event: BackgroundEvent) {
         // 当前无交互，占位预留

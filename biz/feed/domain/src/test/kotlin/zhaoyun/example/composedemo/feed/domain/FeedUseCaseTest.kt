@@ -7,6 +7,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.service.feed.mock.FakeFeedRepository
 
 class FeedUseCaseTest {
@@ -16,7 +17,7 @@ class FeedUseCaseTest {
 
     @Before
     fun setup() {
-        useCase = FeedUseCase(fakeRepository)
+        useCase = FeedUseCase(fakeRepository, FeedState().toStateHolder())
     }
 
     @Test

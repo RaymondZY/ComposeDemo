@@ -3,7 +3,6 @@ package zhaoyun.example.composedemo.scaffold.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import zhaoyun.example.composedemo.scaffold.core.usecase.CombineUseCase
 import zhaoyun.example.composedemo.scaffold.core.mvi.EffectDispatcher
 import zhaoyun.example.composedemo.scaffold.core.mvi.EventReceiver
 import zhaoyun.example.composedemo.scaffold.core.mvi.MviFacade
@@ -14,27 +13,23 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.usecase.CombineUseCase
 import zhaoyun.example.composedemo.scaffold.core.usecase.UseCaseFactory
 
 open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
-    initialState: S,
-    vararg useCases: UseCaseFactory<S, E, F>,
-    stateHolder: StateHolder<S>? = null,
-    parentServiceRegistry: ServiceRegistry? = null,
+    override val stateHolder: StateHolder<S>,
+    vararg useCaseCreators: UseCaseFactory<S, E, F>,
 ) : ViewModel(),
     MviFacade<S, E, F> {
 
-    val serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(parent = parentServiceRegistry)
+    val serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl()
 
     private val combineUseCase = CombineUseCase(
-        initialState,
-        *useCases,
         stateHolder = stateHolder,
-        serviceRegistry = serviceRegistry,
-    )
-
-    override val stateHolder: StateHolder<S>
-        get() = combineUseCase.stateHolder
+        useCaseCreators = useCaseCreators
+    ).apply {
+        attachParent(serviceRegistry)
+    }
 
     override val eventReceiver: EventReceiver<E>
         get() = combineUseCase.eventReceiver
@@ -46,6 +41,10 @@ open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
         viewModelScope.launch {
             receiveEvent(event)
         }
+    }
+
+    fun attachParent(serviceRegistry: ServiceRegistry) {
+        this.serviceRegistry.attachParent(serviceRegistry)
     }
 
     fun <T : Any> registerService(

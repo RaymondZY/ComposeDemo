@@ -6,10 +6,9 @@ import zhaoyun.example.composedemo.service.feed.api.FeedRepository
 
 class FeedUseCase(
     private val feedRepository: FeedRepository,
-    stateHolder: StateHolder<FeedState>? = null,
+    stateHolder: StateHolder<FeedState>,
 ) : BaseUseCase<FeedState, FeedEvent, FeedEffect>(
-    initialState = FeedState(),
-    stateHolder = stateHolder,
+    stateHolder,
 ) {
 
     companion object {

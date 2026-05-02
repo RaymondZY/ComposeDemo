@@ -1,8 +1,7 @@
 package zhaoyun.example.composedemo.scaffold.core.spi
 
-interface UseCaseService
+interface MviService
 
-interface TaggedServiceProvider {
-    val serviceTag: String?
-        get() = null
+interface TaggedMviService : MviService {
+    val serviceTag: String
 }

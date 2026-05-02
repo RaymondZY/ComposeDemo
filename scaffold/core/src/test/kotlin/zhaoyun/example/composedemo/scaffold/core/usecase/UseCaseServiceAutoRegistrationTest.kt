@@ -7,21 +7,19 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
-import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
-import zhaoyun.example.composedemo.scaffold.core.spi.ServiceProvider
-import zhaoyun.example.composedemo.scaffold.core.spi.TaggedServiceProvider
-import zhaoyun.example.composedemo.scaffold.core.spi.UseCaseService
+import zhaoyun.example.composedemo.scaffold.core.spi.TaggedMviService
+import zhaoyun.example.composedemo.scaffold.core.spi.MviService
 
 class UseCaseServiceAutoRegistrationTest {
 
     @Test
     fun `combine use case auto registers use case services for sibling lookup`() = runTest {
-        lateinit var provider: AnalyticsProviderUseCase
+        lateinit var provider: AnalyticsProvider
 
         val combineUseCase = CombineUseCase(
             initialState = DemoState(),
             { holder: StateHolder<DemoState> ->
-                AnalyticsProviderUseCase(stateHolder = holder).also { provider = it }
+                AnalyticsProvider(stateHolder = holder).also { provider = it }
             },
             { holder: StateHolder<DemoState> -> AnalyticsConsumerUseCase(stateHolder = holder) },
         )
@@ -35,7 +33,7 @@ class UseCaseServiceAutoRegistrationTest {
     fun `combine use case auto registers tagged services`() = runTest {
         val combineUseCase = CombineUseCase(
             initialState = DemoState(),
-            { holder: StateHolder<DemoState> -> TaggedAnalyticsProviderUseCase(stateHolder = holder) },
+            { holder: StateHolder<DemoState> -> TaggedAnalytics(stateHolder = holder) },
             { holder: StateHolder<DemoState> -> TaggedAnalyticsConsumerUseCase(stateHolder = holder) },
         )
 
@@ -45,23 +43,10 @@ class UseCaseServiceAutoRegistrationTest {
     }
 
     @Test
-    fun `combine use case supports manual service providers for non marker interfaces`() = runTest {
-        val combineUseCase = CombineUseCase(
-            initialState = DemoState(),
-            { holder: StateHolder<DemoState> -> ManualProviderUseCase(stateHolder = holder) },
-            { holder: StateHolder<DemoState> -> ManualConsumerUseCase(stateHolder = holder) },
-        )
-
-        combineUseCase.receiveEvent(DemoEvent.ReadManual)
-
-        assertEquals(7, combineUseCase.state.value.trackCount)
-    }
-
-    @Test
     fun `auto registration exposes parent marker interfaces in the hierarchy`() = runTest {
         val combineUseCase = CombineUseCase(
             initialState = DemoState(),
-            { holder: StateHolder<DemoState> -> HierarchicalProviderUseCase(stateHolder = holder) },
+            { holder: StateHolder<DemoState> -> HierarchicalProvider(stateHolder = holder) },
             { holder: StateHolder<DemoState> -> HierarchicalConsumerUseCase(stateHolder = holder) },
         )
 
@@ -74,8 +59,8 @@ class UseCaseServiceAutoRegistrationTest {
     fun `duplicate auto registered services in one scope fail fast`() {
         CombineUseCase(
             initialState = DemoState(),
-            { holder: StateHolder<DemoState> -> AnalyticsProviderUseCase(stateHolder = holder) },
-            { holder: StateHolder<DemoState> -> DuplicateAnalyticsProviderUseCase(stateHolder = holder) },
+            { holder: StateHolder<DemoState> -> AnalyticsProvider(stateHolder = holder) },
+            { holder: StateHolder<DemoState> -> DuplicateAnalyticsProvider(stateHolder = holder) },
         )
     }
 
@@ -91,26 +76,26 @@ class UseCaseServiceAutoRegistrationTest {
 
     private data object DemoEffect : UiEffect
 
-    private interface AnalyticsService : UseCaseService {
+    private interface AnalyticsMviService : MviService {
         fun track()
     }
 
-    private interface HierarchicalAnalyticsService : UseCaseService {
+    private interface HierarchicalAnalyticsMviService : MviService {
         fun version(): Int
     }
 
-    private interface DetailedAnalyticsService : HierarchicalAnalyticsService
+    private interface DetailedAnalyticsMviService : HierarchicalAnalyticsMviService
 
     private interface ManualService {
         fun version(): Int
     }
 
-    private class AnalyticsProviderUseCase(
+    private class AnalyticsProvider(
         stateHolder: StateHolder<DemoState>? = null,
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         initialState = DemoState(),
         stateHolder = stateHolder,
-    ), AnalyticsService {
+    ), AnalyticsMviService {
 
         var trackCount: Int = 0
             private set
@@ -130,29 +115,29 @@ class UseCaseServiceAutoRegistrationTest {
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {
-                DemoEvent.Track -> findService<AnalyticsService>().track()
+                DemoEvent.Track -> findService<AnalyticsMviService>().track()
                 else -> Unit
             }
         }
     }
 
-    private class DuplicateAnalyticsProviderUseCase(
+    private class DuplicateAnalyticsProvider(
         stateHolder: StateHolder<DemoState>? = null,
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         initialState = DemoState(),
         stateHolder = stateHolder,
-    ), AnalyticsService {
+    ), AnalyticsMviService {
         override fun track() = Unit
 
         override suspend fun onEvent(event: DemoEvent) = Unit
     }
 
-    private class TaggedAnalyticsProviderUseCase(
+    private class TaggedAnalytics(
         stateHolder: StateHolder<DemoState>? = null,
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         initialState = DemoState(),
         stateHolder = stateHolder,
-    ), AnalyticsService, TaggedServiceProvider {
+    ), AnalyticsMviService, TaggedMviService {
 
         override val serviceTag: String = "story"
 
@@ -170,27 +155,12 @@ class UseCaseServiceAutoRegistrationTest {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {
                 DemoEvent.Track -> {
-                    findService<AnalyticsService>(tag = "story").track()
+                    findService<AnalyticsMviService>(tag = "story").track()
                     updateState { it.copy(trackCount = it.trackCount + 1) }
                 }
                 else -> Unit
             }
         }
-    }
-
-    private class ManualProviderUseCase(
-        stateHolder: StateHolder<DemoState>? = null,
-    ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
-        initialState = DemoState(),
-        stateHolder = stateHolder,
-    ), ServiceProvider {
-        override fun provideServices(registry: MutableServiceRegistry) {
-            registry.register(ManualService::class.java, object : ManualService {
-                override fun version(): Int = 7
-            }, tag = "manual")
-        }
-
-        override suspend fun onEvent(event: DemoEvent) = Unit
     }
 
     private class ManualConsumerUseCase(
@@ -210,12 +180,12 @@ class UseCaseServiceAutoRegistrationTest {
         }
     }
 
-    private class HierarchicalProviderUseCase(
+    private class HierarchicalProvider(
         stateHolder: StateHolder<DemoState>? = null,
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         initialState = DemoState(),
         stateHolder = stateHolder,
-    ), DetailedAnalyticsService {
+    ), DetailedAnalyticsMviService {
         override fun version(): Int = 11
 
         override suspend fun onEvent(event: DemoEvent) = Unit
@@ -230,7 +200,7 @@ class UseCaseServiceAutoRegistrationTest {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {
                 DemoEvent.ReadHierarchy -> {
-                    val service = findService<HierarchicalAnalyticsService>()
+                    val service = findService<HierarchicalAnalyticsMviService>()
                     updateState { it.copy(trackCount = service.version()) }
                 }
                 else -> Unit

@@ -60,3 +60,7 @@ class DeriveStateFlow<P, C>(
         throw IllegalStateException("DerivedStateFlow.collect should never complete")
     }
 }
+
+fun <S : UiState> S.toStateHolder(): StateHolder<S> {
+    return StateHolderImpl(this)
+}

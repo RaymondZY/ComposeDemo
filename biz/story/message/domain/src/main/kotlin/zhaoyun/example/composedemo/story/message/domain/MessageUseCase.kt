@@ -4,10 +4,9 @@ import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 
 class MessageUseCase(
-    stateHolder: StateHolder<MessageState>? = null,
+    stateHolder: StateHolder<MessageState>,
 ) : BaseUseCase<MessageState, MessageEvent, MessageEffect>(
-    initialState = MessageState(),
-    stateHolder = stateHolder,
+    stateHolder,
 ) {
     override suspend fun onEvent(event: MessageEvent) {
         when (event) {

@@ -4,18 +4,19 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 
 class MessageUseCaseTest {
 
-    private val useCase = MessageUseCase().apply {
+    private val useCase = MessageUseCase(MessageState().toStateHolder()).apply {
         val registry = MutableServiceRegistryImpl().apply {
             register(MessageAnalytics::class.java, object : MessageAnalytics {
                 override fun trackMessageClicked() {}
                 override fun trackMessageExpanded(expanded: Boolean) {}
             })
         }
-        attachServiceRegistry(registry)
+        this.attachParent(registry)
     }
 
     @Test

@@ -5,9 +5,6 @@ data class ServiceKey<T : Any>(
     val tag: String? = null,
 )
 
-/**
- * 只读服务发现接口 —— UseCase 通过此接口查找服务
- */
 interface ServiceRegistry {
     fun <T : Any> find(clazz: Class<T>, tag: String? = null): T?
 }
@@ -15,10 +12,9 @@ interface ServiceRegistry {
 inline fun <reified T : Any> ServiceRegistry.find(tag: String? = null): T? =
     find(T::class.java, tag)
 
-/**
- * 可变服务注册表 —— 用于注册和注销服务
- */
 interface MutableServiceRegistry : ServiceRegistry {
+    fun attachParent(serviceRegistry: ServiceRegistry)
+    fun detachParent()
     fun <T : Any> register(clazz: Class<T>, instance: T, tag: String? = null)
     fun unregister(clazz: Class<*>, tag: String? = null)
     fun unregister(instance: Any)
@@ -29,10 +25,3 @@ inline fun <reified T : Any> MutableServiceRegistry.register(
     instance: T,
     tag: String? = null,
 ) = register(T::class.java, instance, tag)
-
-/**
- * 服务提供者契约 —— UseCase 实现此接口以声明"我提供什么服务"
- */
-interface ServiceProvider {
-    fun provideServices(registry: MutableServiceRegistry)
-}

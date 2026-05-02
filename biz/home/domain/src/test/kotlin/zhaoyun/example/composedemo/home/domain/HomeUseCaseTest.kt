@@ -4,10 +4,11 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 
 class HomeUseCaseTest {
 
-    private val useCase = HomeUseCase()
+    private val useCase = HomeUseCase(HomeState().toStateHolder())
 
     @Test
     fun `初始状态默认选中HOME`() {

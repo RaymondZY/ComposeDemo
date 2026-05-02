@@ -9,29 +9,25 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.EventReceiver
 import zhaoyun.example.composedemo.scaffold.core.mvi.EventReceiverImpl
 import zhaoyun.example.composedemo.scaffold.core.mvi.MviFacade
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
-import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolderImpl
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
-import zhaoyun.example.composedemo.scaffold.core.spi.ServiceProvider
-import zhaoyun.example.composedemo.scaffold.core.spi.TaggedServiceProvider
-import zhaoyun.example.composedemo.scaffold.core.spi.UseCaseService
+import zhaoyun.example.composedemo.scaffold.core.spi.MviService
+import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.TaggedMviService
 
 class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
-    initialState: S,
-    vararg useCases: UseCaseFactory<S, E, F>,
-    stateHolder: StateHolder<S>? = null,
-    serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
+    override val stateHolder: StateHolder<S>,
+    vararg useCaseCreators: UseCaseFactory<S, E, F>,
 ) : MviFacade<S, E, F> {
 
-    final override val stateHolder: StateHolder<S> = stateHolder ?: StateHolderImpl(initialState)
+    private val serviceRegistry = MutableServiceRegistryImpl()
 
-    private val childUseCases = useCases.map { it(this.stateHolder) }.onEach { useCase ->
-        useCase.attachServiceRegistry(serviceRegistry)
+    private val childUseCases = useCaseCreators.map { it(this.stateHolder) }.onEach { useCase ->
+        useCase.attachParent(serviceRegistry)
         registerAutoServices(useCase, serviceRegistry)
-        registerManualServices(useCase, serviceRegistry)
     }
 
     override val eventReceiver: EventReceiver<E> = EventReceiverImpl { event ->
@@ -39,14 +35,9 @@ class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     }
 
     override val effectDispatcher: EffectDispatcher<F> = CombineEffectDispatcher(childUseCases)
-}
 
-private fun registerManualServices(
-    useCase: BaseUseCase<*, *, *>,
-    registry: MutableServiceRegistry,
-) {
-    if (useCase is ServiceProvider) {
-        useCase.provideServices(registry)
+    fun attachParent(serviceRegistry: ServiceRegistry) {
+        this.serviceRegistry.attachParent(serviceRegistry)
     }
 }
 
@@ -54,14 +45,14 @@ private fun registerAutoServices(
     useCase: BaseUseCase<*, *, *>,
     registry: MutableServiceRegistry,
 ) {
-    val tag = (useCase as? TaggedServiceProvider)?.serviceTag
-    collectUseCaseServiceTypes(useCase.javaClass).forEach { serviceType ->
+    val tag = (useCase as? TaggedMviService)?.serviceTag
+    collectAutoServiceTypes(useCase.javaClass).forEach { serviceType ->
         @Suppress("UNCHECKED_CAST")
         registry.register(serviceType as Class<Any>, useCase, tag)
     }
 }
 
-private fun collectUseCaseServiceTypes(clazz: Class<*>): Set<Class<*>> {
+private fun collectAutoServiceTypes(clazz: Class<*>): Set<Class<*>> {
     val discovered = linkedSetOf<Class<*>>()
     val pending = ArrayDeque<Class<*>>()
     pending += clazz
@@ -72,8 +63,9 @@ private fun collectUseCaseServiceTypes(clazz: Class<*>): Set<Class<*>> {
         current.interfaces.forEach { interfaceType ->
             pending += interfaceType
             if (
-                interfaceType != UseCaseService::class.java &&
-                UseCaseService::class.java.isAssignableFrom(interfaceType)
+                interfaceType != MviService::class.java &&
+                interfaceType != TaggedMviService::class.java &&
+                MviService::class.java.isAssignableFrom(interfaceType)
             ) {
                 discovered += interfaceType
             }

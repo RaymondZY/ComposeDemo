@@ -32,20 +32,20 @@ fun StoryCardPage(
     viewModel: StoryCardViewModel,
     card: StoryCard,
 ) {
-    val messageViewModel: MessageViewModel = screenViewModel(card) { parentRegistry ->
-        parametersOf(viewModel.messageStateHolder, parentRegistry)
+    val messageViewModel: MessageViewModel = screenViewModel(card) {
+        parametersOf(viewModel.messageStateHolder)
     }
 
-    val infoBarViewModel: InfoBarViewModel = screenViewModel(card) { parentRegistry ->
-        parametersOf(card.cardId, viewModel.infoBarStateHolder, parentRegistry)
+    val infoBarViewModel: InfoBarViewModel = screenViewModel(card) {
+        parametersOf(card.cardId, viewModel.infoBarStateHolder)
     }
 
-    val inputViewModel: InputViewModel = screenViewModel(card) { parentRegistry ->
-        parametersOf(viewModel.inputStateHolder, parentRegistry)
+    val inputViewModel: InputViewModel = screenViewModel(card) {
+        parametersOf(viewModel.inputStateHolder)
     }
 
-    val backgroundViewModel: BackgroundViewModel = screenViewModel(card) { parentRegistry ->
-        parametersOf(viewModel.backgroundStateHolder, parentRegistry)
+    val backgroundViewModel: BackgroundViewModel = screenViewModel(card) {
+        parametersOf(viewModel.backgroundStateHolder)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

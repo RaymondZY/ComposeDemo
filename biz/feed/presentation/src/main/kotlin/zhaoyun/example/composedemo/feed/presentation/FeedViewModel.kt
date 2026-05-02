@@ -1,13 +1,16 @@
 package zhaoyun.example.composedemo.feed.presentation
 
-import org.koin.core.context.GlobalContext.get
 import zhaoyun.example.composedemo.feed.domain.FeedEffect
 import zhaoyun.example.composedemo.feed.domain.FeedEvent
 import zhaoyun.example.composedemo.feed.domain.FeedState
 import zhaoyun.example.composedemo.feed.domain.FeedUseCase
 import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
+import zhaoyun.example.composedemo.service.feed.api.FeedRepository
 
-class FeedViewModel : BaseViewModel<FeedState, FeedEvent, FeedEffect>(
-    FeedState(),
-    { stateHolder -> FeedUseCase(feedRepository = get().get(), stateHolder = stateHolder) }
+class FeedViewModel(
+    feedRepository: FeedRepository,
+) : BaseViewModel<FeedState, FeedEvent, FeedEffect>(
+    FeedState().toStateHolder(),
+    { stateHolder -> FeedUseCase(feedRepository = feedRepository, stateHolder = stateHolder) }
 )
