@@ -33,7 +33,7 @@ fun FeedScreen(
         val state by viewModel.state.collectAsStateWithLifecycle()
 
         LaunchedEffect(Unit) {
-            viewModel.onEvent(FeedEvent.OnRefresh)
+            viewModel.receiveEvent(FeedEvent.OnRefresh)
         }
 
         val pagerState = rememberPagerState(pageCount = { state.cards.size })

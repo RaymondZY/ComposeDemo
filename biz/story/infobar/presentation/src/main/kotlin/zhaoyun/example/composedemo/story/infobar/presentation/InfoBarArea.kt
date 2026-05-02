@@ -106,7 +106,7 @@ fun InfoBarArea(
                         )
                     },
                     count = formatCount(state.likes),
-                    onClick = { viewModel.onEvent(InfoBarEvent.OnLikeClicked) },
+                    onClick = { viewModel.sendEvent(InfoBarEvent.OnLikeClicked) },
                 )
 
                 // 分享
@@ -120,7 +120,7 @@ fun InfoBarArea(
                         )
                     },
                     count = formatCount(state.shares),
-                    onClick = { viewModel.onEvent(InfoBarEvent.OnShareClicked) },
+                    onClick = { viewModel.sendEvent(InfoBarEvent.OnShareClicked) },
                 )
 
                 // 评论
@@ -134,13 +134,13 @@ fun InfoBarArea(
                         )
                     },
                     count = formatCount(state.comments),
-                    onClick = { viewModel.onEvent(InfoBarEvent.OnCommentClicked) },
+                    onClick = { viewModel.sendEvent(InfoBarEvent.OnCommentClicked) },
                 )
 
                 // 历史
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { viewModel.onEvent(InfoBarEvent.OnHistoryClicked) },
+                    modifier = Modifier.clickable { viewModel.sendEvent(InfoBarEvent.OnHistoryClicked) },
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.History,

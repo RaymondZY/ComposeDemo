@@ -27,7 +27,7 @@ fun MessageArea(
 
     Card(
         modifier = modifier
-            .clickable { viewModel.onEvent(MessageEvent.OnDialogueClicked) },
+            .clickable { viewModel.sendEvent(MessageEvent.OnDialogueClicked) },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Black.copy(alpha = 0.6f),

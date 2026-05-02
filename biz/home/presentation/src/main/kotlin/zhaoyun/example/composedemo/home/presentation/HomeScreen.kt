@@ -17,7 +17,7 @@ fun HomeScreen(
     MviScreen(viewModel = viewModel) {
         HomePage(
             state = state,
-            onEvent = viewModel::onEvent,
+            onEvent = viewModel::sendEvent,
             modifier = modifier
         )
     }

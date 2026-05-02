@@ -1,11 +1,16 @@
 package zhaoyun.example.composedemo.feed.domain
 
-import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
+import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.service.feed.api.FeedRepository
 
 class FeedUseCase(
-    private val feedRepository: FeedRepository
-) : BaseUseCase<FeedState, FeedEvent, FeedEffect>(FeedState()) {
+    private val feedRepository: FeedRepository,
+    stateHolder: StateHolder<FeedState>? = null,
+) : BaseUseCase<FeedState, FeedEvent, FeedEffect>(
+    initialState = FeedState(),
+    stateHolder = stateHolder,
+) {
 
     companion object {
         private const val PAGE_SIZE = 10
@@ -60,7 +65,7 @@ class FeedUseCase(
                 } else {
                     updateState { it.copy(isLoading = false) }
                 }
-                sendEffect(FeedEffect.ShowError(error.message ?: "Unknown error"))
+                dispatchEffect(FeedEffect.ShowError(error.message ?: "Unknown error"))
             }
     }
 }

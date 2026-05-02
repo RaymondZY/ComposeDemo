@@ -1,8 +1,14 @@
 package zhaoyun.example.composedemo.home.domain
 
-import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
+import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 
-class HomeUseCase : BaseUseCase<HomeState, HomeEvent, HomeEffect>(HomeState()) {
+class HomeUseCase(
+    stateHolder: StateHolder<HomeState>? = null,
+) : BaseUseCase<HomeState, HomeEvent, HomeEffect>(
+    initialState = HomeState(),
+    stateHolder = stateHolder,
+) {
 
     override suspend fun onEvent(event: HomeEvent) {
         when (event) {

@@ -1,9 +1,13 @@
 package zhaoyun.example.composedemo.story.message.domain
 
-import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
+import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
+import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 
-class MessageUseCase : BaseUseCase<MessageState, MessageEvent, MessageEffect>(
-    MessageState()
+class MessageUseCase(
+    stateHolder: StateHolder<MessageState>? = null,
+) : BaseUseCase<MessageState, MessageEvent, MessageEffect>(
+    initialState = MessageState(),
+    stateHolder = stateHolder,
 ) {
     override suspend fun onEvent(event: MessageEvent) {
         when (event) {

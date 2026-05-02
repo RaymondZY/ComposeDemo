@@ -1,115 +1,81 @@
 package zhaoyun.example.composedemo.scaffold.android
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
-import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
-import zhaoyun.example.composedemo.scaffold.core.mvi.BaseUseCase
-import zhaoyun.example.composedemo.scaffold.core.mvi.DelegateStateHolder
-import zhaoyun.example.composedemo.scaffold.core.mvi.LocalStateHolder
-import zhaoyun.example.composedemo.scaffold.core.mvi.MutableServiceRegistry
-import zhaoyun.example.composedemo.scaffold.core.mvi.ServiceProvider
+import zhaoyun.example.composedemo.scaffold.core.usecase.CombineUseCase
+import zhaoyun.example.composedemo.scaffold.core.mvi.EffectDispatcher
+import zhaoyun.example.composedemo.scaffold.core.mvi.EventReceiver
+import zhaoyun.example.composedemo.scaffold.core.mvi.MviFacade
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
-import zhaoyun.example.composedemo.scaffold.core.mvi.createChild
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
+import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.usecase.UseCaseFactory
 
-/**
- * MVI ViewModel 基类 —— 表现层仅负责生命周期管理与平台桥接
- *
- * 所有业务逻辑已下沉到 [BaseUseCase]（位于 :domain 模块），
- * 该 ViewModel **仅**将 UI 事件广播给所有 UseCase，并暴露统一的状态流供 Compose 订阅。
- *
- * 支持一个 ViewModel 绑定多个 UseCase，它们共享同一份 [State]，并各自独立发射 [Effect]。
- *
- * ## 独立页面 vs 嵌入全局
- * - 默认情况下，内部使用 [LocalStateHolder]，ViewModel 独立管理自己的状态
- * - 可通过构造函数注入外部 [StateHolder]（如 [DelegateStateHolder]），实现状态代理到 GlobalViewModel
- * - 通过 [createDelegateStateHolder] 从父 State 中切片出子 StateHolder，实现嵌套状态共享
- *
- * ## 初始化时序说明
- * StateHolder 在构造函数中直接创建，UseCase 在 `init` 块中立即绑定到 StateHolder，
- * 无需延迟初始化。
- */
-abstract class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
+open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
     initialState: S,
-    injectedStateHolder: StateHolder<S>? = null,
-    private vararg val useCases: BaseUseCase<S, E, F>
-) : ViewModel() {
+    vararg useCases: UseCaseFactory<S, E, F>,
+    stateHolder: StateHolder<S>? = null,
+    parentServiceRegistry: ServiceRegistry? = null,
+) : ViewModel(),
+    MviFacade<S, E, F> {
 
-    private val stateHolder: StateHolder<S> = decorateWithLog(injectedStateHolder ?: LocalStateHolder(initialState))
+    val serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(parent = parentServiceRegistry)
 
-    val state: StateFlow<S> = stateHolder.state
-    val effect: Flow<F> = merge(*useCases.map { it.effect }.toTypedArray())
-    val baseEffect: Flow<BaseEffect> = merge(*useCases.map { it.baseEffect }.toTypedArray())
+    private val combineUseCase = CombineUseCase(
+        initialState,
+        *useCases,
+        stateHolder = stateHolder,
+        serviceRegistry = serviceRegistry,
+    )
 
-    init {
-        useCases.forEach { it.bind(stateHolder) }
-    }
+    override val stateHolder: StateHolder<S>
+        get() = combineUseCase.stateHolder
 
-    fun onEvent(event: E) {
+    override val eventReceiver: EventReceiver<E>
+        get() = combineUseCase.eventReceiver
+
+    override val effectDispatcher: EffectDispatcher<F>
+        get() = combineUseCase.effectDispatcher
+
+    fun sendEvent(event: E) {
         viewModelScope.launch {
-            useCases.forEach { it.onEvent(event) }
+            receiveEvent(event)
         }
     }
 
-    protected fun updateState(transform: (S) -> S) {
-        stateHolder.update(transform)
+    fun <T : Any> registerService(
+        clazz: Class<T>,
+        instance: T,
+        tag: String? = null,
+    ) {
+        serviceRegistry.register(clazz, instance, tag)
     }
 
-    /**
-     * 从当前 [StateHolder] 的状态中切片出子状态，创建 [DelegateStateHolder]。
-     *
-     * 内部调用 [createChild] 扩展函数实现，支持多级嵌套。
-     *
-     * @see zhaoyun.example.composedemo.scaffold.core.mvi.createChild
-     */
-    fun <T> createDelegateStateHolder(childSelector: (S) -> T, parentUpdater: (S, T) -> S): StateHolder<T> =
-        stateHolder.createChild(
-            scope = viewModelScope,
-            selector = childSelector,
-            updater = parentUpdater
-        )
-
-    /**
-     * 将本 ViewModel 的所有 UseCase 注册到指定 [registry]。
-     *
-     * 由 [screenViewModel] 自动调用，业务代码无需手动调用。
-     */
-    fun attachToRegistry(registry: MutableServiceRegistry) {
-        useCases.forEach { it.attachServiceRegistry(registry) }
-        useCases.filterIsInstance<ServiceProvider>()
-              .forEach { it.provideServices(registry) }
+    inline fun <reified T : Any> registerService(
+        instance: T,
+        tag: String? = null,
+    ) {
+        serviceRegistry.register(T::class.java, instance, tag)
     }
 
-    /**
-     * 从 [registry] 中注销本 ViewModel 的所有服务。
-     */
-    fun detachFromRegistry(registry: MutableServiceRegistry) {
-        useCases.filterIsInstance<ServiceProvider>()
-              .forEach { registry.unregister(it) }
-        useCases.forEach { it.detachServiceRegistry() }
+    fun unregisterService(
+        clazz: Class<*>,
+        tag: String? = null,
+    ) {
+        serviceRegistry.unregister(clazz, tag)
     }
 
-    /**
-     * 给原[StateHolder]进行一层装饰的包装，方便在[StateHolder.update]时，输出日志。
-     * Tag 使用继承子类的类名。
-     */
-    private fun decorateWithLog(holder: StateHolder<S>): StateHolder<S> {
-        val tag = this::class.java.simpleName
-        return object : StateHolder<S> {
-            override val state: StateFlow<S> = holder.state
-            override fun update(transform: (S) -> S) {
-                val oldState = state.value
-                holder.update(transform)
-                val newState = state.value
-                Log.d(tag, "State update: $oldState -> $newState")
-            }
-        }
+    fun unregisterService(instance: Any) {
+        serviceRegistry.unregister(instance)
+    }
+
+    override fun onCleared() {
+        serviceRegistry.clear()
+        super.onCleared()
     }
 }

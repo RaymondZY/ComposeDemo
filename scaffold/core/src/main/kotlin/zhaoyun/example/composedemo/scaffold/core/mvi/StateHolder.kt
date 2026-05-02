@@ -1,41 +1,62 @@
 package zhaoyun.example.composedemo.scaffold.core.mvi
 
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
-/**
- * 状态读写最小契约 —— 决定「状态存在哪里」以及「如何更新它」
- *
- * [BaseViewModel] 与 [BaseUseCase] 均面向此接口编程，
- * 从而实现「独立持态」与「代理到外部」两种模式的无感知切换。
- */
 interface StateHolder<S> {
+    val initialState: S
     val state: StateFlow<S>
-    fun update(transform: (S) -> S)
+    val currentState: S get() = state.value
+
+    fun updateState(transform: (S) -> S)
+
+    fun <D : UiState> derive(
+        childSelector: (S) -> D,
+        parentUpdater: S.(D) -> S,
+    ): StateHolder<D> {
+        return object : StateHolder<D> {
+            override val initialState: D = childSelector(this@StateHolder.initialState)
+            override val state: StateFlow<D> = DeriveStateFlow(this@StateHolder.state, childSelector)
+
+            override fun updateState(transform: (D) -> D) {
+                val currentParent = this@StateHolder.state.value
+                val newChild = transform(childSelector(currentParent))
+                val newParent = currentParent.parentUpdater(newChild)
+                this@StateHolder.updateState { newParent }
+            }
+        }
+    }
 }
 
-/**
- * 本地 StateHolder —— 内部持有 [MutableStateFlow]，作为独立页面时的默认实现
- */
-class LocalStateHolder<S>(initial: S) : StateHolder<S> {
-    private val _state = MutableStateFlow(initial)
+class StateHolderImpl<S : UiState>(
+    override val initialState: S,
+) : StateHolder<S> {
+    private val _state = MutableStateFlow(initialState)
+
     override val state: StateFlow<S> = _state.asStateFlow()
-    override fun update(transform: (S) -> S) {
+
+    override fun updateState(transform: (S) -> S) {
         _state.update(transform)
     }
 }
 
-/**
- * 代理 StateHolder —— 将状态读写代理到外部提供的 [StateFlow] 与 [onUpdate] 回调
- *
- * 典型使用场景：直接创建 [DelegateStateHolder] 实例注入给 Detail ViewModel，
- * 使 DetailState 成为 GlobalState 的结构性子集。
- */
-class DelegateStateHolder<S>(
-    override val state: StateFlow<S>,
-    private val onUpdate: ((S) -> S) -> Unit
-) : StateHolder<S> {
-    override fun update(transform: (S) -> S) = onUpdate(transform)
+class DeriveStateFlow<P, C>(
+    private val parent: StateFlow<P>,
+    private val selector: (P) -> C,
+) : StateFlow<C> {
+    override val value: C
+        get() = selector(parent.value)
+
+    override val replayCache: List<C>
+        get() = listOf(value)
+
+    override suspend fun collect(collector: FlowCollector<C>): Nothing {
+        parent.map { selector(it) }.distinctUntilChanged().collect(collector)
+        throw IllegalStateException("DerivedStateFlow.collect should never complete")
+    }
 }

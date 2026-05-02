@@ -48,7 +48,7 @@ fun <S : UiState, E : UiEvent, F : UiEffect> MviScreen(
     onBaseEffect: suspend (BaseEffect) -> Boolean = { false },
     content: @Composable () -> Unit
 ) {
-    ServiceRegistryProvider {
+    ServiceRegistryProvider(registry = viewModel.serviceRegistry) {
         val context = LocalContext.current
         LaunchedEffect(Unit) {
             viewModel.baseEffect.collect { effect ->

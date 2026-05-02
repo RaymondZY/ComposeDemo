@@ -33,7 +33,7 @@ fun InputArea(
                 color = Color.White.copy(alpha = 0.15f),
                 shape = RoundedCornerShape(20.dp),
             )
-            .clickable { viewModel.onEvent(InputEvent.OnInputClicked) }
+            .clickable { viewModel.sendEvent(InputEvent.OnInputClicked) }
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

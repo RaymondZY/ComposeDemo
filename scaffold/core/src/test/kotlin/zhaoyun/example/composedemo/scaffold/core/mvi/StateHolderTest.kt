@@ -1,8 +1,11 @@
 package zhaoyun.example.composedemo.scaffold.core.mvi
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -10,60 +13,74 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class StateHolderTest {
 
-    data class TestState(val count: Int = 0) : UiState
-
     @Test
-    fun `LocalStateHolder执行update后状态正确更新`() = runTest {
-        val stateHolder = LocalStateHolder(TestState(0))
-        assertEquals(0, stateHolder.state.value.count)
+    fun `state holder exposes initial and current state`() {
+        val holder = StateHolderImpl(ParentState(title = "hello", child = ChildState(count = 2)))
 
-        stateHolder.update { it.copy(count = it.count + 1) }
-        assertEquals(1, stateHolder.state.value.count)
-
-        stateHolder.update { it.copy(count = it.count + 5) }
-        assertEquals(6, stateHolder.state.value.count)
+        assertEquals(ParentState(title = "hello", child = ChildState(count = 2)), holder.initialState)
+        assertEquals(ParentState(title = "hello", child = ChildState(count = 2)), holder.currentState)
     }
 
     @Test
-    fun `LocalStateHolder并发update保证原子性`() = runTest {
-        val stateHolder = LocalStateHolder(TestState(0))
-        repeat(100) {
-            stateHolder.update { it.copy(count = it.count + 1) }
+    fun `derived holder exposes the child slice of initial state`() {
+        val holder = StateHolderImpl(ParentState(title = "hello", child = ChildState(count = 2)))
+        val childHolder = holder.derive(ParentState::child) { copy(child = it) }
+
+        assertEquals(ChildState(count = 2), childHolder.initialState)
+        assertEquals(ChildState(count = 2), childHolder.currentState)
+    }
+
+    @Test
+    fun `updating derived holder writes through to parent state`() {
+        val holder = StateHolderImpl(ParentState(title = "hello", child = ChildState(count = 2)))
+        val childHolder = holder.derive(ParentState::child) { copy(child = it) }
+
+        childHolder.updateState { it.copy(count = 3) }
+
+        assertEquals(ChildState(count = 3), childHolder.currentState)
+        assertEquals(ParentState(title = "hello", child = ChildState(count = 3)), holder.currentState)
+    }
+
+    @Test
+    fun `parent updates propagate to the derived holder`() {
+        val holder = StateHolderImpl(ParentState(title = "hello", child = ChildState(count = 2)))
+        val childHolder = holder.derive(ParentState::child) { copy(child = it) }
+
+        holder.updateState { it.copy(child = ChildState(count = 4)) }
+
+        assertEquals(ChildState(count = 4), childHolder.currentState)
+    }
+
+    @Test
+    fun `derived state flow only emits when the child slice changes`() = runTest {
+        val holder = StateHolderImpl(ParentState(title = "hello", child = ChildState(count = 2)))
+        val childHolder = holder.derive(ParentState::child) { copy(child = it) }
+        val emissions = mutableListOf<ChildState>()
+
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            childHolder.state.take(2).toList(emissions)
         }
-        assertEquals(100, stateHolder.state.value.count)
+
+        advanceUntilIdle()
+        assertEquals(listOf(ChildState(count = 2)), emissions)
+
+        holder.updateState { it.copy(title = "world") }
+        advanceUntilIdle()
+        assertEquals(listOf(ChildState(count = 2)), emissions)
+
+        holder.updateState { it.copy(child = ChildState(count = 5)) }
+        advanceUntilIdle()
+        assertEquals(listOf(ChildState(count = 2), ChildState(count = 5)), emissions)
+
+        job.cancel()
     }
 
-    @Test
-    fun `DelegateStateHolder的onUpdate被正确触发`() = runTest {
-        val external = MutableStateFlow(TestState(10))
-        var receivedTransform: ((TestState) -> TestState)? = null
+    private data class ParentState(
+        val title: String = "",
+        val child: ChildState = ChildState(),
+    ) : UiState
 
-        val stateHolder = DelegateStateHolder(
-            state = external,
-            onUpdate = { transform ->
-                receivedTransform = transform
-                external.value = transform(external.value)
-            }
-        )
-
-        stateHolder.update { it.copy(count = it.count + 3) }
-
-        assertEquals(13, external.value.count)
-        assertEquals(13, stateHolder.state.first().count)
-        assertEquals(13, receivedTransform?.invoke(TestState(10))?.count)
-    }
-
-    @Test
-    fun `DelegateStateHolder的stateFlow与外部源同步`() = runTest {
-        val external = MutableStateFlow(TestState(5))
-        val stateHolder = DelegateStateHolder(
-            state = external,
-            onUpdate = { transform -> external.value = transform(external.value) }
-        )
-
-        assertEquals(5, stateHolder.state.value.count)
-
-        external.value = TestState(20)
-        assertEquals(20, stateHolder.state.value.count)
-    }
+    private data class ChildState(
+        val count: Int = 0,
+    ) : UiState
 }

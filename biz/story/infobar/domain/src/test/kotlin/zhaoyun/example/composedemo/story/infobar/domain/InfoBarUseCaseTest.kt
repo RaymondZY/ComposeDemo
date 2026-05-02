@@ -20,15 +20,15 @@ class InfoBarUseCaseTest {
 
     @Test
     fun `点击点赞切换isLiked并增加likes`() = runTest {
-        useCase.onEvent(InfoBarEvent.OnLikeClicked)
+        useCase.receiveEvent(InfoBarEvent.OnLikeClicked)
         assertTrue(useCase.state.value.isLiked)
         assertEquals(1, useCase.state.value.likes)
     }
 
     @Test
     fun `再次点击点赞恢复原始状态`() = runTest {
-        useCase.onEvent(InfoBarEvent.OnLikeClicked)
-        useCase.onEvent(InfoBarEvent.OnLikeClicked)
+        useCase.receiveEvent(InfoBarEvent.OnLikeClicked)
+        useCase.receiveEvent(InfoBarEvent.OnLikeClicked)
         assertFalse(useCase.state.value.isLiked)
         assertEquals(0, useCase.state.value.likes)
     }

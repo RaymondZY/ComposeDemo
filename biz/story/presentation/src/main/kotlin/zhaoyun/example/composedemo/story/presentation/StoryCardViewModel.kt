@@ -2,6 +2,7 @@ package zhaoyun.example.composedemo.story.presentation
 
 import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
 import zhaoyun.example.composedemo.story.background.domain.BackgroundState
 import zhaoyun.example.composedemo.story.domain.StoryCardEffect
@@ -14,6 +15,7 @@ import zhaoyun.example.composedemo.story.message.domain.MessageState
 
 class StoryCardViewModel(
     card: StoryCard,
+    parentServiceRegistry: ServiceRegistry? = null,
 ) : BaseViewModel<StoryCardState, StoryCardEvent, StoryCardEffect>(
     StoryCardState(
         background = BackgroundState(backgroundImageUrl = card.backgroundImageUrl),
@@ -32,27 +34,30 @@ class StoryCardViewModel(
             isLiked = card.isLiked,
         ),
     ),
-    null,
-    StoryCardUseCase()
+    { stateHolder -> StoryCardUseCase(stateHolder) },
+    parentServiceRegistry = parentServiceRegistry,
 ) {
     val messageStateHolder: StateHolder<MessageState> by lazy {
-        createDelegateStateHolder(StoryCardState::message) { storyCardState, state ->
-            storyCardState.copy(message = state)
+        stateHolder.derive(StoryCardState::message) {
+            copy(message = it)
         }
     }
+
     val infoBarStateHolder: StateHolder<InfoBarState> by lazy {
-        createDelegateStateHolder(StoryCardState::infoBar) { storyCardState, state ->
-            storyCardState.copy(infoBar = state)
+        stateHolder.derive(StoryCardState::infoBar) {
+            copy(infoBar = it)
         }
     }
+
     val inputStateHolder: StateHolder<InputState> by lazy {
-        createDelegateStateHolder(StoryCardState::input) { storyCardState, state ->
-            storyCardState.copy(input = state)
+        stateHolder.derive(StoryCardState::input) {
+            copy(input = it)
         }
     }
+
     val backgroundStateHolder: StateHolder<BackgroundState> by lazy {
-        createDelegateStateHolder(StoryCardState::background) { storyCardState, state ->
-            storyCardState.copy(background = state)
+        stateHolder.derive(StoryCardState::background) {
+            copy(background = it)
         }
     }
 }
