@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
+private const val ENABLE_DEBUG = true
+
 interface StateHolder<S> {
     val initialState: S
     val state: StateFlow<S>
@@ -37,11 +39,19 @@ class StateHolderImpl<S : UiState>(
     override val initialState: S,
 ) : StateHolder<S> {
     private val _state = MutableStateFlow(initialState)
-
     override val state: StateFlow<S> = _state.asStateFlow()
 
     override fun updateState(transform: (S) -> S) {
-        _state.update(transform)
+        val actualTransform = if (ENABLE_DEBUG) {
+            { currentState: S ->
+                val newState = transform(currentState)
+                println("updateState: $currentState -> $newState")
+                newState
+            }
+        } else {
+            transform
+        }
+        _state.update(actualTransform)
     }
 }
 

@@ -12,6 +12,10 @@ class MessageUseCase(
     serviceRegistry,
 ) {
     override suspend fun onEvent(event: MessageEvent) {
-        // Placeholder - dialogue click logic removed
+        when (event) {
+            is MessageEvent.OnDialogueClicked -> {
+                updateState { it.copy(isExpanded = !it.isExpanded) }
+            }
+        }
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -27,8 +28,14 @@ fun MessageArea(
 
     Card(
         modifier = modifier
-            .clickable { viewModel.sendEvent(MessageEvent.OnDialogueClicked) },
+            .clickable {
+                viewModel.sendEvent(MessageEvent.OnDialogueClicked)
+            },
         shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (state.isExpanded) 2.dp else 0.dp,
+            color = if (state.isExpanded) Color(0xFF4A90E2) else Color.Transparent,
+        ),
         colors = CardDefaults.cardColors(
             containerColor = Color.Black.copy(alpha = 0.6f),
         ),
@@ -69,7 +76,8 @@ fun MessageArea(
                 ),
                 color = Color.White,
                 modifier = Modifier.padding(top = 10.dp),
-                maxLines = if (state.isExpanded) Int.MAX_VALUE else 4,
+                maxLines = if (state.isExpanded) Int.MAX_VALUE else 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
