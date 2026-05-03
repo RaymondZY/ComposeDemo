@@ -1,7 +1,8 @@
 package zhaoyun.example.composedemo.story.infobar.domain
 
 class FakeLikeRepository : LikeRepository {
-    override suspend fun toggleLike(cardId: String, isLiked: Boolean): LikeResult {
-        return LikeResult(isLiked = isLiked, likes = if (isLiked) 100 else 0)
+    override suspend fun toggleLike(cardId: String, isLiked: Boolean, currentLikes: Int): LikeResult {
+        val newLikes = if (isLiked) currentLikes + 1 else (currentLikes - 1).coerceAtLeast(0)
+        return LikeResult(isLiked = isLiked, likes = newLikes)
     }
 }
