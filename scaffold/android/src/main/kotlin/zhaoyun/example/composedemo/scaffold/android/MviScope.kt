@@ -19,10 +19,11 @@ fun MviScope(
 ) {
     val koin = getKoin()
     val registry = remember(parentRegistry) {
-        MutableServiceRegistryImpl(parent = parentRegistry)
+        MutableServiceRegistryImpl(parent = parentRegistry, logger = AndroidMviLogger)
     }
     val scope = remember(scopeId) {
         koin.createScope(scopeId, qualifier = MviKoinScopes.Item).also {
+            AndroidMviLogger.i("Mvi", "Scope created [MviScope] id=$scopeId")
             it.declare<MutableServiceRegistryImpl>(
                 registry,
                 secondaryTypes = listOf(ServiceRegistry::class, MutableServiceRegistry::class),
@@ -32,6 +33,7 @@ fun MviScope(
     }
     DisposableEffect(scope) {
         onDispose {
+            AndroidMviLogger.i("Mvi", "Scope closing [MviScope] id=$scopeId")
             registry.clear()
             scope.close()
         }

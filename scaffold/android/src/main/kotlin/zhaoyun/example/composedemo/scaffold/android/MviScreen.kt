@@ -28,9 +28,10 @@ inline fun <reified VM : BaseViewModel<*, *, *>> MviScreen(
 ) {
     val koin = getKoin()
     val scopeId = remember { UUID.randomUUID().toString() }
-    val screenRegistry = remember { MutableServiceRegistryImpl() }
+    val screenRegistry = remember { MutableServiceRegistryImpl(logger = AndroidMviLogger) }
     val scope = remember {
         koin.createScope(scopeId, qualifier = MviKoinScopes.Screen).also {
+            AndroidMviLogger.i("Mvi", "Scope created [MviScreenScope] id=$scopeId")
             it.declare<MutableServiceRegistryImpl>(
                 screenRegistry,
                 secondaryTypes = listOf(ServiceRegistry::class, MutableServiceRegistry::class),
@@ -40,6 +41,7 @@ inline fun <reified VM : BaseViewModel<*, *, *>> MviScreen(
     }
     DisposableEffect(scope) {
         onDispose {
+            AndroidMviLogger.i("Mvi", "Scope closing [MviScreenScope] id=$scopeId")
             screenRegistry.clear()
             scope.close()
         }

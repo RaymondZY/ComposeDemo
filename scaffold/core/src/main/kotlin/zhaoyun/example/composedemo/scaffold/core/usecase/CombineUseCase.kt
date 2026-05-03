@@ -3,6 +3,7 @@ package zhaoyun.example.composedemo.scaffold.core.usecase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
+import zhaoyun.example.composedemo.scaffold.core.context.MviContext
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.EffectDispatcher
 import zhaoyun.example.composedemo.scaffold.core.mvi.EventReceiver
@@ -13,7 +14,6 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
-import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistryAccessor
 import zhaoyun.example.composedemo.scaffold.core.spi.autoRegister
 import zhaoyun.example.composedemo.scaffold.core.spi.autoUnregister
 
@@ -21,11 +21,12 @@ class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     override val stateHolder: StateHolder<S>,
     override val serviceRegistry: MutableServiceRegistry,
     vararg useCaseCreators: UseCaseFactory<S, E, F>,
-) : MviFacade<S, E, F>, ServiceRegistryAccessor {
+) : MviFacade<S, E, F>, MviContext {
 
     private val childUseCases = useCaseCreators.map { it(this.stateHolder, serviceRegistry) }
 
     init {
+        logger().i("Mvi", "Created CombineUseCase with ${childUseCases.size} children: ${childUseCases.map { it::class.simpleName }}")
         childUseCases.forEach { it.autoRegister(serviceRegistry) }
         this.autoRegister(serviceRegistry)
     }
@@ -37,6 +38,7 @@ class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     override val effectDispatcher: EffectDispatcher<F> = CombineEffectDispatcher(childUseCases)
 
     fun onCleared() {
+        logger().i("Mvi", "Cleared CombineUseCase")
         childUseCases.forEach { it.autoUnregister(serviceRegistry) }
         this.autoUnregister(serviceRegistry)
     }
