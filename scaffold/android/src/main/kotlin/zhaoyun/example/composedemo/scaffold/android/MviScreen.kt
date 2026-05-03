@@ -9,7 +9,6 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.LocalKoinScope
 import org.koin.compose.getKoin
 import org.koin.core.parameter.ParametersHolder
-import org.koin.core.qualifier.named
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
@@ -31,7 +30,7 @@ inline fun <reified VM : BaseViewModel<*, *, *>> MviScreen(
     val scopeId = remember { UUID.randomUUID().toString() }
     val screenRegistry = remember { MutableServiceRegistryImpl() }
     val scope = remember {
-        koin.createScope(scopeId, qualifier = named("MviScreenScope")).also {
+        koin.createScope(scopeId, qualifier = MviKoinScopes.Screen).also {
             it.declare<MutableServiceRegistryImpl>(
                 screenRegistry,
                 secondaryTypes = listOf(ServiceRegistry::class, MutableServiceRegistry::class),

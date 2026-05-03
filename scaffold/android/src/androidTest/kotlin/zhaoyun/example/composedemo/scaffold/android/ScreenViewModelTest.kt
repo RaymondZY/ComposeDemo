@@ -16,7 +16,6 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.core.parameter.parametersOf
-import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
@@ -64,7 +63,7 @@ class ScreenViewModelTest {
     @Test
     fun screenViewModel_default_parameters_include_key_data() {
         val koin = org.koin.core.context.GlobalContext.get()
-        val scope = koin.createScope("test1", named("MviScreenScope"))
+        val scope = koin.createScope("test1", MviKoinScopes.Screen)
         var viewModel: DefaultScreenViewModel? = null
 
         composeRule.setContent {
@@ -87,7 +86,7 @@ class ScreenViewModelTest {
     @Test
     fun screenViewModel_custom_parameters_receive_payload() {
         val koin = org.koin.core.context.GlobalContext.get()
-        val scope = koin.createScope("test2", named("MviScreenScope"))
+        val scope = koin.createScope("test2", MviKoinScopes.Screen)
         val payload = ScreenPayload("story")
         var viewModel: CustomScreenViewModel? = null
 

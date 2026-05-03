@@ -6,7 +6,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import org.koin.compose.LocalKoinScope
 import org.koin.compose.getKoin
-import org.koin.core.qualifier.named
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
@@ -23,7 +22,7 @@ fun MviScope(
         MutableServiceRegistryImpl(parent = parentRegistry)
     }
     val scope = remember(scopeId) {
-        koin.createScope(scopeId, qualifier = named("MviScope")).also {
+        koin.createScope(scopeId, qualifier = MviKoinScopes.Item).also {
             it.declare<MutableServiceRegistryImpl>(
                 registry,
                 secondaryTypes = listOf(ServiceRegistry::class, MutableServiceRegistry::class),
