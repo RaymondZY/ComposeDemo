@@ -3,7 +3,6 @@ package zhaoyun.example.composedemo.story.domain
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
-import zhaoyun.example.composedemo.story.message.domain.MessageAnalytics
 
 class StoryCardUseCase(
     stateHolder: StateHolder<StoryCardState>,
@@ -11,17 +10,7 @@ class StoryCardUseCase(
 ) : BaseUseCase<StoryCardState, StoryCardEvent, StoryCardEffect>(
     stateHolder,
     serviceRegistry,
-), MessageAnalytics {
-
-    // 实现服务接口
-    override fun trackMessageClicked() {
-        println("trackMessageClicked")
-    }
-
-    override fun trackMessageExpanded(expanded: Boolean) {
-        println("trackMessageExpanded expanded = $expanded")
-    }
-
+) {
     override suspend fun onEvent(event: StoryCardEvent) {
         // Placeholder - business logic handled by child use-cases
     }
