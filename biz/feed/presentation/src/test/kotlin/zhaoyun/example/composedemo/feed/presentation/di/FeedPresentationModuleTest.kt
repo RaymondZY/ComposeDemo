@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import zhaoyun.example.composedemo.feed.presentation.FeedViewModel
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.service.feed.api.FeedRepository
 import zhaoyun.example.composedemo.service.feed.api.model.FeedCard
 
@@ -22,7 +23,8 @@ class FeedPresentationModuleTest {
                     page: Int,
                     pageSize: Int,
                 ): Result<List<FeedCard>> = Result.success(emptyList())
-            }
+            },
+            serviceRegistry = MutableServiceRegistryImpl(),
         )
 
         assertTrue(viewModel.state.value.cards.isEmpty())

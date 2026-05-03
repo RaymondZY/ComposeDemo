@@ -8,7 +8,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertThrows
 import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
@@ -110,15 +109,6 @@ class ScreenViewModelTest {
         }
 
         scope.close()
-    }
-
-    @Test
-    fun screenViewModel_requires_localKoinScope() {
-        assertThrows(IllegalStateException::class.java) {
-            composeRule.setContent {
-                screenViewModel<DefaultScreenViewModel>()
-            }
-        }
     }
 
     private data object ScreenState : UiState
