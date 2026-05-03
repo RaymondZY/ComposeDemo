@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.core.parameter.parametersOf
 import zhaoyun.example.composedemo.feed.domain.FeedEvent
 import zhaoyun.example.composedemo.scaffold.android.MviItemScope
 import zhaoyun.example.composedemo.scaffold.android.MviScreen
@@ -48,7 +49,9 @@ fun FeedScreen(modifier: Modifier = Modifier) {
                     if (card is StoryCard) {
                         key(card.cardId) {
                             MviItemScope {
-                                val storyViewModel: StoryCardViewModel = screenViewModel(StoryCardState.from(card).toStateHolder())
+                                val storyViewModel: StoryCardViewModel = screenViewModel(key = card.cardId) {
+                                    parametersOf(StoryCardState.from(card).toStateHolder())
+                                }
                                 StoryCardPage(viewModel = storyViewModel, card = card)
                             }
                         }

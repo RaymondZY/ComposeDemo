@@ -32,19 +32,19 @@ fun StoryCardPage(
     viewModel: StoryCardViewModel,
     card: StoryCard,
 ) {
-    val messageViewModel: MessageViewModel = screenViewModel(card) {
+    val messageViewModel: MessageViewModel = screenViewModel(card.cardId) {
         parametersOf(viewModel.messageStateHolder)
     }
 
-    val infoBarViewModel: InfoBarViewModel = screenViewModel(card) {
+    val infoBarViewModel: InfoBarViewModel = screenViewModel(card.cardId) {
         parametersOf(card.cardId, viewModel.infoBarStateHolder)
     }
 
-    val inputViewModel: InputViewModel = screenViewModel(card) {
+    val inputViewModel: InputViewModel = screenViewModel(card.cardId) {
         parametersOf(viewModel.inputStateHolder)
     }
 
-    val backgroundViewModel: BackgroundViewModel = screenViewModel(card) {
+    val backgroundViewModel: BackgroundViewModel = screenViewModel(card.cardId) {
         parametersOf(viewModel.backgroundStateHolder)
     }
 

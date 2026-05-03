@@ -70,7 +70,7 @@ class ScreenViewModelTest {
 
         composeRule.setContent {
             CompositionLocalProvider(LocalKoinScope provides scope) {
-                val resolved: DefaultScreenViewModel = screenViewModel("story")
+                val resolved: DefaultScreenViewModel = screenViewModel(parameters = { parametersOf("story") })
                 SideEffect {
                     viewModel = resolved
                 }
@@ -94,9 +94,9 @@ class ScreenViewModelTest {
 
         composeRule.setContent {
             CompositionLocalProvider(LocalKoinScope provides scope) {
-                val resolved: CustomScreenViewModel = screenViewModel(payload) {
+                val resolved: CustomScreenViewModel = screenViewModel(parameters = {
                     parametersOf(payload, "custom")
-                }
+                })
                 SideEffect {
                     viewModel = resolved
                 }
@@ -116,7 +116,7 @@ class ScreenViewModelTest {
     fun screenViewModel_requires_localKoinScope() {
         assertThrows(IllegalStateException::class.java) {
             composeRule.setContent {
-                screenViewModel<String, DefaultScreenViewModel>("missing")
+                screenViewModel<DefaultScreenViewModel>()
             }
         }
     }
