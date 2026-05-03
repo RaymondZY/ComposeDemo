@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
-import org.koin.androidx.compose.getKoin
 import org.koin.compose.LocalKoinScope
+import org.koin.compose.getKoin
 import org.koin.core.qualifier.named
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
@@ -23,14 +23,13 @@ fun MviScope(
         MutableServiceRegistryImpl(parent = parentRegistry)
     }
     val scope = remember(scopeId) {
-        koin.createScope(scopeId, qualifier = named("MviScope"))
-    }
-    remember(scope, registry) {
-        scope.declare<MutableServiceRegistryImpl>(
-            registry,
-            secondaryTypes = listOf(ServiceRegistry::class, MutableServiceRegistry::class),
-            allowOverride = true,
-        )
+        koin.createScope(scopeId, qualifier = named("MviScope")).also {
+            it.declare<MutableServiceRegistryImpl>(
+                registry,
+                secondaryTypes = listOf(ServiceRegistry::class, MutableServiceRegistry::class),
+                allowOverride = true,
+            )
+        }
     }
     DisposableEffect(scope) {
         onDispose {
