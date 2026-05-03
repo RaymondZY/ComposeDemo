@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 
@@ -15,5 +16,6 @@ fun StoryBackground(viewModel: BackgroundViewModel) {
         model = state.backgroundImageUrl,
         contentDescription = null,
         modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.Crop,
     )
 }
