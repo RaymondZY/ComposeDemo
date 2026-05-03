@@ -6,4 +6,5 @@ sealed class InfoBarEffect : UiEffect {
     data class ShowShareSheet(val cardId: String) : InfoBarEffect()
     data class NavigateToComments(val cardId: String) : InfoBarEffect()
     data class ShowHistory(val cardId: String) : InfoBarEffect()
+    data class NavigateToCreatorProfile(val creatorHandle: String) : InfoBarEffect()
 }

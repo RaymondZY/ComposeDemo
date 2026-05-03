@@ -6,6 +6,7 @@ import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 
 class InfoBarUseCase(
     private val cardId: String,
+    private val likeRepository: LikeRepository = FakeLikeRepository(),
     stateHolder: StateHolder<InfoBarState>,
     serviceRegistry: MutableServiceRegistry,
 ) : BaseUseCase<InfoBarState, InfoBarEvent, InfoBarEffect>(
@@ -18,6 +19,9 @@ class InfoBarUseCase(
                 val newIsLiked = !currentState.isLiked
                 val newLikes = if (newIsLiked) currentState.likes + 1 else currentState.likes - 1
                 updateState { it.copy(isLiked = newIsLiked, likes = newLikes.coerceAtLeast(0)) }
+
+                val result = likeRepository.toggleLike(cardId, newIsLiked)
+                updateState { it.copy(isLiked = result.isLiked, likes = result.likes.coerceAtLeast(0)) }
             }
 
             is InfoBarEvent.OnShareClicked -> {
@@ -30,6 +34,10 @@ class InfoBarUseCase(
 
             is InfoBarEvent.OnHistoryClicked -> {
                 dispatchEffect(InfoBarEffect.ShowHistory(cardId))
+            }
+
+            is InfoBarEvent.OnCreatorClicked -> {
+                dispatchEffect(InfoBarEffect.NavigateToCreatorProfile(currentState.creatorHandle))
             }
         }
     }

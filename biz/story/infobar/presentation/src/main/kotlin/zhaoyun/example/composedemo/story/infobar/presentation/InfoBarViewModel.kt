@@ -15,5 +15,11 @@ class InfoBarViewModel(
 ) : BaseViewModel<InfoBarState, InfoBarEvent, InfoBarEffect>(
     stateHolder,
     serviceRegistry,
-    { holder, registry -> InfoBarUseCase(cardId = cardId, stateHolder = holder, serviceRegistry = registry) },
+    { holder, registry ->
+        InfoBarUseCase(
+            cardId = cardId,
+            stateHolder = holder,
+            serviceRegistry = registry,
+        )
+    },
 )
