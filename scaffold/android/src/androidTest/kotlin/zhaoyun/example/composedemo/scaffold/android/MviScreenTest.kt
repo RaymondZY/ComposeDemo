@@ -14,6 +14,8 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 
 @RunWith(AndroidJUnit4::class)
@@ -81,8 +83,10 @@ class MviScreenTest {
 
     private class EffectUseCase(
         stateHolder: StateHolder<ScreenState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<ScreenState, ScreenEvent, ScreenEffect>(
         stateHolder = stateHolder ?: zhaoyun.example.composedemo.scaffold.core.mvi.StateHolderImpl(ScreenState()),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: ScreenEvent) {
             if (event == ScreenEvent.EmitBaseEffect) {
@@ -91,8 +95,11 @@ class MviScreenTest {
         }
     }
 
-    private class ScreenTestViewModel : BaseViewModel<ScreenState, ScreenEvent, ScreenEffect>(
+    private class ScreenTestViewModel(
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
+    ) : BaseViewModel<ScreenState, ScreenEvent, ScreenEffect>(
         stateHolder = zhaoyun.example.composedemo.scaffold.core.mvi.StateHolderImpl(ScreenState()),
-        { holder -> EffectUseCase(stateHolder = holder) },
+        serviceRegistry = serviceRegistry,
+        { holder, reg -> EffectUseCase(stateHolder = holder, serviceRegistry = reg) },
     )
 }

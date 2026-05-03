@@ -1,125 +1,82 @@
 package zhaoyun.example.composedemo.scaffold.core.usecase
 
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
-import zhaoyun.example.composedemo.scaffold.core.spi.MviService
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
-import zhaoyun.example.composedemo.scaffold.core.spi.ScreenScopeStack
+import zhaoyun.example.composedemo.scaffold.core.spi.MviService
 import zhaoyun.example.composedemo.scaffold.core.spi.TaggedMviService
+import zhaoyun.example.composedemo.scaffold.core.spi.findService
 
 class UseCaseServiceAutoRegistrationTest {
 
-    @Before
-    fun setup() {
-        startKoin {
-            modules(module {
-                scope(named("MviScreenScope")) {
-                    scoped<zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry> { MutableServiceRegistryImpl() }
-                }
-            })
-        }
-    }
-
-    @After
-    fun teardown() {
-        stopKoin()
-        while (ScreenScopeStack.current != null) {
-            ScreenScopeStack.pop()
-        }
-    }
-
     @Test
     fun `combine use case auto registers use case services for sibling lookup`() = runTest {
-        val koin = org.koin.core.context.GlobalContext.get()
-        val scope = koin.createScope("test", named("MviScreenScope"))
-        ScreenScopeStack.push(scope)
-
+        val registry = MutableServiceRegistryImpl()
         lateinit var provider: AnalyticsProvider
 
         val combineUseCase = CombineUseCase(
             DemoState().toStateHolder(),
-            { holder: StateHolder<DemoState> ->
-                AnalyticsProvider(stateHolder = holder).also { provider = it }
+            registry,
+            { holder: StateHolder<DemoState>, reg ->
+                AnalyticsProvider(stateHolder = holder, serviceRegistry = reg).also { provider = it }
             },
-            { holder: StateHolder<DemoState> -> AnalyticsConsumerUseCase(stateHolder = holder) },
+            { holder: StateHolder<DemoState>, reg -> AnalyticsConsumerUseCase(stateHolder = holder, serviceRegistry = reg) },
         )
 
         combineUseCase.receiveEvent(DemoEvent.Track)
 
         assertEquals(1, provider.trackCount)
-
-        ScreenScopeStack.pop()
-        scope.close()
+        combineUseCase.onCleared()
     }
 
     @Test
     fun `combine use case auto registers tagged services`() = runTest {
-        val koin = org.koin.core.context.GlobalContext.get()
-        val scope = koin.createScope("test2", named("MviScreenScope"))
-        ScreenScopeStack.push(scope)
-
+        val registry = MutableServiceRegistryImpl()
         val combineUseCase = CombineUseCase(
             DemoState().toStateHolder(),
-            { holder: StateHolder<DemoState> -> TaggedAnalytics(stateHolder = holder) },
-            { holder: StateHolder<DemoState> -> TaggedAnalyticsConsumerUseCase(stateHolder = holder) },
+            registry,
+            { holder: StateHolder<DemoState>, reg -> TaggedAnalytics(stateHolder = holder, serviceRegistry = reg) },
+            { holder: StateHolder<DemoState>, reg -> TaggedAnalyticsConsumerUseCase(stateHolder = holder, serviceRegistry = reg) },
         )
 
         combineUseCase.receiveEvent(DemoEvent.Track)
 
         assertEquals(1, combineUseCase.state.value.trackCount)
-
-        ScreenScopeStack.pop()
-        scope.close()
+        combineUseCase.onCleared()
     }
 
     @Test
     fun `auto registration exposes parent marker interfaces in the hierarchy`() = runTest {
-        val koin = org.koin.core.context.GlobalContext.get()
-        val scope = koin.createScope("test3", named("MviScreenScope"))
-        ScreenScopeStack.push(scope)
-
+        val registry = MutableServiceRegistryImpl()
         val combineUseCase = CombineUseCase(
             DemoState().toStateHolder(),
-            { holder: StateHolder<DemoState> -> HierarchicalProvider(stateHolder = holder) },
-            { holder: StateHolder<DemoState> -> HierarchicalConsumerUseCase(stateHolder = holder) },
+            registry,
+            { holder: StateHolder<DemoState>, reg -> HierarchicalProvider(stateHolder = holder, serviceRegistry = reg) },
+            { holder: StateHolder<DemoState>, reg -> HierarchicalConsumerUseCase(stateHolder = holder, serviceRegistry = reg) },
         )
 
         combineUseCase.receiveEvent(DemoEvent.ReadHierarchy)
 
         assertEquals(11, combineUseCase.state.value.trackCount)
-
-        ScreenScopeStack.pop()
-        scope.close()
+        combineUseCase.onCleared()
     }
 
     @Test(expected = IllegalStateException::class)
     fun `duplicate auto registered services in one scope fail fast`() {
-        val koin = org.koin.core.context.GlobalContext.get()
-        val scope = koin.createScope("test4", named("MviScreenScope"))
-        ScreenScopeStack.push(scope)
-
-        try {
-            CombineUseCase(
-                DemoState().toStateHolder(),
-                { holder: StateHolder<DemoState> -> AnalyticsProvider(stateHolder = holder) },
-                { holder: StateHolder<DemoState> -> DuplicateAnalyticsProvider(stateHolder = holder) },
-            )
-        } finally {
-            ScreenScopeStack.pop()
-            scope.close()
-        }
+        val registry = MutableServiceRegistryImpl()
+        CombineUseCase(
+            DemoState().toStateHolder(),
+            registry,
+            { holder: StateHolder<DemoState>, reg -> AnalyticsProvider(stateHolder = holder, serviceRegistry = reg) },
+            { holder: StateHolder<DemoState>, reg -> DuplicateAnalyticsProvider(stateHolder = holder, serviceRegistry = reg) },
+        )
     }
 
     private data class DemoState(
@@ -150,8 +107,10 @@ class UseCaseServiceAutoRegistrationTest {
 
     private class AnalyticsProvider(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ), AnalyticsMviService {
 
         var trackCount: Int = 0
@@ -166,8 +125,10 @@ class UseCaseServiceAutoRegistrationTest {
 
     private class AnalyticsConsumerUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {
@@ -179,8 +140,10 @@ class UseCaseServiceAutoRegistrationTest {
 
     private class DuplicateAnalyticsProvider(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ), AnalyticsMviService {
         override fun track() = Unit
 
@@ -189,8 +152,10 @@ class UseCaseServiceAutoRegistrationTest {
 
     private class TaggedAnalytics(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ), AnalyticsMviService, TaggedMviService {
 
         override val serviceTag: String = "story"
@@ -202,8 +167,10 @@ class UseCaseServiceAutoRegistrationTest {
 
     private class TaggedAnalyticsConsumerUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {
@@ -218,8 +185,10 @@ class UseCaseServiceAutoRegistrationTest {
 
     private class ManualConsumerUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {
@@ -234,8 +203,10 @@ class UseCaseServiceAutoRegistrationTest {
 
     private class HierarchicalProvider(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ), DetailedAnalyticsMviService {
         override fun version(): Int = 11
 
@@ -244,8 +215,10 @@ class UseCaseServiceAutoRegistrationTest {
 
     private class HierarchicalConsumerUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {

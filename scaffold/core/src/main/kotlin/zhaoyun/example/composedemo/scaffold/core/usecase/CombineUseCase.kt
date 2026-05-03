@@ -12,23 +12,22 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
-import zhaoyun.example.composedemo.scaffold.core.spi.ScreenScopeStack
-import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistryAccessor
 import zhaoyun.example.composedemo.scaffold.core.spi.autoRegister
-import zhaoyun.example.composedemo.scaffold.core.spi.requireServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.autoUnregister
 
 class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     override val stateHolder: StateHolder<S>,
+    override val serviceRegistry: MutableServiceRegistry,
     vararg useCaseCreators: UseCaseFactory<S, E, F>,
-) : MviFacade<S, E, F> {
+) : MviFacade<S, E, F>, ServiceRegistryAccessor {
 
-    private val childUseCases = useCaseCreators.map { it(this.stateHolder) }
+    private val childUseCases = useCaseCreators.map { it(this.stateHolder, serviceRegistry) }
 
     init {
-        if (ScreenScopeStack.current != null) {
-            childUseCases.forEach { it.autoRegister(requireServiceRegistry()) }
-            autoRegister(requireServiceRegistry())
-        }
+        childUseCases.forEach { it.autoRegister(serviceRegistry) }
+        this.autoRegister(serviceRegistry)
     }
 
     override val eventReceiver: EventReceiver<E> = EventReceiverImpl { event ->
@@ -37,14 +36,9 @@ class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
 
     override val effectDispatcher: EffectDispatcher<F> = CombineEffectDispatcher(childUseCases)
 
-    fun allUseCases(): List<BaseUseCase<*, *, *>> = childUseCases
-
-    @Deprecated(
-        "attachParent is no longer needed. ServiceRegistry is now shared per-Screen via Koin Scope.",
-        ReplaceWith("")
-    )
-    fun attachParent(serviceRegistry: ServiceRegistry) {
-        // no-op: retained for binary compatibility during migration
+    fun onCleared() {
+        childUseCases.forEach { it.autoUnregister(serviceRegistry) }
+        this.autoUnregister(serviceRegistry)
     }
 }
 

@@ -1,7 +1,7 @@
 package zhaoyun.example.composedemo.scaffold.core.spi
 
 class MutableServiceRegistryImpl(
-    private var parent: ServiceRegistry? = null,
+    private val parent: ServiceRegistry? = null,
 ) : MutableServiceRegistry {
 
     private val services = linkedMapOf<ServiceKey<*>, Any>()
@@ -30,13 +30,5 @@ class MutableServiceRegistryImpl(
 
     override fun clear() {
         services.clear()
-    }
-
-    override fun attachParent(serviceRegistry: ServiceRegistry) {
-        parent = serviceRegistry
-    }
-
-    override fun detachParent() {
-        parent = null
     }
 }

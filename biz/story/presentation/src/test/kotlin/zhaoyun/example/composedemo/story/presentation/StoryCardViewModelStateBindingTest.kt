@@ -3,15 +3,24 @@ package zhaoyun.example.composedemo.story.presentation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
+import zhaoyun.example.composedemo.story.domain.StoryCardState
 import zhaoyun.example.composedemo.story.message.presentation.MessageViewModel
 
 class StoryCardViewModelStateBindingTest {
 
     @Test
     fun `message view model writes through the derived state holder passed at construction`() {
-        val parentViewModel = StoryCardViewModel(sampleCard())
-        val messageViewModel = MessageViewModel(stateHolder = parentViewModel.messageStateHolder)
+        val parentViewModel = StoryCardViewModel(
+            StoryCardState.from(sampleCard()).toStateHolder(),
+            MutableServiceRegistryImpl(),
+        )
+        val messageViewModel = MessageViewModel(
+            stateHolder = parentViewModel.messageStateHolder,
+            serviceRegistry = MutableServiceRegistryImpl(),
+        )
 
         assertEquals("Hero", messageViewModel.state.value.characterName)
 

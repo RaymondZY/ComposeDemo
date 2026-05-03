@@ -1,13 +1,16 @@
 package zhaoyun.example.composedemo.story.infobar.domain
 
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 
 class InfoBarUseCase(
     private val cardId: String,
     stateHolder: StateHolder<InfoBarState>,
+    serviceRegistry: MutableServiceRegistry,
 ) : BaseUseCase<InfoBarState, InfoBarEvent, InfoBarEffect>(
     stateHolder,
+    serviceRegistry,
 ) {
     override suspend fun onEvent(event: InfoBarEvent) {
         when (event) {

@@ -11,6 +11,8 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 
 class CombineUseCaseBehaviorTest {
 
@@ -18,8 +20,9 @@ class CombineUseCaseBehaviorTest {
     fun `combine use case fans a single event out to all child use cases`() = runTest {
         val combineUseCase = CombineUseCase(
             DemoState().toStateHolder(),
-            { holder: StateHolder<DemoState> -> LeftCounterUseCase(stateHolder = holder) },
-            { holder: StateHolder<DemoState> -> RightCounterUseCase(stateHolder = holder) },
+            MutableServiceRegistryImpl(),
+            { holder: StateHolder<DemoState>, registry -> LeftCounterUseCase(stateHolder = holder, serviceRegistry = registry) },
+            { holder: StateHolder<DemoState>, registry -> RightCounterUseCase(stateHolder = holder, serviceRegistry = registry) },
         )
 
         combineUseCase.receiveEvent(DemoEvent.Count)
@@ -31,7 +34,8 @@ class CombineUseCaseBehaviorTest {
     fun `combine use case merges child effects and its own dispatched effects`() = runTest {
         val combineUseCase = CombineUseCase(
             DemoState().toStateHolder(),
-            { holder: StateHolder<DemoState> -> EffectEmitterUseCase(stateHolder = holder) },
+            MutableServiceRegistryImpl(),
+            { holder: StateHolder<DemoState>, registry -> EffectEmitterUseCase(stateHolder = holder, serviceRegistry = registry) },
         )
 
         val childEffect = async { combineUseCase.effect.first() }
@@ -47,7 +51,8 @@ class CombineUseCaseBehaviorTest {
     fun `combine use case merges child base effects and its own base effects`() = runTest {
         val combineUseCase = CombineUseCase(
             DemoState().toStateHolder(),
-            { holder: StateHolder<DemoState> -> EffectEmitterUseCase(stateHolder = holder) },
+            MutableServiceRegistryImpl(),
+            { holder: StateHolder<DemoState>, registry -> EffectEmitterUseCase(stateHolder = holder, serviceRegistry = registry) },
         )
 
         val childBaseEffect = async { combineUseCase.baseEffect.first() }
@@ -76,8 +81,10 @@ class CombineUseCaseBehaviorTest {
 
     private class LeftCounterUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             if (event == DemoEvent.Count) {
@@ -88,8 +95,10 @@ class CombineUseCaseBehaviorTest {
 
     private class RightCounterUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             if (event == DemoEvent.Count) {
@@ -100,8 +109,10 @@ class CombineUseCaseBehaviorTest {
 
     private class EffectEmitterUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {

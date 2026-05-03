@@ -1,13 +1,16 @@
 package zhaoyun.example.composedemo.story.domain
 
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 import zhaoyun.example.composedemo.story.message.domain.MessageAnalytics
 
 class StoryCardUseCase(
     stateHolder: StateHolder<StoryCardState>,
+    serviceRegistry: MutableServiceRegistry,
 ) : BaseUseCase<StoryCardState, StoryCardEvent, StoryCardEffect>(
     stateHolder,
+    serviceRegistry,
 ), MessageAnalytics {
 
     // 实现服务接口

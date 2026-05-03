@@ -3,9 +3,10 @@ package zhaoyun.example.composedemo.scaffold.core.mvi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 import zhaoyun.example.composedemo.scaffold.core.usecase.CombineUseCase
-import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 
 class CombineUseCaseStateBindingTest {
 
@@ -27,7 +28,8 @@ class CombineUseCaseStateBindingTest {
         val sharedStateHolder = StateHolderImpl(CounterState(value = 3))
         val combinedUseCase = CombineUseCase(
             sharedStateHolder,
-            { holder: StateHolder<CounterState> -> IncrementUseCase(stateHolder = holder) },
+            MutableServiceRegistryImpl(),
+            { holder: StateHolder<CounterState>, registry -> IncrementUseCase(stateHolder = holder, serviceRegistry = registry) },
         )
 
         combinedUseCase.receiveEvent(CounterEvent.Increment)
@@ -48,8 +50,10 @@ class CombineUseCaseStateBindingTest {
 
     private class IncrementUseCase(
         stateHolder: StateHolder<CounterState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<CounterState, CounterEvent, CounterEffect>(
         stateHolder = stateHolder ?: CounterState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: CounterEvent) {
             when (event) {

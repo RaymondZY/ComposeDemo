@@ -5,10 +5,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
-import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
@@ -22,6 +22,8 @@ import org.koin.dsl.module
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 
 @RunWith(AndroidJUnit4::class)
 class ScreenViewModelTest {
@@ -31,13 +33,15 @@ class ScreenViewModelTest {
 
     companion object {
         private val testModule = module {
+            factory<MutableServiceRegistry> { MutableServiceRegistryImpl() }
             viewModel { (keyData: String) ->
-                DefaultScreenViewModel(keyData = keyData)
+                DefaultScreenViewModel(keyData = keyData, serviceRegistry = get())
             }
             viewModel { (payload: ScreenPayload, marker: String) ->
                 CustomScreenViewModel(
                     payload = payload,
                     marker = marker,
+                    serviceRegistry = get(),
                 )
             }
         }
@@ -129,14 +133,18 @@ class ScreenViewModelTest {
 
     private class DefaultScreenViewModel(
         val keyData: String,
+        serviceRegistry: MutableServiceRegistry,
     ) : BaseViewModel<ScreenState, ScreenEvent, ScreenEffect>(
         stateHolder = zhaoyun.example.composedemo.scaffold.core.mvi.StateHolderImpl(ScreenState),
+        serviceRegistry = serviceRegistry,
     )
 
     private class CustomScreenViewModel(
         val payload: ScreenPayload,
         val marker: String,
+        serviceRegistry: MutableServiceRegistry,
     ) : BaseViewModel<ScreenState, ScreenEvent, ScreenEffect>(
         stateHolder = zhaoyun.example.composedemo.scaffold.core.mvi.StateHolderImpl(ScreenState),
+        serviceRegistry = serviceRegistry,
     )
 }

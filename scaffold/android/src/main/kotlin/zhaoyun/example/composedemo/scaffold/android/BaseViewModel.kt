@@ -11,44 +11,26 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
-import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistryAccessor
 import zhaoyun.example.composedemo.scaffold.core.spi.autoRegister
 import zhaoyun.example.composedemo.scaffold.core.spi.autoUnregister
-import zhaoyun.example.composedemo.scaffold.core.spi.requireServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.usecase.CombineUseCase
 import zhaoyun.example.composedemo.scaffold.core.usecase.UseCaseFactory
 
 open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
     override val stateHolder: StateHolder<S>,
+    override val serviceRegistry: MutableServiceRegistry,
     vararg useCaseCreators: UseCaseFactory<S, E, F>,
-) : ViewModel(),
-    MviFacade<S, E, F> {
+) : ViewModel(), MviFacade<S, E, F>, ServiceRegistryAccessor {
 
-    private val combineUseCase = CombineUseCase(
-        stateHolder = stateHolder,
-        useCaseCreators = useCaseCreators
-    )
-
-    private var screenRegistry: MutableServiceRegistry? = null
+    private val combineUseCase = CombineUseCase(stateHolder, serviceRegistry, *useCaseCreators)
 
     init {
-        screenRegistry = runCatching { requireServiceRegistry() }.getOrNull()
-        screenRegistry?.let { autoRegister(it) }
+        autoRegister(serviceRegistry)
     }
 
-    internal fun ensureRegistered(registry: MutableServiceRegistry) {
-        if (screenRegistry != null) return
-        screenRegistry = registry
-        combineUseCase.allUseCases().forEach { it.autoRegister(registry) }
-        combineUseCase.autoRegister(registry)
-        autoRegister(registry)
-    }
-
-    override val eventReceiver: EventReceiver<E>
-        get() = combineUseCase.eventReceiver
-
-    override val effectDispatcher: EffectDispatcher<F>
-        get() = combineUseCase.effectDispatcher
+    override val eventReceiver: EventReceiver<E> get() = combineUseCase.eventReceiver
+    override val effectDispatcher: EffectDispatcher<F> get() = combineUseCase.effectDispatcher
 
     fun sendEvent(event: E) {
         viewModelScope.launch {
@@ -56,47 +38,9 @@ open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
         }
     }
 
-    @Deprecated(
-        "attachParent is no longer needed. ServiceRegistry is now shared per-Screen via Koin Scope.",
-        ReplaceWith("")
-    )
-    fun attachParent(serviceRegistry: ServiceRegistry) {
-        // no-op: retained for binary compatibility during migration
-    }
-
-    fun <T : Any> registerService(
-        clazz: Class<T>,
-        instance: T,
-        tag: String? = null,
-    ) {
-        (screenRegistry ?: error("No screen registry available"))
-            .register(clazz, instance, tag)
-    }
-
-    inline fun <reified T : Any> registerService(
-        instance: T,
-        tag: String? = null,
-    ) {
-        registerService(T::class.java, instance, tag)
-    }
-
-    fun unregisterService(
-        clazz: Class<*>,
-        tag: String? = null,
-    ) {
-        screenRegistry?.unregister(clazz, tag)
-    }
-
-    fun unregisterService(instance: Any) {
-        screenRegistry?.unregister(instance)
-    }
-
     override fun onCleared() {
-        screenRegistry?.let { registry ->
-            combineUseCase.allUseCases().forEach { it.autoUnregister(registry) }
-            combineUseCase.autoUnregister(registry)
-            autoUnregister(registry)
-        }
+        combineUseCase.onCleared()
+        this.autoUnregister(serviceRegistry)
         super.onCleared()
     }
 }

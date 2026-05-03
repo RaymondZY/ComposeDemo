@@ -6,8 +6,12 @@ import zhaoyun.example.composedemo.home.domain.HomeState
 import zhaoyun.example.composedemo.home.domain.HomeUseCase
 import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 
-class HomeViewModel : BaseViewModel<HomeState, HomeEvent, HomeEffect>(
+class HomeViewModel(
+    serviceRegistry: MutableServiceRegistry,
+) : BaseViewModel<HomeState, HomeEvent, HomeEffect>(
     HomeState().toStateHolder(),
-    { stateHolder -> HomeUseCase(stateHolder) }
+    serviceRegistry,
+    { stateHolder, registry -> HomeUseCase(stateHolder, registry) }
 )

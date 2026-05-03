@@ -1,12 +1,15 @@
 package zhaoyun.example.composedemo.story.input.domain
 
-import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 
 class InputUseCase(
     stateHolder: StateHolder<InputState>,
+    serviceRegistry: MutableServiceRegistry,
 ) : BaseUseCase<InputState, InputEvent, InputEffect>(
     stateHolder,
+    serviceRegistry,
 ) {
     override suspend fun onEvent(event: InputEvent) {
         when (event) {

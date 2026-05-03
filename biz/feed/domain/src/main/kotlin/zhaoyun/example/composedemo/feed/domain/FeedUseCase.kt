@@ -1,14 +1,17 @@
 package zhaoyun.example.composedemo.feed.domain
 
-import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
+import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 import zhaoyun.example.composedemo.service.feed.api.FeedRepository
 
 class FeedUseCase(
     private val feedRepository: FeedRepository,
     stateHolder: StateHolder<FeedState>,
+    serviceRegistry: MutableServiceRegistry,
 ) : BaseUseCase<FeedState, FeedEvent, FeedEffect>(
     stateHolder,
+    serviceRegistry,
 ) {
 
     companion object {

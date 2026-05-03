@@ -9,15 +9,15 @@ import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 
 class MessageUseCaseTest {
 
-    private val useCase = MessageUseCase(MessageState().toStateHolder()).apply {
-        val registry = MutableServiceRegistryImpl().apply {
+    private val useCase = MessageUseCase(
+        MessageState().toStateHolder(),
+        MutableServiceRegistryImpl().apply {
             register(MessageAnalytics::class.java, object : MessageAnalytics {
                 override fun trackMessageClicked() {}
                 override fun trackMessageExpanded(expanded: Boolean) {}
             })
-        }
-        this.attachParent(registry)
-    }
+        },
+    )
 
     @Test
     fun `初始状态isExpanded为false`() {

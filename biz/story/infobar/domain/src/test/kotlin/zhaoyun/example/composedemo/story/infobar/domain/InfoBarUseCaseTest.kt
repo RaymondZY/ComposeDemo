@@ -6,10 +6,15 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 
 class InfoBarUseCaseTest {
 
-    private val useCase = InfoBarUseCase(cardId = "test-1", stateHolder = InfoBarState().toStateHolder())
+    private val useCase = InfoBarUseCase(
+        cardId = "test-1",
+        stateHolder = InfoBarState().toStateHolder(),
+        serviceRegistry = MutableServiceRegistryImpl(),
+    )
 
     @Test
     fun `初始状态同步默认值`() {

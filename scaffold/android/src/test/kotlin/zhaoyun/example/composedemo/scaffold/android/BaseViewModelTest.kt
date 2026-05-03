@@ -3,18 +3,9 @@ package zhaoyun.example.composedemo.scaffold.android
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertSame
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolderImpl
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
@@ -23,7 +14,8 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.scaffold.core.spi.MviService
-import zhaoyun.example.composedemo.scaffold.core.spi.ScreenScopeStack
+import zhaoyun.example.composedemo.scaffold.core.spi.findService
+import zhaoyun.example.composedemo.scaffold.core.spi.registerService
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BaseViewModelTest {
@@ -31,44 +23,19 @@ class BaseViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    @Before
-    fun setup() {
-        startKoin {
-            modules(module {
-                scope(named("MviScreenScope")) {
-                    scoped<MutableServiceRegistry> { MutableServiceRegistryImpl() }
-                }
-            })
-        }
-    }
-
-    @After
-    fun teardown() {
-        stopKoin()
-        while (ScreenScopeStack.current != null) {
-            ScreenScopeStack.pop()
-        }
-    }
-
     @Test
     fun `view model shares one registry across its child use cases`() = runTest {
-        val koin = org.koin.core.context.GlobalContext.get()
-        val scope = koin.createScope("test", named("MviScreenScope"))
-        ScreenScopeStack.push(scope)
-
-        val viewModel = DemoViewModel()
+        val registry = MutableServiceRegistryImpl()
+        val viewModel = DemoViewModel(serviceRegistry = registry)
 
         viewModel.receiveEvent(DemoEvent.RegisterAndRead)
 
         assertEquals("registered", viewModel.state.value.resolvedName)
-
-        ScreenScopeStack.pop()
-        scope.close()
     }
 
     @Test
     fun `sendEvent processes events on the viewModel scope`() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = DemoViewModel()
+        val viewModel = DemoViewModel(serviceRegistry = MutableServiceRegistryImpl())
 
         viewModel.sendEvent(DemoEvent.Increment)
         advanceUntilIdle()
@@ -77,48 +44,9 @@ class BaseViewModelTest {
     }
 
     @Test
-    fun `view model register and unregister service APIs operate on the owned registry`() {
-        val koin = org.koin.core.context.GlobalContext.get()
-        val scope = koin.createScope("test2", named("MviScreenScope"))
-        ScreenScopeStack.push(scope)
-
-        val viewModel = DemoViewModel()
-        val service = DemoService("vm")
-
-        viewModel.registerService(DemoNamedService::class.java, service, tag = "vm")
-        val registry = scope.get<MutableServiceRegistry>()
-        assertSame(service, registry.find(DemoNamedService::class.java, tag = "vm"))
-
-        viewModel.unregisterService(DemoNamedService::class.java, tag = "vm")
-        assertNull(registry.find(DemoNamedService::class.java, tag = "vm"))
-
-        ScreenScopeStack.pop()
-        scope.close()
-    }
-
-    @Test
-    fun `viewModel ensureRegistered is idempotent`() {
-        val registry = MutableServiceRegistryImpl()
-        val viewModel = DemoViewModel()
-
-        viewModel.ensureRegistered(registry)
-        viewModel.ensureRegistered(registry) // should not crash or duplicate
-
-        val service = DemoService("local")
-        viewModel.registerService(DemoNamedService::class.java, service, tag = "local")
-        assertSame(service, registry.find(DemoNamedService::class.java, tag = "local"))
-    }
-
-    @Test
-    fun `viewModel onCleared handles null registry gracefully`() {
-        val viewModel = DemoViewModel()
-        viewModel.clearForTest() // should not crash even though screenRegistry is null
-    }
-
-    @Test
     fun `view model can be constructed with a shared state holder`() {
         val sharedStateHolder = StateHolderImpl(DemoState(count = 3))
-        val viewModel = DemoViewModel(stateHolder = sharedStateHolder)
+        val viewModel = DemoViewModel(stateHolder = sharedStateHolder, serviceRegistry = MutableServiceRegistryImpl())
 
         assertEquals(3, viewModel.state.value.count)
 
@@ -151,8 +79,10 @@ class BaseViewModelTest {
 
     private class ProviderUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: StateHolderImpl(DemoState()),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {
@@ -164,8 +94,10 @@ class BaseViewModelTest {
 
     private class ConsumerUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: StateHolderImpl(DemoState()),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {
@@ -180,13 +112,11 @@ class BaseViewModelTest {
 
     private class DemoViewModel(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseViewModel<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: StateHolderImpl(DemoState()),
-        { holder -> ProviderUseCase(stateHolder = holder) },
-        { holder -> ConsumerUseCase(stateHolder = holder) },
-    ) {
-        fun clearForTest() {
-            onCleared()
-        }
-    }
+        serviceRegistry = serviceRegistry,
+        { holder, reg -> ProviderUseCase(stateHolder = holder, serviceRegistry = reg) },
+        { holder, reg -> ConsumerUseCase(stateHolder = holder, serviceRegistry = reg) },
+    )
 }

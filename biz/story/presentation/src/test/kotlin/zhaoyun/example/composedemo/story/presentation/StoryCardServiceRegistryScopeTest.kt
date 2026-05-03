@@ -3,7 +3,10 @@ package zhaoyun.example.composedemo.story.presentation
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
+import zhaoyun.example.composedemo.story.domain.StoryCardState
 import zhaoyun.example.composedemo.story.message.domain.MessageEvent
 import zhaoyun.example.composedemo.story.message.presentation.MessageViewModel
 
@@ -11,10 +14,14 @@ class StoryCardServiceRegistryScopeTest {
 
     @Test
     fun `message view model can resolve services from the parent story scope`() = runTest {
-        val storyCardViewModel = StoryCardViewModel(sampleCard())
+        val storyRegistry = MutableServiceRegistryImpl()
+        val storyCardViewModel = StoryCardViewModel(
+            StoryCardState.from(sampleCard()).toStateHolder(),
+            storyRegistry,
+        )
         val messageViewModel = MessageViewModel(
             stateHolder = storyCardViewModel.messageStateHolder,
-            parentServiceRegistry = storyCardViewModel.serviceRegistry,
+            serviceRegistry = MutableServiceRegistryImpl(parent = storyRegistry),
         )
 
         messageViewModel.receiveEvent(MessageEvent.OnDialogueClicked)

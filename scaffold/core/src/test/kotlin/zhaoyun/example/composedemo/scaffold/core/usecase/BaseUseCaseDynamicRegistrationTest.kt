@@ -1,56 +1,33 @@
 package zhaoyun.example.composedemo.scaffold.core.usecase
 
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
-import zhaoyun.example.composedemo.scaffold.core.spi.ScreenScopeStack
+import zhaoyun.example.composedemo.scaffold.core.spi.findService
+import zhaoyun.example.composedemo.scaffold.core.spi.findServiceOrNull
+import zhaoyun.example.composedemo.scaffold.core.spi.registerService
+import zhaoyun.example.composedemo.scaffold.core.spi.unregisterService
 
 class BaseUseCaseDynamicRegistrationTest {
 
-    @Before
-    fun setup() {
-        startKoin {
-            modules(module {
-                scope(named("MviScreenScope")) {
-                    scoped<zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry> { MutableServiceRegistryImpl() }
-                }
-            })
-        }
-    }
-
-    @After
-    fun teardown() {
-        stopKoin()
-        while (ScreenScopeStack.current != null) {
-            ScreenScopeStack.pop()
-        }
-    }
-
     @Test
     fun `use case can dynamically register and unregister services in current scope`() = runTest {
-        val koin = org.koin.core.context.GlobalContext.get()
-        val scope = koin.createScope("test", named("MviScreenScope"))
-        ScreenScopeStack.push(scope)
-
+        val registry = MutableServiceRegistryImpl()
         val combineUseCase = CombineUseCase(
             DemoState().toStateHolder(),
-            { holder: StateHolder<DemoState> -> DynamicProviderUseCase(stateHolder = holder) },
-            { holder: StateHolder<DemoState> -> DynamicConsumerUseCase(stateHolder = holder) },
+            registry,
+            { holder: StateHolder<DemoState>, reg -> DynamicProviderUseCase(stateHolder = holder, serviceRegistry = reg) },
+            { holder: StateHolder<DemoState>, reg -> DynamicConsumerUseCase(stateHolder = holder, serviceRegistry = reg) },
         )
 
         combineUseCase.receiveEvent(DemoEvent.Register)
@@ -62,19 +39,16 @@ class BaseUseCaseDynamicRegistrationTest {
         combineUseCase.receiveEvent(DemoEvent.CheckMissing)
         assertFalse(combineUseCase.state.value.hasService)
 
-        ScreenScopeStack.pop()
-        scope.close()
+        combineUseCase.onCleared()
     }
 
     @Test
     fun `find service or null returns null before a dynamic registration happens`() = runTest {
-        val koin = org.koin.core.context.GlobalContext.get()
-        val scope = koin.createScope("test2", named("MviScreenScope"))
-        ScreenScopeStack.push(scope)
-
+        val registry = MutableServiceRegistryImpl()
         val combineUseCase = CombineUseCase(
             DemoState().toStateHolder(),
-            { holder: StateHolder<DemoState> -> DynamicConsumerUseCase(stateHolder = holder) },
+            registry,
+            { holder: StateHolder<DemoState>, reg -> DynamicConsumerUseCase(stateHolder = holder, serviceRegistry = reg) },
         )
 
         combineUseCase.receiveEvent(DemoEvent.CheckMissing)
@@ -82,13 +56,15 @@ class BaseUseCaseDynamicRegistrationTest {
         assertFalse(combineUseCase.state.value.hasService)
         assertNull(combineUseCase.state.value.resolvedId)
 
-        ScreenScopeStack.pop()
-        scope.close()
+        combineUseCase.onCleared()
     }
 
     @Test(expected = IllegalStateException::class)
-    fun `register service fails fast when no mutable registry is attached`() = runTest {
-        DynamicProviderUseCase().receiveEvent(DemoEvent.Register)
+    fun `register service fails fast when duplicate registration happens`() = runTest {
+        val registry = MutableServiceRegistryImpl()
+        val useCase = DynamicProviderUseCase(serviceRegistry = registry)
+        useCase.receiveEvent(DemoEvent.Register)
+        useCase.receiveEvent(DemoEvent.Register) // duplicate should fail
     }
 
     private data class DemoState(
@@ -117,8 +93,10 @@ class BaseUseCaseDynamicRegistrationTest {
 
     private class DynamicProviderUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ) {
         private val service = DynamicServiceImpl("dynamic")
 
@@ -133,8 +111,10 @@ class BaseUseCaseDynamicRegistrationTest {
 
     private class DynamicConsumerUseCase(
         stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
     ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
         stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
     ) {
         override suspend fun onEvent(event: DemoEvent) {
             when (event) {
