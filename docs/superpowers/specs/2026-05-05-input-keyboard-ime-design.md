@@ -110,4 +110,3 @@ Domain 层（State/Event/Effect/UseCase）**零改动**。
 | 键盘高度未侵入 10dp 安全区 | 内容保持不动 |
 | 点击输入框外，键盘收起 | 内容平滑还原至原始位置；输入光标消失 |
 | 快速连续弹出/收起键盘 | 无抖动、无过冲（overshoot） |
-| 横竖屏切换或字体缩放 | `onGloballyPositioned` 重新测量，偏移量自动正确 |
