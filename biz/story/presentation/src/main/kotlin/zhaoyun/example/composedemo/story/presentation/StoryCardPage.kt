@@ -1,5 +1,6 @@
 package zhaoyun.example.composedemo.story.presentation
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,9 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
@@ -52,6 +55,14 @@ fun StoryCardPage(
         maxOf(0f, imeBottom - (windowHeight - inputAreaBottom) - safetyMarginPx)
     else 0f
 
+    Log.d("DEBUG", "StoryCardPage recomposition")
+    Log.d("DEBUG", "density = $density")
+    Log.d("DEBUG", "windowHeight = $windowHeight")
+    Log.d("DEBUG", "inputAreaBottom = $inputAreaBottom")
+    Log.d("DEBUG", "imeBottom = $imeBottom")
+    Log.d("DEBUG", "safetyMarginPx = $safetyMarginPx")
+    Log.d("DEBUG", "intrusion = $intrusion")
+
     val messageViewModel: MessageViewModel = screenViewModel(card.cardId) {
         parametersOf(viewModel.messageStateHolder)
     }
@@ -71,7 +82,7 @@ fun StoryCardPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer { translationY = -intrusion },
+//            .graphicsLayer { translationY = -intrusion },
     ) {
         StoryBackground(viewModel = backgroundViewModel)
 
@@ -104,7 +115,12 @@ fun StoryCardPage(
                     InputArea(
                         viewModel = inputViewModel,
                         modifier = Modifier.onGloballyPositioned { coords ->
-                            inputAreaBottom = coords.positionInRoot().y + coords.size.height
+                            Log.d("DEBUG", "card: ${card.cardId} onGloballyPositioned")
+                            Log.d("DEBUG", "isAttached: ${coords.isAttached}")
+                            Log.d("DEBUG", "positionInParent: ${coords.positionInParent()}")
+                            Log.d("DEBUG", "positionOnScreen: ${coords.positionOnScreen()}")
+                            Log.d("DEBUG", "positionInRoot: ${coords.positionInRoot()}")
+                            Log.d("DEBUG", "boundsInWindow: ${coords.boundsInWindow()}")
                         },
                     )
                 }
