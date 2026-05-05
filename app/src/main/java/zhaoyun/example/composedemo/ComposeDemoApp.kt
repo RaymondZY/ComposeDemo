@@ -41,6 +41,7 @@ class ComposeDemoApp : Application() {
                 listOf(
                     module {
                         single { FakeFeedRepository() } bind FeedRepository::class
+                        single { zhaoyun.example.composedemo.story.input.domain.InputKeyboardCoordinator() }
                     },
                 )
             )
