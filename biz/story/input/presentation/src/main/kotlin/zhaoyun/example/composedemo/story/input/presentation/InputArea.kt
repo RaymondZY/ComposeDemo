@@ -67,13 +67,13 @@ fun InputArea(
     }
 
     // UC-01/02：isFocused 状态驱动键盘显隐
-    // 注意：isFocused=false 时只隐藏键盘，不 clearFocus()，避免与 onFocusChanged 互相触发循环
     LaunchedEffect(state.isFocused) {
         if (state.isFocused) {
             focusRequester.requestFocus()
             keyboardController?.show()
         } else {
             keyboardController?.hide()
+            focusRequester.freeFocus()
         }
     }
 
