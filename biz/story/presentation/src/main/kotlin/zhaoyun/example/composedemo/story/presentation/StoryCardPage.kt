@@ -69,9 +69,6 @@ fun StoryCardPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .onGloballyPositioned { coords ->
-                inputAreaBottom = coords.boundsInWindow().bottom
-            }
             .graphicsLayer { translationY = -intrusion },
     ) {
         StoryBackground(viewModel = backgroundViewModel)
@@ -102,7 +99,12 @@ fun StoryCardPage(
                 ) {
                     MessageArea(viewModel = messageViewModel)
                     InfoBarArea(viewModel = infoBarViewModel)
-                    InputArea(viewModel = inputViewModel)
+                    InputArea(
+                        viewModel = inputViewModel,
+                        modifier = Modifier.onGloballyPositioned { coords ->
+                            inputAreaBottom = coords.boundsInWindow().bottom
+                        },
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
