@@ -28,7 +28,8 @@ inline fun <reified VM : BaseViewModel<*, *, *>> MviScreen(
 ) {
     val koin = getKoin()
     val scopeId = remember { UUID.randomUUID().toString() }
-    val screenRegistry = remember { MutableServiceRegistryImpl(logger = AndroidMviLogger) }
+    val koinRegistry = remember { KoinServiceRegistry(koin) }
+    val screenRegistry = remember { MutableServiceRegistryImpl(parent = koinRegistry, logger = AndroidMviLogger) }
     val scope = remember {
         koin.createScope(scopeId, qualifier = MviKoinScopes.Screen).also {
             AndroidMviLogger.i("Mvi", "Scope created [MviScreenScope] id=$scopeId")
