@@ -75,8 +75,8 @@ fun InputArea(
             focusRequester.requestFocus()
             keyboardController?.show()
         } else {
-            keyboardController?.hide()
             focusManager.clearFocus()
+            keyboardController?.hide()
         }
     }
 

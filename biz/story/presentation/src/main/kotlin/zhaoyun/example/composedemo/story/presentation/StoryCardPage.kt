@@ -45,10 +45,12 @@ fun StoryCardPage(
 ) {
     val density = LocalDensity.current
     val windowHeight = LocalView.current.height.toFloat()
-    var inputAreaBottom by remember { mutableFloatStateOf(windowHeight) }
+    var inputAreaBottom by remember { mutableFloatStateOf(0f) }
     val imeBottom = WindowInsets.ime.getBottom(density).toFloat()
     val safetyMarginPx = with(density) { 10.dp.toPx() }
-    val intrusion = maxOf(0f, imeBottom - (windowHeight - inputAreaBottom) - safetyMarginPx)
+    val intrusion = if (inputAreaBottom > 0f)
+        maxOf(0f, imeBottom - (windowHeight - inputAreaBottom) - safetyMarginPx)
+    else 0f
 
     val messageViewModel: MessageViewModel = screenViewModel(card.cardId) {
         parametersOf(viewModel.messageStateHolder)
