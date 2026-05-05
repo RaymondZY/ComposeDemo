@@ -1,6 +1,5 @@
 package zhaoyun.example.composedemo.story.presentation
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,11 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
@@ -48,20 +45,22 @@ fun StoryCardPage(
 ) {
     val density = LocalDensity.current
     val windowHeight = LocalView.current.height.toFloat()
+    // InputArea 底部距窗口顶部的 layout y 坐标（px），键盘收起时（imeBottom≈0）测量并锁定。
+    // 键盘弹出期间不更新，避免 graphicsLayer 变换污染 positionInRoot 读数引发反馈循环振荡。
     var inputAreaBottom by remember { mutableFloatStateOf(0f) }
     val imeBottom = WindowInsets.ime.getBottom(density).toFloat()
     val safetyMarginPx = with(density) { 10.dp.toPx() }
-    val intrusion = if (inputAreaBottom > 0f)
-        maxOf(0f, imeBottom - (windowHeight - inputAreaBottom) - safetyMarginPx)
+    // 坐标系：y 轴向下，原点为窗口左上角。
+    //   distanceToBottom = windowHeight - inputAreaBottom  → InputArea 底部到窗口底部的距离
+    //   键盘占据窗口底部 imeBottom px，键盘顶部 y = windowHeight - imeBottom
+    //   侵入量 = imeBottom - distanceToBottom = 键盘顶部超过 InputArea 底部的距离
+    //   加上 safetyMarginPx 确保键盘顶部与 InputArea 底部之间始终保留 10dp 间距
+    //   intrusion = imeBottom - (windowHeight - inputAreaBottom) + safetyMarginPx
+    // 仅当 inputAreaBottom 在窗口范围内（0 < x < windowHeight）时计算，
+    // 排除 VerticalPager 中屏幕外 card（其 positionInRoot.y 超出 windowHeight 导致公式溢出）。
+    val intrusion = if (inputAreaBottom > 0f && inputAreaBottom < windowHeight)
+        maxOf(0f, imeBottom - (windowHeight - inputAreaBottom) + safetyMarginPx)
     else 0f
-
-    Log.d("DEBUG", "StoryCardPage recomposition")
-    Log.d("DEBUG", "density = $density")
-    Log.d("DEBUG", "windowHeight = $windowHeight")
-    Log.d("DEBUG", "inputAreaBottom = $inputAreaBottom")
-    Log.d("DEBUG", "imeBottom = $imeBottom")
-    Log.d("DEBUG", "safetyMarginPx = $safetyMarginPx")
-    Log.d("DEBUG", "intrusion = $intrusion")
 
     val messageViewModel: MessageViewModel = screenViewModel(card.cardId) {
         parametersOf(viewModel.messageStateHolder)
@@ -79,18 +78,15 @@ fun StoryCardPage(
         parametersOf(viewModel.backgroundStateHolder)
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-//            .graphicsLayer { translationY = -intrusion },
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         StoryBackground(viewModel = backgroundViewModel)
 
-        // 底部渐变遮罩
+        // 前景内容（渐变遮罩 + UI 元素），背景保持不动
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
+                .graphicsLayer { translationY = -intrusion }
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
@@ -115,12 +111,12 @@ fun StoryCardPage(
                     InputArea(
                         viewModel = inputViewModel,
                         modifier = Modifier.onGloballyPositioned { coords ->
-                            Log.d("DEBUG", "card: ${card.cardId} onGloballyPositioned")
-                            Log.d("DEBUG", "isAttached: ${coords.isAttached}")
-                            Log.d("DEBUG", "positionInParent: ${coords.positionInParent()}")
-                            Log.d("DEBUG", "positionOnScreen: ${coords.positionOnScreen()}")
-                            Log.d("DEBUG", "positionInRoot: ${coords.positionInRoot()}")
-                            Log.d("DEBUG", "boundsInWindow: ${coords.boundsInWindow()}")
+                            // graphicsLayer 变换会污染 positionInRoot 的读数。
+                            // 只在 imeBottom≈0（键盘收起、intrusion=0、graphicsLayer 无偏移）
+                            // 时采样，保证拿到的是纯 layout 坐标。
+                            if (imeBottom < 1f) {
+                                inputAreaBottom = coords.positionInRoot().y + coords.size.height
+                            }
                         },
                     )
                 }
