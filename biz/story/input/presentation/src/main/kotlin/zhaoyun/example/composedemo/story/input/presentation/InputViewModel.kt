@@ -14,5 +14,5 @@ class InputViewModel(
 ) : BaseViewModel<InputState, InputEvent, InputEffect>(
     stateHolder,
     serviceRegistry,
-    { holder, registry -> InputUseCase(stateHolder = holder, serviceRegistry = registry) },
+    { holder, registry -> InputUseCase(holder, registry) },
 )
