@@ -21,8 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
@@ -104,7 +104,7 @@ fun StoryCardPage(
                     InputArea(
                         viewModel = inputViewModel,
                         modifier = Modifier.onGloballyPositioned { coords ->
-                            inputAreaBottom = coords.boundsInWindow().bottom
+                            inputAreaBottom = coords.positionInRoot().y + coords.size.height
                         },
                     )
                 }
