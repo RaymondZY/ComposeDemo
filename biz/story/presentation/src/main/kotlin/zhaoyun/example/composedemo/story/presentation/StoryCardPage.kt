@@ -5,15 +5,26 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import org.koin.core.parameter.parametersOf
 import zhaoyun.example.composedemo.scaffold.android.screenViewModel
@@ -32,6 +43,13 @@ fun StoryCardPage(
     viewModel: StoryCardViewModel,
     card: StoryCard,
 ) {
+    val density = LocalDensity.current
+    val windowHeight = LocalView.current.height.toFloat()
+    var inputAreaBottom by remember { mutableFloatStateOf(windowHeight) }
+    val imeBottom = WindowInsets.ime.getBottom(density).toFloat()
+    val safetyMarginPx = with(density) { 10.dp.toPx() }
+    val intrusion = maxOf(0f, imeBottom - (windowHeight - inputAreaBottom) - safetyMarginPx)
+
     val messageViewModel: MessageViewModel = screenViewModel(card.cardId) {
         parametersOf(viewModel.messageStateHolder)
     }
@@ -48,7 +66,14 @@ fun StoryCardPage(
         parametersOf(viewModel.backgroundStateHolder)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { coords ->
+                inputAreaBottom = coords.boundsInWindow().bottom
+            }
+            .graphicsLayer { translationY = -intrusion },
+    ) {
         StoryBackground(viewModel = backgroundViewModel)
 
         // 底部渐变遮罩
