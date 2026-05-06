@@ -1,15 +1,16 @@
 package zhaoyun.example.composedemo.scaffold.android
 
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.BeforeClass
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -25,10 +26,6 @@ import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 
 @RunWith(AndroidJUnit4::class)
 class ScreenViewModelTest {
-
-    @get:Rule
-    val composeRule = createAndroidComposeRule<ComponentActivity>()
-
     companion object {
         private val testModule = module {
             factory<MutableServiceRegistry> { MutableServiceRegistryImpl() }
@@ -66,16 +63,20 @@ class ScreenViewModelTest {
         val scope = koin.createScope("test1", MviKoinScopes.Screen)
         var viewModel: DefaultScreenViewModel? = null
 
-        composeRule.setContent {
-            CompositionLocalProvider(LocalKoinScope provides scope) {
-                val resolved: DefaultScreenViewModel = screenViewModel(parameters = { parametersOf("story") })
-                SideEffect {
-                    viewModel = resolved
+        ActivityScenario.launch(ComponentActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.setContent {
+                    CompositionLocalProvider(LocalKoinScope provides scope) {
+                        val resolved: DefaultScreenViewModel =
+                            screenViewModel(parameters = { parametersOf("story") })
+                        SideEffect {
+                            viewModel = resolved
+                        }
+                    }
                 }
             }
-        }
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
-        composeRule.runOnIdle {
             assertNotNull(viewModel)
             assertEquals("story", viewModel?.keyData)
         }
@@ -90,18 +91,21 @@ class ScreenViewModelTest {
         val payload = ScreenPayload("story")
         var viewModel: CustomScreenViewModel? = null
 
-        composeRule.setContent {
-            CompositionLocalProvider(LocalKoinScope provides scope) {
-                val resolved: CustomScreenViewModel = screenViewModel(parameters = {
-                    parametersOf(payload, "custom")
-                })
-                SideEffect {
-                    viewModel = resolved
+        ActivityScenario.launch(ComponentActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.setContent {
+                    CompositionLocalProvider(LocalKoinScope provides scope) {
+                        val resolved: CustomScreenViewModel = screenViewModel(parameters = {
+                            parametersOf(payload, "custom")
+                        })
+                        SideEffect {
+                            viewModel = resolved
+                        }
+                    }
                 }
             }
-        }
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
-        composeRule.runOnIdle {
             assertNotNull(viewModel)
             assertEquals(payload, viewModel?.payload)
             assertEquals("custom", viewModel?.marker)

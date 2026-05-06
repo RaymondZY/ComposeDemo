@@ -110,6 +110,7 @@ fun StoryCardPage(
                     InfoBarArea(viewModel = infoBarViewModel)
                     InputArea(
                         viewModel = inputViewModel,
+                        visualTranslationY = -intrusion,
                         modifier = Modifier.onGloballyPositioned { coords ->
                             // graphicsLayer 变换会污染 positionInRoot 的读数。
                             // 只在 imeBottom≈0（键盘收起、intrusion=0、graphicsLayer 无偏移）

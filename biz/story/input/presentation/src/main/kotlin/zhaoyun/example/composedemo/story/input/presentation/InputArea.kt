@@ -49,11 +49,13 @@ import org.koin.compose.koinInject
 import zhaoyun.example.composedemo.story.input.domain.InputEffect
 import zhaoyun.example.composedemo.story.input.domain.InputEvent
 import zhaoyun.example.composedemo.story.input.domain.InputKeyboardCoordinator
+import kotlin.math.abs
 
 @Composable
 fun InputArea(
     viewModel: InputViewModel,
     modifier: Modifier = Modifier,
+    visualTranslationY: Float = 0f,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
@@ -68,17 +70,39 @@ fun InputArea(
     // 缓存最近一次 layout 的坐标，以便在 onFocusChanged 触发时立即上报 bounds
     // （onGloballyPositioned 仅在位置变化时回调，焦点变化本身不会触发它）
     var lastCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var lastLayoutBounds by remember { mutableStateOf<InputKeyboardCoordinator.Bounds?>(null) }
 
-    fun reportBounds(coords: LayoutCoordinates) {
+    fun cacheLayoutBounds(coords: LayoutCoordinates) {
         val pos = coords.positionInRoot()
+        lastLayoutBounds = InputKeyboardCoordinator.Bounds(
+            left = pos.x,
+            top = pos.y,
+            right = pos.x + coords.size.width,
+            bottom = pos.y + coords.size.height,
+        )
+    }
+
+    fun reportBounds() {
+        val bounds = lastLayoutBounds ?: return
         coordinator.setActiveBounds(
             InputKeyboardCoordinator.Bounds(
-                left = pos.x,
-                top = pos.y,
-                right = pos.x + coords.size.width,
-                bottom = pos.y + coords.size.height,
+                left = bounds.left,
+                top = bounds.top + visualTranslationY,
+                right = bounds.right,
+                bottom = bounds.bottom + visualTranslationY,
             )
         )
+    }
+
+    LaunchedEffect(isTextFieldFocused, visualTranslationY, lastCoords) {
+        if (isTextFieldFocused) {
+            lastCoords?.let {
+                if (lastLayoutBounds == null) {
+                    cacheLayoutBounds(it)
+                }
+                reportBounds()
+            }
+        }
     }
 
     // UC-06：收集 InsertBrackets effect，同步含光标位置的 TextFieldValue
@@ -122,8 +146,11 @@ fun InputArea(
             // 即使未持焦也缓存 coords，使下次获焦时能立即上报。
             .onGloballyPositioned { coords ->
                 lastCoords = coords
+                if (abs(visualTranslationY) < 1f) {
+                    cacheLayoutBounds(coords)
+                }
                 if (isTextFieldFocused) {
-                    reportBounds(coords)
+                    reportBounds()
                 }
             },
         verticalAlignment = Alignment.CenterVertically,
@@ -143,7 +170,12 @@ fun InputArea(
                     if (focusState.isFocused) {
                         // 用最近一次缓存的 coords 立即上报 bounds，
                         // 避免等到下次 layout 才上报（onGloballyPositioned 不会因焦点变化重跑）
-                        lastCoords?.let { reportBounds(it) }
+                        lastCoords?.let {
+                            if (lastLayoutBounds == null) {
+                                cacheLayoutBounds(it)
+                            }
+                            reportBounds()
+                        }
                     } else {
                         coordinator.clearActiveBounds()
                     }
