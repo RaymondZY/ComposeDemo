@@ -3,7 +3,8 @@ package zhaoyun.example.composedemo.story.input.domain
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
@@ -30,22 +31,28 @@ class InputUseCaseTest {
         assertTrue(useCase.state.value.isFocused)
     }
 
-    // UC-02
+    // UC-02：dismissKeyboard 不再直接改 state，而是发出 ClearFocus 命令
     @Test
-    fun `test_UC02_coordinator调用后isFocused变为false`() = runTest {
+    fun `test_UC02_coordinator调用后发出ClearFocus_effect`() = runTest {
         useCase.receiveEvent(InputEvent.OnFocusChanged(true))
+
+        val effects = mutableListOf<InputEffect>()
+        val collectJob = launch { useCase.effect.collect { effects += it } }
+
         coordinator.requestDismiss()
-        assertFalse(useCase.state.value.isFocused)
+        advanceUntilIdle()
+        collectJob.cancel()
+
+        assertTrue(effects.any { it is InputEffect.ClearFocus })
     }
 
-    // UC-02
+    // UC-02：收起命令不影响已输入文字
     @Test
     fun `test_UC02_收起后文字内容保留`() = runTest {
         useCase.receiveEvent(InputEvent.OnTextChanged("hello"))
         useCase.receiveEvent(InputEvent.OnFocusChanged(true))
         coordinator.requestDismiss()
         assertEquals("hello", useCase.state.value.text)
-        assertFalse(useCase.state.value.isFocused)
     }
 
     // UC-06

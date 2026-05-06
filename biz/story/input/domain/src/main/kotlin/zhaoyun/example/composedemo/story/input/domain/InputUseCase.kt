@@ -16,9 +16,11 @@ class InputUseCase(
         findServiceOrNull<InputKeyboardCoordinator>()?.register(this)
     }
 
-    // UC-02：coordinator 广播时调用，仅修改 isFocused，保留 text
+    // UC-02：coordinator 广播时调用。发出 ClearFocus 命令而不是直接改 state，
+    // 让 isFocused 始终由 onFocusChanged 单向上报；接收侧（InputArea）需自行判断
+    // TextField 是否真的持有焦点再执行全局 clearFocus，避免离屏 page 误清当前焦点。
     override fun dismissKeyboard() {
-        updateState { it.copy(isFocused = false) }
+        dispatchEffect(InputEffect.ClearFocus)
     }
 
     override suspend fun onEvent(event: InputEvent) {

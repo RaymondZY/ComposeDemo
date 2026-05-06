@@ -32,6 +32,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
@@ -41,9 +44,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.koinInject
 
 import zhaoyun.example.composedemo.story.input.domain.InputEffect
 import zhaoyun.example.composedemo.story.input.domain.InputEvent
+import zhaoyun.example.composedemo.story.input.domain.InputKeyboardCoordinator
 
 @Composable
 fun InputArea(
@@ -54,9 +59,30 @@ fun InputArea(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val coordinator = koinInject<InputKeyboardCoordinator>()
     var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
+    // 跟踪本 TextField 是否真的持有焦点。focusManager.clearFocus() 是 window 级全局操作，
+    // 离屏/预加载 page 的 InputArea 也会 collect 到自己的 ClearFocus effect，
+    // 必须 guard 住，否则会清掉当前页 TextField 的焦点导致键盘秒收。
+    var isTextFieldFocused by remember { mutableStateOf(false) }
+    // 缓存最近一次 layout 的坐标，以便在 onFocusChanged 触发时立即上报 bounds
+    // （onGloballyPositioned 仅在位置变化时回调，焦点变化本身不会触发它）
+    var lastCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+
+    fun reportBounds(coords: LayoutCoordinates) {
+        val pos = coords.positionInRoot()
+        coordinator.setActiveBounds(
+            InputKeyboardCoordinator.Bounds(
+                left = pos.x,
+                top = pos.y,
+                right = pos.x + coords.size.width,
+                bottom = pos.y + coords.size.height,
+            )
+        )
+    }
 
     // UC-06：收集 InsertBrackets effect，同步含光标位置的 TextFieldValue
+    // UC-02：收到 ClearFocus 命令时，仅当本 TextField 真持有焦点才执行 clearFocus
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -65,18 +91,13 @@ fun InputArea(
                         text = effect.newText,
                         selection = TextRange(effect.cursorPosition),
                     )
+                InputEffect.ClearFocus -> {
+                    if (isTextFieldFocused) {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    }
+                }
             }
-        }
-    }
-
-    // UC-01/02：isFocused 状态驱动键盘显隐
-    LaunchedEffect(state.isFocused) {
-        if (state.isFocused) {
-            focusRequester.requestFocus()
-            keyboardController?.show()
-        } else {
-            focusManager.clearFocus()
-            keyboardController?.hide()
         }
     }
 
@@ -88,14 +109,23 @@ fun InputArea(
                 color = Color.White.copy(alpha = 0.15f),
                 shape = RoundedCornerShape(20.dp),
             )
-            // 消费来自 Row 背景的 tap，防止 FeedScreen.detectTapGestures 误触发 dismiss
-            // 同时实现「点击输入框任意区域打开键盘」的 UX（UC-01）
+            // 「点击输入框任意区域打开键盘」的 UX（UC-01）；
+            // FeedScreen 的 dismiss overlay 会通过 bounds hit-test 排除本区域，无需这里再消费 tap
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = { focusRequester.requestFocus() },
             )
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+            // 持焦时把 root 坐标系下的整体 bounds 上报给 coordinator，
+            // FeedScreen overlay 用它做 hit-test 排除 InputArea 区域。
+            // 即使未持焦也缓存 coords，使下次获焦时能立即上报。
+            .onGloballyPositioned { coords ->
+                lastCoords = coords
+                if (isTextFieldFocused) {
+                    reportBounds(coords)
+                }
+            },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // UC-03：单行，hint 超出以省略号截断
@@ -109,6 +139,14 @@ fun InputArea(
                 .weight(1f)
                 .focusRequester(focusRequester)
                 .onFocusChanged { focusState ->
+                    isTextFieldFocused = focusState.isFocused
+                    if (focusState.isFocused) {
+                        // 用最近一次缓存的 coords 立即上报 bounds，
+                        // 避免等到下次 layout 才上报（onGloballyPositioned 不会因焦点变化重跑）
+                        lastCoords?.let { reportBounds(it) }
+                    } else {
+                        coordinator.clearActiveBounds()
+                    }
                     viewModel.sendEvent(InputEvent.OnFocusChanged(focusState.isFocused))
                 },
             singleLine = true,
