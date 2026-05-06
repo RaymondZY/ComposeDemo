@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
@@ -51,17 +53,26 @@ import zhaoyun.example.composedemo.story.input.domain.InputEvent
 import zhaoyun.example.composedemo.story.input.domain.InputKeyboardCoordinator
 import kotlin.math.abs
 
+object InputAreaTestTags {
+    const val TextField = "story_input_text_field"
+    const val BracketButton = "story_input_bracket_button"
+    const val VoiceButton = "story_input_voice_button"
+    const val PlusButton = "story_input_plus_button"
+    const val SendButton = "story_input_send_button"
+}
+
 @Composable
 fun InputArea(
     viewModel: InputViewModel,
     modifier: Modifier = Modifier,
     visualTranslationY: Float = 0f,
+    keyboardCoordinator: InputKeyboardCoordinator? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val coordinator = koinInject<InputKeyboardCoordinator>()
+    val coordinator = keyboardCoordinator ?: koinInject<InputKeyboardCoordinator>()
     var textFieldValue by remember { mutableStateOf(TextFieldValue()) }
     // 跟踪本 TextField 是否真的持有焦点。focusManager.clearFocus() 是 window 级全局操作，
     // 离屏/预加载 page 的 InputArea 也会 collect 到自己的 ClearFocus effect，
@@ -164,6 +175,7 @@ fun InputArea(
             },
             modifier = Modifier
                 .weight(1f)
+                .testTag(InputAreaTestTags.TextField)
                 .focusRequester(focusRequester)
                 .onFocusChanged { focusState ->
                     isTextFieldFocused = focusState.isFocused
@@ -184,27 +196,34 @@ fun InputArea(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
             textStyle = LocalTextStyle.current.copy(
-                color = Color.White,
+                color = Color.Transparent,
                 fontSize = 14.sp,
             ),
             cursorBrush = SolidColor(Color.White),
             decorationBox = { innerTextField ->
-                if (textFieldValue.text.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = state.hintText,
+                        text = textFieldValue.text.ifEmpty { state.hintText },
                         style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = if (textFieldValue.text.isEmpty()) {
+                            Color.White.copy(alpha = 0.6f)
+                        } else {
+                            Color.White
+                        },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    innerTextField()
                 }
-                innerTextField()
             },
         )
 
         // UC-05：展开状态（isFocused）额外显示括号按钮
         AnimatedVisibility(visible = state.isFocused) {
-            IconButton(onClick = { viewModel.sendEvent(InputEvent.OnBracketClicked) }) {
+            IconButton(
+                modifier = Modifier.testTag(InputAreaTestTags.BracketButton),
+                onClick = { viewModel.sendEvent(InputEvent.OnBracketClicked) },
+            ) {
                 Text(
                     text = "( )",
                     color = Color.White,
@@ -214,7 +233,10 @@ fun InputArea(
         }
 
         // UC-04/07：语音按钮，始终显示（占位）
-        IconButton(onClick = { viewModel.sendEvent(InputEvent.OnVoiceClicked) }) {
+        IconButton(
+            modifier = Modifier.testTag(InputAreaTestTags.VoiceButton),
+            onClick = { viewModel.sendEvent(InputEvent.OnVoiceClicked) },
+        ) {
             Icon(
                 imageVector = Icons.Default.Mic,
                 contentDescription = "语音输入",
@@ -224,7 +246,10 @@ fun InputArea(
 
         // UC-04/08/09：有文字时显示发送，无文字时显示加号
         if (state.text.isNotEmpty()) {
-            IconButton(onClick = { viewModel.sendEvent(InputEvent.OnSendClicked) }) {
+            IconButton(
+                modifier = Modifier.testTag(InputAreaTestTags.SendButton),
+                onClick = { viewModel.sendEvent(InputEvent.OnSendClicked) },
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
                     contentDescription = "发送",
@@ -232,7 +257,10 @@ fun InputArea(
                 )
             }
         } else {
-            IconButton(onClick = { viewModel.sendEvent(InputEvent.OnPlusClicked) }) {
+            IconButton(
+                modifier = Modifier.testTag(InputAreaTestTags.PlusButton),
+                onClick = { viewModel.sendEvent(InputEvent.OnPlusClicked) },
+            ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "更多",

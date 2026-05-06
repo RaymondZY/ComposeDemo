@@ -58,9 +58,12 @@ fun StoryCardPage(
     //   intrusion = imeBottom - (windowHeight - inputAreaBottom) + safetyMarginPx
     // 仅当 inputAreaBottom 在窗口范围内（0 < x < windowHeight）时计算，
     // 排除 VerticalPager 中屏幕外 card（其 positionInRoot.y 超出 windowHeight 导致公式溢出）。
-    val intrusion = if (inputAreaBottom > 0f && inputAreaBottom < windowHeight)
-        maxOf(0f, imeBottom - (windowHeight - inputAreaBottom) + safetyMarginPx)
-    else 0f
+    val intrusion = calculateInputImeIntrusion(
+        windowHeight = windowHeight,
+        inputAreaBottom = inputAreaBottom,
+        imeBottom = imeBottom,
+        safetyMarginPx = safetyMarginPx,
+    )
 
     val messageViewModel: MessageViewModel = screenViewModel(card.cardId) {
         parametersOf(viewModel.messageStateHolder)

@@ -1,5 +1,6 @@
 package zhaoyun.example.composedemo.story.input.domain
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -10,6 +11,7 @@ import org.junit.Test
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class InputUseCaseTest {
 
     private lateinit var coordinator: InputKeyboardCoordinator
@@ -109,6 +111,17 @@ class InputUseCaseTest {
     fun `test_UC08_加号点击无状态副作用`() = runTest {
         val stateBefore = useCase.state.value
         useCase.receiveEvent(InputEvent.OnPlusClicked)
+        assertEquals(stateBefore, useCase.state.value)
+    }
+
+    // UC-09
+    @Test
+    fun `test_UC09_send_click_has_no_state_side_effect`() = runTest {
+        useCase.receiveEvent(InputEvent.OnTextChanged("x"))
+        val stateBefore = useCase.state.value
+
+        useCase.receiveEvent(InputEvent.OnSendClicked)
+
         assertEquals(stateBefore, useCase.state.value)
     }
 }
