@@ -3,10 +3,12 @@ package zhaoyun.example.composedemo.feed.presentation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
@@ -19,7 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import org.junit.Rule
 import org.junit.Test
-import zhaoyun.example.composedemo.feed.domain.FeedEffect
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.feed.domain.FeedEvent
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.service.feed.api.FeedRepository
@@ -87,10 +89,10 @@ class FeedScreenTest {
 
             if (withEffectCollection) {
                 LaunchedEffect(viewModel) {
-                    viewModel.effect.collect { effect ->
+                    viewModel.baseEffect.collect { effect ->
                         when (effect) {
-                            is FeedEffect.ShowRefreshError -> snackbarHostState.showSnackbar("刷新失败，请重试")
-                            is FeedEffect.ShowLoadMoreError -> snackbarHostState.showSnackbar("加载失败，请重试")
+                            is BaseEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                            else -> Unit
                         }
                     }
                 }
@@ -98,20 +100,27 @@ class FeedScreenTest {
 
             val pagerState = rememberPagerState(pageCount = { state.cards.size })
 
-            FeedScreenContent(
-                state = state,
-                pagerState = pagerState,
-                onSendEvent = viewModel::sendEvent,
-                snackbarHostState = snackbarHostState,
-                pullThresholdPx = 80f,
-                cardContent = { card ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .testTag("card_${card.cardId}")
-                    )
-                },
-            )
+            Box(modifier = Modifier.fillMaxSize()) {
+                FeedScreenContent(
+                    state = state,
+                    pagerState = pagerState,
+                    onSendEvent = viewModel::sendEvent,
+                    pullThresholdPx = 80f,
+                    cardContent = { card ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .testTag("card_${card.cardId}")
+                        )
+                    },
+                )
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .testTag("feed_snackbar_host"),
+                )
+            }
         }
     }
 
@@ -306,7 +315,6 @@ class FeedScreenTest {
                 state = zhaoyun.example.composedemo.feed.domain.FeedState(isLoading = true),
                 pagerState = pagerState,
                 onSendEvent = {},
-                snackbarHostState = snackbarHostState,
                 pullThresholdPx = 80f,
                 cardContent = {},
             )

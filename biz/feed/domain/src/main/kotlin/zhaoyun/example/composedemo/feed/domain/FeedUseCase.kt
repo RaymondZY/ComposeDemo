@@ -1,5 +1,6 @@
 package zhaoyun.example.composedemo.feed.domain
 
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
@@ -66,10 +67,10 @@ class FeedUseCase(
             .onFailure { _ ->
                 if (isRefresh) {
                     updateState { it.copy(isRefreshing = false) }
-                    dispatchEffect(FeedEffect.ShowRefreshError)
+                    dispatchBaseEffect(BaseEffect.ShowSnackbar("刷新失败，请重试"))
                 } else {
                     updateState { it.copy(isLoading = false) }
-                    dispatchEffect(FeedEffect.ShowLoadMoreError)
+                    dispatchBaseEffect(BaseEffect.ShowSnackbar("加载失败，请重试"))
                 }
             }
     }

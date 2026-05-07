@@ -10,4 +10,5 @@ sealed interface BaseEffect : UiEffect {
     data class ShowToast(val message: String) : BaseEffect
     data class ShowDialog(val title: String, val message: String) : BaseEffect
     data object NavigateBack : BaseEffect
+    data class ShowSnackbar(val message: String, val actionLabel: String? = null) : BaseEffect
 }

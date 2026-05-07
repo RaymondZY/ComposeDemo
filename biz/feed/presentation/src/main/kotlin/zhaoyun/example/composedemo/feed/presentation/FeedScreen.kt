@@ -13,8 +13,6 @@ import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
-import zhaoyun.example.composedemo.feed.domain.FeedEffect
 import zhaoyun.example.composedemo.feed.domain.FeedEvent
 import zhaoyun.example.composedemo.feed.domain.FeedState
 import zhaoyun.example.composedemo.scaffold.android.MviItemScope
@@ -63,17 +60,6 @@ fun FeedScreen(modifier: Modifier = Modifier) {
     MviScreen<FeedViewModel> { viewModel ->
         val state by viewModel.state.collectAsStateWithLifecycle()
 
-        // Effect 收集：刷新/加载失败时显示 Snackbar
-        val snackbarHostState = remember { SnackbarHostState() }
-        LaunchedEffect(viewModel) {
-            viewModel.effect.collect { effect ->
-                when (effect) {
-                    is FeedEffect.ShowRefreshError -> snackbarHostState.showSnackbar("刷新失败，请重试")
-                    is FeedEffect.ShowLoadMoreError -> snackbarHostState.showSnackbar("加载失败，请重试")
-                }
-            }
-        }
-
         LaunchedEffect(Unit) {
             viewModel.sendEvent(FeedEvent.OnRefresh)
         }
@@ -91,7 +77,6 @@ fun FeedScreen(modifier: Modifier = Modifier) {
                 state = state,
                 pagerState = pagerState,
                 onSendEvent = viewModel::sendEvent,
-                snackbarHostState = snackbarHostState,
                 pullThresholdPx = pullThresholdPx,
                 cardContent = { card ->
                     if (card is StoryCard) {
@@ -160,7 +145,6 @@ internal fun FeedScreenContent(
     state: FeedState,
     pagerState: PagerState,
     onSendEvent: (FeedEvent) -> Unit,
-    snackbarHostState: SnackbarHostState,
     pullThresholdPx: Float,
     cardContent: @Composable (FeedCard) -> Unit,
     modifier: Modifier = Modifier,
@@ -252,13 +236,6 @@ internal fun FeedScreenContent(
             }
         }
 
-        // Snackbar
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .testTag("feed_snackbar_host"),
-        )
     }
 }
 

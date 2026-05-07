@@ -12,6 +12,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.service.feed.api.FeedRepository
@@ -65,9 +66,9 @@ class FeedUseCaseTest {
             FeedState(cards = useCase.state.value.cards).toStateHolder(),
             MutableServiceRegistryImpl()
         )
-        val failingEffects = mutableListOf<FeedEffect>()
+        val failingEffects = mutableListOf<BaseEffect>()
         backgroundScope.launch {
-            failingUseCase.effect.collect { failingEffects.add(it) }
+            failingUseCase.baseEffect.collect { failingEffects.add(it) }
         }
         runCurrent()
 
@@ -76,7 +77,7 @@ class FeedUseCaseTest {
 
         assertEquals(10, failingUseCase.state.value.cards.size)
         assertFalse(failingUseCase.state.value.isRefreshing)
-        assertEquals(listOf(FeedEffect.ShowRefreshError), failingEffects)
+        assertEquals(listOf(BaseEffect.ShowSnackbar("刷新失败，请重试")), failingEffects)
     }
 
     @Test
@@ -167,9 +168,9 @@ class FeedUseCaseTest {
             FeedState(cards = useCase.state.value.cards, currentPage = 1).toStateHolder(),
             MutableServiceRegistryImpl()
         )
-        val failingEffects = mutableListOf<FeedEffect>()
+        val failingEffects = mutableListOf<BaseEffect>()
         backgroundScope.launch {
-            failingUseCase.effect.collect { failingEffects.add(it) }
+            failingUseCase.baseEffect.collect { failingEffects.add(it) }
         }
         runCurrent()
 
@@ -178,7 +179,7 @@ class FeedUseCaseTest {
 
         assertEquals(10, failingUseCase.state.value.cards.size)
         assertFalse(failingUseCase.state.value.isLoading)
-        assertEquals(listOf(FeedEffect.ShowLoadMoreError), failingEffects)
+        assertEquals(listOf(BaseEffect.ShowSnackbar("加载失败，请重试")), failingEffects)
     }
 
     private class DelayedFeedRepository(
