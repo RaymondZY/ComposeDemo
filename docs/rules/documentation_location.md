@@ -33,7 +33,7 @@ docs/
 - 每个 skill 一个子目录，目录名与 skill 名一致，内部包含 `SKILL.md`：
   ```
   docs/skills/
-  └── doc_sync/
+  └── doc-sync/
       └── SKILL.md
   ```
 - **禁止**将项目相关的 skills 放到用户级路径（如 `~/.agents/skills/`）或其他位置。

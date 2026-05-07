@@ -1,5 +1,5 @@
 ---
-name: doc_sync
+name: doc-sync
 description: 审查 docs/ 目录下的所有文档和 AGENTS.md，修复失效链接和不准确的描述
 ---
 

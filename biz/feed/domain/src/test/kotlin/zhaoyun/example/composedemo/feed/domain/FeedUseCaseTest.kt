@@ -133,6 +133,30 @@ class FeedUseCaseTest {
     }
 
     @Test
+    fun `刷新进行中时触发加载更多和预加载直接丢弃`() = runTest {
+        val delayedRepo = RecordingDelayedFeedRepository(1000)
+        val delayedUseCase = FeedUseCase(delayedRepo, FeedState().toStateHolder(), MutableServiceRegistryImpl())
+
+        val job = launch {
+            delayedUseCase.receiveEvent(FeedEvent.OnRefresh)
+        }
+
+        runCurrent()
+        assertTrue(delayedUseCase.state.value.isRefreshing)
+
+        delayedUseCase.receiveEvent(FeedEvent.OnLoadMore)
+        delayedUseCase.receiveEvent(FeedEvent.OnPreload(7))
+
+        advanceTimeBy(1000)
+        runCurrent()
+        job.join()
+
+        assertEquals(listOf(0), delayedRepo.requestedPages)
+        assertFalse(delayedUseCase.state.value.isRefreshing)
+        assertEquals(10, delayedUseCase.state.value.cards.size)
+    }
+
+    @Test
     fun `加载更多进行中时再次触发加载更多直接丢弃`() = runTest {
         useCase.receiveEvent(FeedEvent.OnRefresh)
         assertEquals(10, useCase.state.value.cards.size)
@@ -154,6 +178,37 @@ class FeedUseCaseTest {
         runCurrent()
         job.join()
 
+        assertFalse(delayedUseCase.state.value.isLoading)
+        assertEquals(15, delayedUseCase.state.value.cards.size)
+    }
+
+    @Test
+    fun `加载更多进行中时触发刷新和预加载直接丢弃`() = runTest {
+        useCase.receiveEvent(FeedEvent.OnRefresh)
+        assertEquals(10, useCase.state.value.cards.size)
+
+        val delayedRepo = RecordingDelayedFeedRepository(1000)
+        val delayedUseCase = FeedUseCase(
+            delayedRepo,
+            useCase.state.value.copy().toStateHolder(),
+            MutableServiceRegistryImpl()
+        )
+
+        val job = launch {
+            delayedUseCase.receiveEvent(FeedEvent.OnLoadMore)
+        }
+
+        runCurrent()
+        assertTrue(delayedUseCase.state.value.isLoading)
+
+        delayedUseCase.receiveEvent(FeedEvent.OnRefresh)
+        delayedUseCase.receiveEvent(FeedEvent.OnPreload(7))
+
+        advanceTimeBy(1000)
+        runCurrent()
+        job.join()
+
+        assertEquals(listOf(1), delayedRepo.requestedPages)
         assertFalse(delayedUseCase.state.value.isLoading)
         assertEquals(15, delayedUseCase.state.value.cards.size)
     }
@@ -182,6 +237,27 @@ class FeedUseCaseTest {
         assertEquals(listOf(BaseEffect.ShowSnackbar("加载失败，请重试")), failingEffects)
     }
 
+    @Test
+    fun `无更多内容时加载更多和预加载直接丢弃`() = runTest {
+        useCase.receiveEvent(FeedEvent.OnRefresh)
+        val existingCards = useCase.state.value.cards
+        assertEquals(10, existingCards.size)
+
+        val recordingRepo = RecordingFakeFeedRepository()
+        val completedUseCase = FeedUseCase(
+            recordingRepo,
+            FeedState(cards = existingCards, currentPage = 3, hasMore = false).toStateHolder(),
+            MutableServiceRegistryImpl()
+        )
+
+        completedUseCase.receiveEvent(FeedEvent.OnLoadMore)
+        completedUseCase.receiveEvent(FeedEvent.OnPreload(Int.MAX_VALUE))
+
+        assertTrue(recordingRepo.requestedPages.isEmpty())
+        assertEquals(existingCards, completedUseCase.state.value.cards)
+        assertFalse(completedUseCase.state.value.hasMore)
+    }
+
     private class DelayedFeedRepository(
         private val delayMs: Long,
     ) : FeedRepository {
@@ -190,6 +266,28 @@ class FeedUseCaseTest {
         override suspend fun fetchFeed(page: Int, pageSize: Int): Result<List<FeedCard>> {
             delay(delayMs)
             return fake.fetchFeed(page, pageSize)
+        }
+    }
+
+    private class RecordingDelayedFeedRepository(
+        private val delayMs: Long,
+    ) : FeedRepository {
+        private val fake = FakeFeedRepository()
+        val requestedPages = mutableListOf<Int>()
+
+        override suspend fun fetchFeed(page: Int, pageSize: Int): Result<List<FeedCard>> {
+            requestedPages += page
+            delay(delayMs)
+            return fake.fetchFeed(page, pageSize)
+        }
+    }
+
+    private class RecordingFakeFeedRepository : FeedRepository {
+        val requestedPages = mutableListOf<Int>()
+
+        override suspend fun fetchFeed(page: Int, pageSize: Int): Result<List<FeedCard>> {
+            requestedPages += page
+            return FakeFeedRepository().fetchFeed(page, pageSize)
         }
     }
 

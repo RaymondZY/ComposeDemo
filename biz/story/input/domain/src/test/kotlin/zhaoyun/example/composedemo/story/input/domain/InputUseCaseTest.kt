@@ -33,6 +33,16 @@ class InputUseCaseTest {
         assertTrue(useCase.state.value.isFocused)
     }
 
+    @Test
+    fun `test_UC02_失焦后isFocused变为false并保留文字`() = runTest {
+        useCase.receiveEvent(InputEvent.OnTextChanged("hello"))
+        useCase.receiveEvent(InputEvent.OnFocusChanged(true))
+        useCase.receiveEvent(InputEvent.OnFocusChanged(false))
+
+        assertEquals("hello", useCase.state.value.text)
+        assertTrue(!useCase.state.value.isFocused)
+    }
+
     // UC-02：dismissKeyboard 不再直接改 state，而是发出 ClearFocus 命令
     @Test
     fun `test_UC02_coordinator调用后发出ClearFocus_effect`() = runTest {
@@ -63,6 +73,23 @@ class InputUseCaseTest {
         useCase.receiveEvent(InputEvent.OnTextChanged("你好"))
         useCase.receiveEvent(InputEvent.OnBracketClicked)
         assertEquals("你好（）", useCase.state.value.text)
+    }
+
+    @Test
+    fun `test_UC05_文字更新为最新内容且保留焦点状态`() = runTest {
+        useCase.receiveEvent(InputEvent.OnFocusChanged(true))
+        useCase.receiveEvent(InputEvent.OnTextChanged("first"))
+        useCase.receiveEvent(InputEvent.OnTextChanged("second"))
+
+        assertEquals("second", useCase.state.value.text)
+        assertTrue(useCase.state.value.isFocused)
+    }
+
+    @Test
+    fun `test_UC07_空文字点击括号得到一对全角括号`() = runTest {
+        useCase.receiveEvent(InputEvent.OnBracketClicked)
+
+        assertEquals("（）", useCase.state.value.text)
     }
 
     // UC-06

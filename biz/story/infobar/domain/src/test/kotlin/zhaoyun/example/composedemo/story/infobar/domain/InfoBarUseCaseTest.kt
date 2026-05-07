@@ -75,6 +75,18 @@ class InfoBarUseCaseTest {
     }
 
     @Test
+    fun `取消点赞时likes不会低于0`() = runTest {
+        val useCase = createUseCase(
+            initialState = InfoBarState(isLiked = true, likes = 0),
+        )
+
+        useCase.receiveEvent(InfoBarEvent.OnLikeClicked)
+
+        assertFalse(useCase.state.value.isLiked)
+        assertEquals(0, useCase.state.value.likes)
+    }
+
+    @Test
     fun `点击作者区域发送NavigateToCreatorProfile效果`() = runTest {
         val useCase = createUseCase(
             initialState = InfoBarState(creatorHandle = "author_123"),
@@ -85,6 +97,42 @@ class InfoBarUseCaseTest {
             InfoBarEffect.NavigateToCreatorProfile("author_123"),
             effectDeferred.await(),
         )
+    }
+
+    @Test
+    fun `点击分享发送ShowShareSheet效果且不改变状态`() = runTest {
+        val initialState = InfoBarState(likes = 3, shares = 2, comments = 1, isLiked = true)
+        val useCase = createUseCase(cardId = "story-1", initialState = initialState)
+
+        val effectDeferred = async { useCase.effect.first() }
+        useCase.receiveEvent(InfoBarEvent.OnShareClicked)
+
+        assertEquals(InfoBarEffect.ShowShareSheet("story-1"), effectDeferred.await())
+        assertEquals(initialState, useCase.state.value)
+    }
+
+    @Test
+    fun `点击评论发送NavigateToComments效果且不改变状态`() = runTest {
+        val initialState = InfoBarState(likes = 3, shares = 2, comments = 1, isLiked = true)
+        val useCase = createUseCase(cardId = "story-1", initialState = initialState)
+
+        val effectDeferred = async { useCase.effect.first() }
+        useCase.receiveEvent(InfoBarEvent.OnCommentClicked)
+
+        assertEquals(InfoBarEffect.NavigateToComments("story-1"), effectDeferred.await())
+        assertEquals(initialState, useCase.state.value)
+    }
+
+    @Test
+    fun `点击历史发送ShowHistory效果且不改变状态`() = runTest {
+        val initialState = InfoBarState(likes = 3, shares = 2, comments = 1, isLiked = true)
+        val useCase = createUseCase(cardId = "story-1", initialState = initialState)
+
+        val effectDeferred = async { useCase.effect.first() }
+        useCase.receiveEvent(InfoBarEvent.OnHistoryClicked)
+
+        assertEquals(InfoBarEffect.ShowHistory("story-1"), effectDeferred.await())
+        assertEquals(initialState, useCase.state.value)
     }
 
     @Test

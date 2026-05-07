@@ -8,7 +8,7 @@
 
 ## 背景
 
-UC-01~09 已实现。本文档覆盖调整后 usecases.md 新增的三项工作：
+UC-01~09 已实现。本文档覆盖调整后 `feature.md` 新增的三项工作：
 
 1. 全局约束：禁用系统 `adjustResize`/`adjustPan`，改由应用层通过 IME Insets 精确控制布局
 2. 全局约束补全：输入框失焦时必须 `clearFocus()`，清除光标

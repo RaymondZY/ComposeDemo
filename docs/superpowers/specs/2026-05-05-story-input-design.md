@@ -2,7 +2,7 @@
 
 **日期**：2026-05-05  
 **模块**：`:biz:story:input:domain` / `:biz:story:input:presentation`  
-**关联需求**：`biz/story/input/usecases.md`（UC-01 ～ UC-09）
+**关联需求**：`biz/story/input/domain/feature.md`（UC-01 ～ UC-09）
 
 ---
 

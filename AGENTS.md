@@ -18,7 +18,7 @@ ComposeDemo 是一个基于 **Jetpack Compose** + **Kotlin Coroutines** 的 Andr
 |----------------|---------|------------------------------------------------------------------------------------------------------|
 | `docs/arch/`   | 架构设计文档  | `overview.md`（项目架构总览）、`mvi.md`（MVI 框架实现）、`di.md`（DI 配置）、`usecase.md`（UseCase 与测试）                    |
 | `docs/rules/`  | 项目规范与规则 | `module-development.md`（开发顺序与规范）、`environment.md`（JDK/Gradle 版本）、`documentation_location.md`（文档存放规则） |
-| `docs/skills/` | 技能与工具说明 | `doc_sync`（文档同步技能）                                                                                   |
+| `docs/skills/` | 技能与工具说明 | `doc-sync`（文档同步技能）                                                                                   |
 
 **Agent 应先阅读 `docs/arch/overview.md` 了解整体架构，再根据任务深入对应子文档。**
 
@@ -49,4 +49,4 @@ ComposeDemo 是一个基于 **Jetpack Compose** + **Kotlin Coroutines** 的 Andr
 - **从内向外开发**：先完成 `:biz:xxx:domain` 层（UseCase + JUnit 测试），再到 `:biz:xxx:presentation` 层（ViewModel/Composable + JUnit/androidTest）
 - **平台无关层优先**：`:scaffold:core`、`:biz:*:domain`、`:service:*:api` 为零 Android 依赖的纯 Kotlin 代码，使用标准 JUnit 测试
 - **内层 API 稳定**：外层开发时尽量保持 domain 层实现和 API 不变
-- **需求文档化**：各子层（domain / presentation）按需放置 `usecases.md` 描述需求，功能与测试必须全部覆盖
+- **需求文档化**：各子层（domain / presentation）按需放置 `feature.md` 描述功能需求，功能与测试必须全部覆盖
