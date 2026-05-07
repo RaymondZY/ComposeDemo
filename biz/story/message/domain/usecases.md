@@ -1,6 +1,10 @@
-# biz:story:message:domain 测试用例
+# Message 模块功能需求
 
-## MessageUseCaseTest
-- 初始状态 isExpanded 为 false
-- 点击对白切换 isExpanded 为 true
-- 再次点击对白恢复 isExpanded 为 false
+## 功能点
+
+1. **初始状态**
+    - 对白区域默认处于收起状态。
+
+2. **点击对白切换展开/收起**
+    - 点击对白区域后，对白区域从收起状态切换为展开状态。
+    - 再次点击对白区域，对白区域从展开状态恢复为收起状态。

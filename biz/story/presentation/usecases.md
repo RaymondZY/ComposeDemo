@@ -1,4 +1,6 @@
-# biz:story:presentation 测试用例
+# Story Presentation 模块功能需求
 
-## StoryCardViewModelStateBindingTest
-- MessageViewModel 通过派生 StateHolder 写入状态会同步到父 StoryCardViewModel 的状态中
+## 功能点
+
+1. **子组件状态同步**
+    - 子组件通过派生的状态持有者写入状态时，状态变更应同步反映到父组件的状态中。

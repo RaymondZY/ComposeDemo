@@ -5,12 +5,13 @@
 每个模块的实现需求必须在 **模块根路径下的 `usecases.md`** 中进行描述。该文件是模块的功能契约，开发者和测试者都以此为依据。
 
 ```
-biz/story/
-├── usecases.md          ← 模块需求描述
+biz/feed/
 ├── domain/
+│   ├── usecases.md      ← 模块需求描述
 │   ├── src/main/...
 │   └── src/test/...     ← 功能与测试覆盖
 └── presentation/
+    ├── usecases.md      ← 可选，presentation 层特定需求
     ├── src/main/...
     └── src/androidTest/...
 ```
@@ -18,6 +19,8 @@ biz/story/
 ## 2. 测试覆盖要求
 
 功能代码和测试代码都**必须覆盖 `usecases.md` 中描述的所有需求**。不允许出现需求已描述但无对应实现或测试的情况。
+
+`usecases.md` 中的测试描述**必须与项目代码无关**，仅作为需求功能点的描述。不得出现具体的类名、方法名、字段名、Toast 文案等代码相关细节。
 
 ## 3. 开发顺序：从内向外
 

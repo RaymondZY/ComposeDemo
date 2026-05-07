@@ -14,11 +14,11 @@ ComposeDemo 是一个基于 **Jetpack Compose** + **Kotlin Coroutines** 的 Andr
 
 所有项目文档统一存放在 `docs/` 下，按类型分目录：
 
-| 目录             | 内容          | 关键文件                                                                                                 |
-|----------------|-------------|------------------------------------------------------------------------------------------------------|
-| `docs/arch/`   | 架构设计文档      | `overview.md`（项目架构总览）、`mvi.md`（MVI 框架实现）、`di.md`（DI 配置）、`usecase.md`（UseCase 与测试）                    |
-| `docs/rules/`  | 项目规范与规则     | `module-development.md`（开发顺序与规范）、`environment.md`（JDK/Gradle 版本）、`documentation_location.md`（文档存放规则） |
-| `docs/skills/` | 技能与工具说明（预留） | —                                                                                                    |
+| 目录             | 内容      | 关键文件                                                                                                 |
+|----------------|---------|------------------------------------------------------------------------------------------------------|
+| `docs/arch/`   | 架构设计文档  | `overview.md`（项目架构总览）、`mvi.md`（MVI 框架实现）、`di.md`（DI 配置）、`usecase.md`（UseCase 与测试）                    |
+| `docs/rules/`  | 项目规范与规则 | `module-development.md`（开发顺序与规范）、`environment.md`（JDK/Gradle 版本）、`documentation_location.md`（文档存放规则） |
+| `docs/skills/` | 技能与工具说明 | `doc_sync`（文档同步技能）                                                                                   |
 
 **Agent 应先阅读 `docs/arch/overview.md` 了解整体架构，再根据任务深入对应子文档。**
 

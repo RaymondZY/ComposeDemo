@@ -1,6 +1,9 @@
-# biz:feed:presentation 测试用例
+# Feed Presentation 模块功能需求
 
-## FeedPresentationModuleTest
+## 功能点
 
-- feed 模块只暴露 presentation module
-- FeedViewModel 能接受 Repository 注入并正确初始化
+1. **模块暴露**
+    - Feed 模块仅对外暴露 Presentation 层的依赖注入模块。
+
+2. **视图模型初始化**
+    - 视图模型能够接收数据仓库注入并正确初始化。
