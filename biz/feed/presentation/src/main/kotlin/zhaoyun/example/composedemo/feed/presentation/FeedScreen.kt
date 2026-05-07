@@ -1,15 +1,21 @@
 package zhaoyun.example.composedemo.feed.presentation
 
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,17 +33,21 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import zhaoyun.example.composedemo.feed.domain.FeedEffect
 import zhaoyun.example.composedemo.feed.domain.FeedEvent
+import zhaoyun.example.composedemo.feed.domain.FeedState
 import zhaoyun.example.composedemo.scaffold.android.MviItemScope
 import zhaoyun.example.composedemo.scaffold.android.MviScreen
 import zhaoyun.example.composedemo.scaffold.android.screenViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
+import zhaoyun.example.composedemo.service.feed.api.model.FeedCard
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
 import zhaoyun.example.composedemo.story.domain.StoryCardState
 import zhaoyun.example.composedemo.story.input.domain.InputKeyboardCoordinator
@@ -53,8 +63,19 @@ fun FeedScreen(modifier: Modifier = Modifier) {
     MviScreen<FeedViewModel> { viewModel ->
         val state by viewModel.state.collectAsStateWithLifecycle()
 
+        // Effect 收集：刷新/加载失败时显示 Snackbar
+        val snackbarHostState = remember { SnackbarHostState() }
+        LaunchedEffect(viewModel) {
+            viewModel.effect.collect { effect ->
+                when (effect) {
+                    is FeedEffect.ShowRefreshError -> snackbarHostState.showSnackbar("刷新失败，请重试")
+                    is FeedEffect.ShowLoadMoreError -> snackbarHostState.showSnackbar("加载失败，请重试")
+                }
+            }
+        }
+
         LaunchedEffect(Unit) {
-            viewModel.receiveEvent(FeedEvent.OnRefresh)
+            viewModel.sendEvent(FeedEvent.OnRefresh)
         }
 
         val pagerState = rememberPagerState(pageCount = { state.cards.size })
@@ -62,14 +83,17 @@ fun FeedScreen(modifier: Modifier = Modifier) {
         val coordinator = koinInject<InputKeyboardCoordinator>()
         val activeBounds by coordinator.activeInputBounds.collectAsStateWithLifecycle()
 
+        val density = LocalDensity.current
+        val pullThresholdPx = remember(density) { with(density) { 80.dp.toPx() } }
+
         Box(modifier = modifier.fillMaxSize()) {
-            if (state.cards.isNotEmpty()) {
-                VerticalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                    beyondViewportPageCount = 1,
-                ) { page ->
-                    val card = state.cards[page]
+            FeedScreenContent(
+                state = state,
+                pagerState = pagerState,
+                onSendEvent = viewModel::sendEvent,
+                snackbarHostState = snackbarHostState,
+                pullThresholdPx = pullThresholdPx,
+                cardContent = { card ->
                     if (card is StoryCard) {
                         key(card.cardId) {
                             MviItemScope {
@@ -81,15 +105,10 @@ fun FeedScreen(modifier: Modifier = Modifier) {
                             }
                         }
                     }
-                }
-            } else if (state.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            }
+                },
+            )
 
             // Keyboard is open: cover only the area outside InputArea.
-            // A full-screen sibling overlay cannot truly pass pointer events through to InputArea.
             activeBounds?.let { bounds ->
                 var overlayPositionInRoot by remember { mutableStateOf(Offset.Zero) }
                 var overlaySize by remember { mutableStateOf(IntSize.Zero) }
@@ -132,23 +151,114 @@ fun FeedScreen(modifier: Modifier = Modifier) {
                     )
                 }
             }
+        }
+    }
+}
 
-            if (state.isRefreshing) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter),
-                )
+@Composable
+internal fun FeedScreenContent(
+    state: FeedState,
+    pagerState: PagerState,
+    onSendEvent: (FeedEvent) -> Unit,
+    snackbarHostState: SnackbarHostState,
+    pullThresholdPx: Float,
+    cardContent: @Composable (FeedCard) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier.fillMaxSize()) {
+        if (state.cards.isNotEmpty()) {
+            VerticalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag("feed_vertical_pager"),
+                beyondViewportPageCount = 1,
+            ) { page ->
+                // 滑动到剩余 3 个卡片时静默触发加载更多
+                if (page >= state.cards.size - 3) {
+                    LaunchedEffect(page) {
+                        onSendEvent(FeedEvent.OnPreload(page))
+                    }
+                }
+
+                cardContent(state.cards[page])
             }
+        } else if (state.isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .testTag("feed_empty_loading"),
+            )
+        }
 
-            if (state.isLoading && !state.isRefreshing && state.cards.isNotEmpty()) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(16.dp),
-                )
+        // 顶部下拉刷新触发区域
+        if (state.cards.isNotEmpty() && !state.isRefreshing) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .align(Alignment.TopCenter)
+                    .testTag("feed_pull_refresh_area")
+                    .pointerInput(pullThresholdPx, state.isRefreshing) {
+                        if (state.isRefreshing) return@pointerInput
+                        var accumulatedDrag = 0f
+                        detectVerticalDragGestures(
+                            onDragStart = { accumulatedDrag = 0f },
+                            onDragEnd = {
+                                if (accumulatedDrag > pullThresholdPx) {
+                                    onSendEvent(FeedEvent.OnRefresh)
+                                }
+                                accumulatedDrag = 0f
+                            },
+                            onVerticalDrag = { _, dragAmount ->
+                                accumulatedDrag += dragAmount
+                            }
+                        )
+                    }
+            )
+        }
+
+        // 刷新指示器（Header）
+        if (state.isRefreshing) {
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .testTag("feed_refresh_indicator"),
+            )
+        }
+
+        // Footer：加载中 / 没有更多内容
+        if (state.cards.isNotEmpty()) {
+            when {
+                state.isLoading && !state.isRefreshing -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                            .testTag("feed_loading_indicator"),
+                    )
+                }
+
+                !state.hasMore -> {
+                    Text(
+                        text = "没有更多内容",
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                            .testTag("feed_no_more_content"),
+                    )
+                }
             }
         }
+
+        // Snackbar
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .testTag("feed_snackbar_host"),
+        )
     }
 }
 
