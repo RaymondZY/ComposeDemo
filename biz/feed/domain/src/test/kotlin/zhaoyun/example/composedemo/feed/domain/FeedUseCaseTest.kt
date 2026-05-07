@@ -1,5 +1,10 @@
 package zhaoyun.example.composedemo.feed.domain
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -9,8 +14,11 @@ import org.junit.Before
 import org.junit.Test
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
+import zhaoyun.example.composedemo.service.feed.api.FeedRepository
+import zhaoyun.example.composedemo.service.feed.api.model.FeedCard
 import zhaoyun.example.composedemo.service.feed.mock.FakeFeedRepository
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class FeedUseCaseTest {
 
     private val fakeRepository = FakeFeedRepository()
@@ -28,6 +36,7 @@ class FeedUseCaseTest {
         assertFalse(state.isLoading)
         assertFalse(state.isRefreshing)
         assertNull(state.errorMessage)
+        assertTrue(state.hasMore)
     }
 
     @Test
@@ -37,12 +46,37 @@ class FeedUseCaseTest {
     }
 
     @Test
-    fun `刷新成功填充数据`() = runTest {
+    fun `刷新成功全量替换数据`() = runTest {
         useCase.receiveEvent(FeedEvent.OnRefresh)
         val state = useCase.state.value
         assertEquals(10, state.cards.size)
         assertFalse(state.isRefreshing)
         assertEquals(1, state.currentPage)
+        assertTrue(state.hasMore)
+    }
+
+    @Test
+    fun `刷新失败保留现有内容`() = runTest {
+        useCase.receiveEvent(FeedEvent.OnRefresh)
+        assertEquals(10, useCase.state.value.cards.size)
+
+        val failingUseCase = FeedUseCase(
+            FailingFeedRepository(),
+            FeedState(cards = useCase.state.value.cards).toStateHolder(),
+            MutableServiceRegistryImpl()
+        )
+        val failingEffects = mutableListOf<FeedEffect>()
+        backgroundScope.launch {
+            failingUseCase.effect.collect { failingEffects.add(it) }
+        }
+        runCurrent()
+
+        failingUseCase.receiveEvent(FeedEvent.OnRefresh)
+        runCurrent()
+
+        assertEquals(10, failingUseCase.state.value.cards.size)
+        assertFalse(failingUseCase.state.value.isRefreshing)
+        assertEquals(listOf(FeedEffect.ShowRefreshError), failingEffects)
     }
 
     @Test
@@ -52,15 +86,115 @@ class FeedUseCaseTest {
         val state = useCase.state.value
         assertEquals(15, state.cards.size)
         assertTrue(state.hasMore)
+        assertEquals(2, state.currentPage)
     }
 
     @Test
-    fun `加载更多到第三页hasMore为false`() = runTest {
-        useCase.receiveEvent(FeedEvent.OnRefresh)      // page 0 -> 10条
-        useCase.receiveEvent(FeedEvent.OnLoadMore)     // page 1 -> +5条
-        useCase.receiveEvent(FeedEvent.OnLoadMore)     // page 2 -> 空
+    fun `滑动到剩余3个卡片时静默触发加载更多`() = runTest {
+        useCase.receiveEvent(FeedEvent.OnRefresh)
+        useCase.receiveEvent(FeedEvent.OnPreload(6))
+        assertEquals(10, useCase.state.value.cards.size)
+
+        useCase.receiveEvent(FeedEvent.OnPreload(7))
+        assertEquals(15, useCase.state.value.cards.size)
+    }
+
+    @Test
+    fun `加载更多到最后一页`() = runTest {
+        useCase.receiveEvent(FeedEvent.OnRefresh)
+        useCase.receiveEvent(FeedEvent.OnLoadMore)
+        useCase.receiveEvent(FeedEvent.OnLoadMore)
         val state = useCase.state.value
         assertEquals(15, state.cards.size)
         assertFalse(state.hasMore)
+    }
+
+    @Test
+    fun `刷新进行中时再次触发刷新直接丢弃`() = runTest {
+        val delayedRepo = DelayedFeedRepository(1000)
+        val delayedUseCase = FeedUseCase(delayedRepo, FeedState().toStateHolder(), MutableServiceRegistryImpl())
+
+        val job = launch {
+            delayedUseCase.receiveEvent(FeedEvent.OnRefresh)
+        }
+
+        runCurrent()
+        assertTrue(delayedUseCase.state.value.isRefreshing)
+
+        delayedUseCase.receiveEvent(FeedEvent.OnRefresh)
+
+        advanceTimeBy(1000)
+        runCurrent()
+        job.join()
+
+        assertFalse(delayedUseCase.state.value.isRefreshing)
+        assertEquals(10, delayedUseCase.state.value.cards.size)
+    }
+
+    @Test
+    fun `加载更多进行中时再次触发加载更多直接丢弃`() = runTest {
+        useCase.receiveEvent(FeedEvent.OnRefresh)
+        assertEquals(10, useCase.state.value.cards.size)
+
+        val delayedRepo = DelayedFeedRepository(1000)
+        val stateHolder = useCase.state.value.copy().toStateHolder()
+        val delayedUseCase = FeedUseCase(delayedRepo, stateHolder, MutableServiceRegistryImpl())
+
+        val job = launch {
+            delayedUseCase.receiveEvent(FeedEvent.OnLoadMore)
+        }
+
+        runCurrent()
+        assertTrue(delayedUseCase.state.value.isLoading)
+
+        delayedUseCase.receiveEvent(FeedEvent.OnLoadMore)
+
+        advanceTimeBy(1000)
+        runCurrent()
+        job.join()
+
+        assertFalse(delayedUseCase.state.value.isLoading)
+        assertEquals(15, delayedUseCase.state.value.cards.size)
+    }
+
+    @Test
+    fun `加载更多失败保留现有内容`() = runTest {
+        useCase.receiveEvent(FeedEvent.OnRefresh)
+        assertEquals(10, useCase.state.value.cards.size)
+
+        val failingUseCase = FeedUseCase(
+            FailingFeedRepository(),
+            FeedState(cards = useCase.state.value.cards, currentPage = 1).toStateHolder(),
+            MutableServiceRegistryImpl()
+        )
+        val failingEffects = mutableListOf<FeedEffect>()
+        backgroundScope.launch {
+            failingUseCase.effect.collect { failingEffects.add(it) }
+        }
+        runCurrent()
+
+        failingUseCase.receiveEvent(FeedEvent.OnLoadMore)
+        runCurrent()
+
+        assertEquals(10, failingUseCase.state.value.cards.size)
+        assertFalse(failingUseCase.state.value.isLoading)
+        assertEquals(listOf(FeedEffect.ShowLoadMoreError), failingEffects)
+    }
+
+    private class DelayedFeedRepository(
+        private val delayMs: Long,
+    ) : FeedRepository {
+        private val fake = FakeFeedRepository()
+
+        override suspend fun fetchFeed(page: Int, pageSize: Int): Result<List<FeedCard>> {
+            delay(delayMs)
+            return fake.fetchFeed(page, pageSize)
+        }
+    }
+
+    private class FailingFeedRepository : FeedRepository {
+        override suspend fun fetchFeed(page: Int, pageSize: Int): Result<List<FeedCard>> {
+            return Result.failure(Exception("Network error"))
+        }
     }
 }

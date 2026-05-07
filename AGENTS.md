@@ -49,4 +49,4 @@ ComposeDemo 是一个基于 **Jetpack Compose** + **Kotlin Coroutines** 的 Andr
 - **从内向外开发**：先完成 `:biz:xxx:domain` 层（UseCase + JUnit 测试），再到 `:biz:xxx:presentation` 层（ViewModel/Composable + JUnit/androidTest）
 - **平台无关层优先**：`:scaffold:core`、`:biz:*:domain`、`:service:*:api` 为零 Android 依赖的纯 Kotlin 代码，使用标准 JUnit 测试
 - **内层 API 稳定**：外层开发时尽量保持 domain 层实现和 API 不变
-- **需求文档化**：每个模块根路径下需放置 `usecases.md` 描述需求，功能与测试必须全部覆盖
+- **需求文档化**：各子层（domain / presentation）按需放置 `usecases.md` 描述需求，功能与测试必须全部覆盖

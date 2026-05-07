@@ -16,6 +16,7 @@ class FeedUseCase(
 
     companion object {
         private const val PAGE_SIZE = 10
+        private const val PRELOAD_THRESHOLD = 3
     }
 
     override suspend fun onEvent(event: FeedEvent) {
@@ -27,20 +28,21 @@ class FeedUseCase(
     }
 
     private suspend fun refresh() {
+        if (currentState.isRefreshing || currentState.isLoading) return
         updateState { it.copy(isRefreshing = true, errorMessage = null) }
         loadFeed(page = 0, isRefresh = true)
     }
 
     private suspend fun loadMore() {
         val state = currentState
-        if (state.isLoading || !state.hasMore) return
+        if (state.isLoading || state.isRefreshing || !state.hasMore) return
         updateState { it.copy(isLoading = true, errorMessage = null) }
         loadFeed(page = state.currentPage, isRefresh = false)
     }
 
     private suspend fun preload(index: Int) {
         val state = currentState
-        if (index >= state.cards.size - 2 && state.hasMore && !state.isLoading) {
+        if (index >= state.cards.size - PRELOAD_THRESHOLD && state.hasMore && !state.isLoading && !state.isRefreshing) {
             loadMore()
         }
     }
@@ -61,13 +63,14 @@ class FeedUseCase(
                     )
                 }
             }
-            .onFailure { error ->
+            .onFailure { _ ->
                 if (isRefresh) {
                     updateState { it.copy(isRefreshing = false) }
+                    dispatchEffect(FeedEffect.ShowRefreshError)
                 } else {
                     updateState { it.copy(isLoading = false) }
+                    dispatchEffect(FeedEffect.ShowLoadMoreError)
                 }
-                dispatchEffect(FeedEffect.ShowError(error.message ?: "Unknown error"))
             }
     }
 }
