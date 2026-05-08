@@ -15,11 +15,11 @@ import zhaoyun.example.composedemo.story.commentpanel.presentation.CommentPanelV
 class CommentPanelPresentationModuleTest {
 
     @Test
-    fun `comment panel view model resolves from item scope`() {
+    fun `comment panel view model resolves from screen scope`() {
         val koin = koinApplication {
             modules(commentPanelPresentationModule)
         }.koin
-        val scope = koin.createScope("comment-panel", MviKoinScopes.Item).also {
+        val scope = koin.createScope("comment-panel", MviKoinScopes.Screen).also {
             val registry = MutableServiceRegistryImpl()
             it.declare<MutableServiceRegistryImpl>(
                 registry,
@@ -29,7 +29,7 @@ class CommentPanelPresentationModuleTest {
         }
 
         val viewModel = scope.get<CommentPanelViewModel> {
-            parametersOf("story-1", CommentPanelState(cardId = "story-1").toStateHolder())
+            parametersOf(CommentPanelState(cardId = "story-1").toStateHolder())
         }
 
         assertEquals("story-1", viewModel.state.value.cardId)

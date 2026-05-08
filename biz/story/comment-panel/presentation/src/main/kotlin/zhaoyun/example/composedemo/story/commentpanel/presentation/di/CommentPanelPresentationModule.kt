@@ -8,10 +8,9 @@ import zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelState
 import zhaoyun.example.composedemo.story.commentpanel.presentation.CommentPanelViewModel
 
 val commentPanelPresentationModule = module {
-    scope(MviKoinScopes.Item) {
-        viewModel { (cardId: String, stateHolder: StateHolder<CommentPanelState>) ->
+    scope(MviKoinScopes.Screen) {
+        viewModel { (stateHolder: StateHolder<CommentPanelState>) ->
             CommentPanelViewModel(
-                cardId = cardId,
                 stateHolder = stateHolder,
                 serviceRegistry = get(),
             )

@@ -9,7 +9,6 @@ import zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelState
 import zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCase
 
 class CommentPanelViewModel(
-    cardId: String,
     stateHolder: StateHolder<CommentPanelState>,
     serviceRegistry: MutableServiceRegistry,
 ) : BaseViewModel<CommentPanelState, CommentPanelEvent, CommentPanelEffect>(
@@ -17,7 +16,6 @@ class CommentPanelViewModel(
     serviceRegistry,
     { holder, registry ->
         CommentPanelUseCase(
-            cardId = cardId,
             stateHolder = holder,
             serviceRegistry = registry,
         )
