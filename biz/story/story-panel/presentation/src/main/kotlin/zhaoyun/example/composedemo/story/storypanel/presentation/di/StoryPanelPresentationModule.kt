@@ -8,7 +8,7 @@ import zhaoyun.example.composedemo.story.storypanel.domain.StoryPanelState
 import zhaoyun.example.composedemo.story.storypanel.presentation.StoryPanelViewModel
 
 val storyPanelPresentationModule = module {
-    scope(MviKoinScopes.Item) {
+    scope(MviKoinScopes.Screen) {
         viewModel { (stateHolder: StateHolder<StoryPanelState>) ->
             StoryPanelViewModel(
                 stateHolder = stateHolder,
