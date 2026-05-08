@@ -16,6 +16,7 @@ import zhaoyun.example.composedemo.story.infobar.presentation.di.infoBarPresenta
 import zhaoyun.example.composedemo.story.input.presentation.di.inputPresentationModule
 import zhaoyun.example.composedemo.story.message.presentation.di.messagePresentationModule
 import zhaoyun.example.composedemo.story.presentation.di.storyPresentationModule
+import zhaoyun.example.composedemo.story.sharepanel.presentation.di.sharePanelPresentationModule
 import zhaoyun.example.composedemo.story.storypanel.presentation.di.storyPanelPresentationModule
 
 /**
@@ -36,6 +37,7 @@ class ComposeDemoApp : Application() {
                     storyPresentationModule,
                     messagePresentationModule,
                     infoBarPresentationModule,
+                    sharePanelPresentationModule,
                     inputPresentationModule,
                     backgroundPresentationModule,
                     storyPanelPresentationModule,

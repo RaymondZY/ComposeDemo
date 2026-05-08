@@ -13,7 +13,6 @@ import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 class InfoBarUseCase(
     private val cardId: String,
     private val likeRepository: LikeRepository = FakeLikeRepository(),
-    private val shareRepository: ShareRepository = FakeShareRepository(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     stateHolder: StateHolder<InfoBarState>,
     serviceRegistry: MutableServiceRegistry,
@@ -44,14 +43,7 @@ class InfoBarUseCase(
             }
 
             is InfoBarEvent.OnShareClicked -> {
-                scope.launch {
-                    try {
-                        val link = shareRepository.getShareLink(cardId)
-                        dispatchEffect(InfoBarEffect.ShowShareSheet(cardId, link))
-                    } catch (_: Exception) {
-                        dispatchBaseEffect(BaseEffect.ShowToast("网络失败"))
-                    }
-                }
+                dispatchEffect(InfoBarEffect.OpenSharePanel(cardId))
             }
 
             is InfoBarEvent.OnCommentClicked -> {

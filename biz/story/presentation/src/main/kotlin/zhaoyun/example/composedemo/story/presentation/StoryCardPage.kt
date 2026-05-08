@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,6 +38,7 @@ import zhaoyun.example.composedemo.story.input.presentation.InputArea
 import zhaoyun.example.composedemo.story.input.presentation.InputViewModel
 import zhaoyun.example.composedemo.story.message.presentation.MessageArea
 import zhaoyun.example.composedemo.story.message.presentation.MessageViewModel
+import zhaoyun.example.composedemo.story.sharepanel.presentation.SharePanelSheet
 
 @Composable
 fun StoryCardPage(
@@ -48,6 +50,7 @@ fun StoryCardPage(
     // InputArea 底部距窗口顶部的 layout y 坐标（px），键盘收起时（imeBottom≈0）测量并锁定。
     // 键盘弹出期间不更新，避免 graphicsLayer 变换污染 positionInRoot 读数引发反馈循环振荡。
     var inputAreaBottom by remember { mutableFloatStateOf(0f) }
+    var sharePanelCardId by remember { mutableStateOf<String?>(null) }
     val imeBottom = WindowInsets.ime.getBottom(density).toFloat()
     val safetyMarginPx = with(density) { 10.dp.toPx() }
     // 坐标系：y 轴向下，原点为窗口左上角。
@@ -113,6 +116,7 @@ fun StoryCardPage(
                     InfoBarArea(
                         viewModel = infoBarViewModel,
                         cardId = card.cardId,
+                        onSharePanelRequested = { sharePanelCardId = it },
                     )
                     InputArea(
                         viewModel = inputViewModel,
@@ -132,6 +136,14 @@ fun StoryCardPage(
 
                 // 右侧：垂直图标区域（在 InfoBarArea 内部处理）
             }
+        }
+
+        if (sharePanelCardId != null) {
+            SharePanelSheet(
+                cardId = sharePanelCardId.orEmpty(),
+                backgroundImageUrl = card.backgroundImageUrl,
+                onDismissRequest = { sharePanelCardId = null },
+            )
         }
     }
 }

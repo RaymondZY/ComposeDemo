@@ -47,6 +47,7 @@ dependencies {
     implementation(project(":biz:story:presentation"))
     implementation(project(":biz:story:background:presentation"))
     implementation(project(":biz:story:infobar:presentation"))
+    implementation(project(":biz:story:share-panel:presentation"))
     implementation(project(":biz:story:input:presentation"))
     implementation(project(":biz:story:message:presentation"))
     implementation(project(":biz:story:story-panel:presentation"))

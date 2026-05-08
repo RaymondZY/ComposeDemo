@@ -35,12 +35,10 @@ class InfoBarUseCaseTest {
         likeRepository: LikeRepository = FakeLikeRepository { _, isLiked, currentLikes ->
             LikeResult(isLiked = isLiked, likes = if (isLiked) currentLikes + 1 else (currentLikes - 1).coerceAtLeast(0))
         },
-        shareRepository: ShareRepository = FakeShareRepository(),
         scope: CoroutineScope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher()),
     ) = InfoBarUseCase(
         cardId = cardId,
         likeRepository = likeRepository,
-        shareRepository = shareRepository,
         scope = scope,
         stateHolder = initialState.toStateHolder(),
         serviceRegistry = MutableServiceRegistryImpl(),
@@ -101,7 +99,7 @@ class InfoBarUseCaseTest {
     }
 
     @Test
-    fun `点击分享成功后发送ShowShareSheet效果且不改变状态`() = runTest {
+    fun `点击分享发送OpenSharePanel效果且不改变状态`() = runTest {
         val initialState = InfoBarState(likes = 3, shares = 2, comments = 1, isLiked = true)
         val useCase = createUseCase(cardId = "story-1", initialState = initialState)
 
@@ -109,32 +107,8 @@ class InfoBarUseCaseTest {
         useCase.receiveEvent(InfoBarEvent.OnShareClicked)
 
         assertEquals(
-            InfoBarEffect.ShowShareSheet("story-1", "https://example.com/share/story-1"),
+            InfoBarEffect.OpenSharePanel("story-1"),
             effectDeferred.await(),
-        )
-        assertEquals(initialState, useCase.state.value)
-    }
-
-    @Test
-    fun `点击分享失败后发送ShowToast效果且不改变状态`() = runTest {
-        val initialState = InfoBarState(likes = 3, shares = 2, comments = 1, isLiked = true)
-        val failingShareRepository = object : ShareRepository {
-            override suspend fun getShareLink(cardId: String): String {
-                throw RuntimeException("network error")
-            }
-        }
-        val useCase = createUseCase(
-            cardId = "story-1",
-            initialState = initialState,
-            shareRepository = failingShareRepository,
-        )
-
-        val baseEffectDeferred = async { useCase.baseEffect.first() }
-        useCase.receiveEvent(InfoBarEvent.OnShareClicked)
-
-        assertEquals(
-            BaseEffect.ShowToast("网络失败"),
-            baseEffectDeferred.await(),
         )
         assertEquals(initialState, useCase.state.value)
     }

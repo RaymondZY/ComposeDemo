@@ -4,9 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,9 +20,7 @@ import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,11 +43,11 @@ import zhaoyun.example.composedemo.story.storypanel.presentation.StoryPanelScree
 fun InfoBarArea(
     viewModel: InfoBarViewModel,
     cardId: String,
+    onSharePanelRequested: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    var showShareSheet by remember { mutableStateOf(false) }
     var showCommentSheet by remember { mutableStateOf(false) }
     var showHistorySheet by remember { mutableStateOf(false) }
     var showDetailPanel by remember { mutableStateOf(false) }
@@ -57,7 +55,7 @@ fun InfoBarArea(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is InfoBarEffect.ShowShareSheet -> showShareSheet = true
+                is InfoBarEffect.OpenSharePanel -> onSharePanelRequested(effect.cardId)
                 is InfoBarEffect.NavigateToComments -> showCommentSheet = true
                 is InfoBarEffect.ShowHistory -> showHistorySheet = true
                 is InfoBarEffect.NavigateToStoryDetail -> showDetailPanel = true
@@ -71,20 +69,28 @@ fun InfoBarArea(
         Row(
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 左侧：故事标题（可点击）
+            // 左侧：作者信息（可点击进入故事详情占位）
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .clickable { viewModel.sendEvent(InfoBarEvent.OnStoryTitleClicked) },
             ) {
                 Text(
-                    text = state.storyTitle.ifEmpty { "未命名故事" },
+                    text = state.creatorName.ifEmpty { state.storyTitle.ifEmpty { "未命名故事" } },
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                     ),
                     color = Color.White,
                 )
+                if (state.creatorHandle.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = state.creatorHandle,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = Color.White.copy(alpha = 0.8f),
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -154,37 +160,28 @@ fun InfoBarArea(
         }
     }
 
-    if (showShareSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showShareSheet = false },
-            sheetState = rememberModalBottomSheetState(),
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) { }
-        }
-    }
-
     if (showCommentSheet) {
-        ModalBottomSheet(
+        androidx.compose.material3.ModalBottomSheet(
             onDismissRequest = { showCommentSheet = false },
-            sheetState = rememberModalBottomSheetState(),
+            sheetState = androidx.compose.material3.rememberModalBottomSheetState(),
         ) {
             Box(modifier = Modifier.fillMaxSize()) { }
         }
     }
 
     if (showHistorySheet) {
-        ModalBottomSheet(
+        androidx.compose.material3.ModalBottomSheet(
             onDismissRequest = { showHistorySheet = false },
-            sheetState = rememberModalBottomSheetState(),
+            sheetState = androidx.compose.material3.rememberModalBottomSheetState(),
         ) {
             Box(modifier = Modifier.fillMaxSize()) { }
         }
     }
 
     if (showDetailPanel) {
-        ModalBottomSheet(
+        androidx.compose.material3.ModalBottomSheet(
             onDismissRequest = { showDetailPanel = false },
-            sheetState = rememberModalBottomSheetState(),
+            sheetState = androidx.compose.material3.rememberModalBottomSheetState(),
         ) {
             StoryPanelScreen(
                 cardId = cardId,

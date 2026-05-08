@@ -4,7 +4,7 @@ import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 
 sealed class StoryCardEffect : UiEffect {
     sealed class InfoBar : StoryCardEffect() {
-        data class ShowShareSheet(val cardId: String) : InfoBar()
+        data class OpenSharePanel(val cardId: String) : InfoBar()
         data class NavigateToComments(val cardId: String) : InfoBar()
         data class ShowHistory(val cardId: String) : InfoBar()
     }
