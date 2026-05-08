@@ -1,10 +1,8 @@
 package zhaoyun.example.composedemo.feed.presentation
 
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -12,8 +10,10 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,10 +36,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import zhaoyun.example.composedemo.feed.domain.FeedEvent
-import zhaoyun.example.composedemo.feed.domain.FeedState
 import zhaoyun.example.composedemo.scaffold.android.MviItemScope
 import zhaoyun.example.composedemo.scaffold.android.MviScreen
 import zhaoyun.example.composedemo.scaffold.android.screenViewModel
@@ -55,29 +57,32 @@ import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(modifier: Modifier = Modifier) {
     MviScreen<FeedViewModel> { viewModel ->
-        val state by viewModel.state.collectAsStateWithLifecycle()
-
-        LaunchedEffect(Unit) {
-            viewModel.sendEvent(FeedEvent.OnRefresh)
-        }
-
-        val pagerState = rememberPagerState(pageCount = { state.cards.size })
+        val lazyPagingItems = viewModel.pagingData.collectAsLazyPagingItems()
+        val pagerState = rememberPagerState(pageCount = { lazyPagingItems.itemCount })
 
         val coordinator = koinInject<InputKeyboardCoordinator>()
         val activeBounds by coordinator.activeInputBounds.collectAsStateWithLifecycle()
 
-        val density = LocalDensity.current
-        val pullThresholdPx = remember(density) { with(density) { 80.dp.toPx() } }
+        LaunchedEffect(lazyPagingItems.loadState.refresh) {
+            if (lazyPagingItems.loadState.refresh is LoadState.Error) {
+                viewModel.sendEvent(FeedEvent.OnRefreshFailed)
+            }
+        }
+
+        LaunchedEffect(lazyPagingItems.loadState.append) {
+            if (lazyPagingItems.loadState.append is LoadState.Error) {
+                viewModel.sendEvent(FeedEvent.OnLoadMoreFailed)
+            }
+        }
 
         Box(modifier = modifier.fillMaxSize()) {
             FeedScreenContent(
-                state = state,
+                lazyPagingItems = lazyPagingItems,
                 pagerState = pagerState,
-                onSendEvent = viewModel::sendEvent,
-                pullThresholdPx = pullThresholdPx,
                 cardContent = { card ->
                     if (card is StoryCard) {
                         key(card.cardId) {
@@ -140,102 +145,81 @@ fun FeedScreen(modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun FeedScreenContent(
-    state: FeedState,
+    lazyPagingItems: LazyPagingItems<FeedCard>,
     pagerState: PagerState,
-    onSendEvent: (FeedEvent) -> Unit,
-    pullThresholdPx: Float,
     cardContent: @Composable (FeedCard) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
-        if (state.cards.isNotEmpty()) {
-            VerticalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .testTag("feed_vertical_pager"),
-                beyondViewportPageCount = 1,
-            ) { page ->
-                // 滑动到剩余 3 个卡片时静默触发加载更多
-                if (page >= state.cards.size - 3) {
-                    LaunchedEffect(page) {
-                        onSendEvent(FeedEvent.OnPreload(page))
-                    }
+    val refreshState = lazyPagingItems.loadState.refresh
+    val appendState = lazyPagingItems.loadState.append
+    val isEmptyRefreshLoading = lazyPagingItems.itemCount == 0 && refreshState is LoadState.Loading
+    val isPullRefreshing = lazyPagingItems.itemCount > 0 && refreshState is LoadState.Loading
+
+    PullToRefreshBox(
+        isRefreshing = isPullRefreshing,
+        onRefresh = { lazyPagingItems.refresh() },
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("feed_pull_refresh_area"),
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (lazyPagingItems.itemCount > 0) {
+                VerticalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("feed_vertical_pager"),
+                    beyondViewportPageCount = 1,
+                ) { page ->
+                    lazyPagingItems[page]?.let { cardContent(it) }
                 }
-
-                cardContent(state.cards[page])
+            } else if (isEmptyRefreshLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .testTag("feed_empty_loading"),
+                )
             }
-        } else if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .testTag("feed_empty_loading"),
-            )
-        }
 
-        // 顶部下拉刷新触发区域
-        if (state.cards.isNotEmpty() && !state.isRefreshing) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .align(Alignment.TopCenter)
-                    .testTag("feed_pull_refresh_area")
-                    .pointerInput(pullThresholdPx, state.isRefreshing) {
-                        if (state.isRefreshing) return@pointerInput
-                        var accumulatedDrag = 0f
-                        detectVerticalDragGestures(
-                            onDragStart = { accumulatedDrag = 0f },
-                            onDragEnd = {
-                                if (accumulatedDrag > pullThresholdPx) {
-                                    onSendEvent(FeedEvent.OnRefresh)
-                                }
-                                accumulatedDrag = 0f
-                            },
-                            onVerticalDrag = { _, dragAmount ->
-                                accumulatedDrag += dragAmount
-                            }
+            // 刷新指示器（Header）
+            if (isPullRefreshing) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .testTag("feed_refresh_indicator"),
+                )
+            }
+
+            // Footer：加载中 / 没有更多内容
+            if (lazyPagingItems.itemCount > 0) {
+                when (appendState) {
+                    is LoadState.Loading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(16.dp)
+                                .testTag("feed_loading_indicator"),
                         )
                     }
-            )
-        }
 
-        // 刷新指示器（Header）
-        if (state.isRefreshing) {
-            LinearProgressIndicator(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .testTag("feed_refresh_indicator"),
-            )
-        }
+                    is LoadState.NotLoading -> if (appendState.endOfPaginationReached) {
+                        Text(
+                            text = "没有更多内容",
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(16.dp)
+                                .testTag("feed_no_more_content"),
+                        )
+                    }
 
-        // Footer：加载中 / 没有更多内容
-        if (state.cards.isNotEmpty()) {
-            when {
-                state.isLoading && !state.isRefreshing -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(16.dp)
-                            .testTag("feed_loading_indicator"),
-                    )
-                }
-
-                !state.hasMore -> {
-                    Text(
-                        text = "没有更多内容",
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(16.dp)
-                            .testTag("feed_no_more_content"),
-                    )
+                    is LoadState.Error -> Unit
                 }
             }
         }
-
     }
 }
 

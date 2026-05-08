@@ -1,7 +1,7 @@
 package zhaoyun.example.composedemo.feed.presentation.di
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Test
 import zhaoyun.example.composedemo.feed.presentation.FeedViewModel
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
@@ -27,6 +27,6 @@ class FeedPresentationModuleTest {
             serviceRegistry = MutableServiceRegistryImpl(),
         )
 
-        assertTrue(viewModel.state.value.cards.isEmpty())
+        assertNull(viewModel.state.value.errorMessage)
     }
 }

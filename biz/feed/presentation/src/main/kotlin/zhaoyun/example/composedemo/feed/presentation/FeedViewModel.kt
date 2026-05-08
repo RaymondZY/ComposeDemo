@@ -1,5 +1,10 @@
 package zhaoyun.example.composedemo.feed.presentation
 
+import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.cachedIn
+import zhaoyun.example.composedemo.feed.domain.FeedPagingSource
 import zhaoyun.example.composedemo.feed.domain.FeedEffect
 import zhaoyun.example.composedemo.feed.domain.FeedEvent
 import zhaoyun.example.composedemo.feed.domain.FeedState
@@ -15,5 +20,15 @@ class FeedViewModel(
 ) : BaseViewModel<FeedState, FeedEvent, FeedEffect>(
     FeedState().toStateHolder(),
     serviceRegistry,
-    { stateHolder, registry -> FeedUseCase(feedRepository = feedRepository, stateHolder = stateHolder, serviceRegistry = registry) }
-)
+    { stateHolder, registry -> FeedUseCase(stateHolder = stateHolder, serviceRegistry = registry) },
+) {
+    val pagingData = Pager(
+        config = PagingConfig(
+            pageSize = FeedPagingSource.PAGE_SIZE,
+            initialLoadSize = FeedPagingSource.PAGE_SIZE,
+            prefetchDistance = FeedPagingSource.PRELOAD_DISTANCE,
+            enablePlaceholders = false,
+        ),
+        pagingSourceFactory = { FeedPagingSource(feedRepository) },
+    ).flow.cachedIn(viewModelScope)
+}

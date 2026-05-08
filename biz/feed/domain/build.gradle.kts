@@ -9,6 +9,7 @@ kotlin {
 dependencies {
     api(project(":scaffold:core"))
     api(project(":service:feed:api"))
+    api(libs.androidx.paging.common)
     implementation(libs.koin.core)
     implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
