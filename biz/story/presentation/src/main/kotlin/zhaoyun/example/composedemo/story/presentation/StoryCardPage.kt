@@ -110,7 +110,10 @@ fun StoryCardPage(
                     modifier = Modifier.weight(1f),
                 ) {
                     MessageArea(viewModel = messageViewModel)
-                    InfoBarArea(viewModel = infoBarViewModel)
+                    InfoBarArea(
+                        viewModel = infoBarViewModel,
+                        cardId = card.cardId,
+                    )
                     InputArea(
                         viewModel = inputViewModel,
                         visualTranslationY = -intrusion,

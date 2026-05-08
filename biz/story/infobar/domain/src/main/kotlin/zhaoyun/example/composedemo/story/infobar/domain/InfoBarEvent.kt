@@ -7,5 +7,5 @@ sealed class InfoBarEvent : UiEvent {
     data object OnShareClicked : InfoBarEvent()
     data object OnCommentClicked : InfoBarEvent()
     data object OnHistoryClicked : InfoBarEvent()
-    data object OnCreatorClicked : InfoBarEvent()
+    data object OnStoryTitleClicked : InfoBarEvent()
 }

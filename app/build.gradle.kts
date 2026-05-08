@@ -49,6 +49,7 @@ dependencies {
     implementation(project(":biz:story:infobar:presentation"))
     implementation(project(":biz:story:input:presentation"))
     implementation(project(":biz:story:message:presentation"))
+    implementation(project(":biz:story:story-panel:presentation"))
     implementation(project(":service:feed:mock"))
     implementation(project(":service:user-center:api"))
     implementation(project(":service:user-center:impl"))

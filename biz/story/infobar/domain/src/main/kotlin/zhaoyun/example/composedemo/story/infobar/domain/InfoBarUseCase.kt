@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
@@ -12,6 +13,7 @@ import zhaoyun.example.composedemo.scaffold.core.usecase.BaseUseCase
 class InfoBarUseCase(
     private val cardId: String,
     private val likeRepository: LikeRepository = FakeLikeRepository(),
+    private val shareRepository: ShareRepository = FakeShareRepository(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     stateHolder: StateHolder<InfoBarState>,
     serviceRegistry: MutableServiceRegistry,
@@ -24,20 +26,32 @@ class InfoBarUseCase(
     override suspend fun onEvent(event: InfoBarEvent) {
         when (event) {
             is InfoBarEvent.OnLikeClicked -> {
-                val oldLikes = currentState.likes
-                val newIsLiked = !currentState.isLiked
-                val newLikes = if (newIsLiked) oldLikes + 1 else oldLikes - 1
+                val oldState = currentState
+                val newIsLiked = !oldState.isLiked
+                val newLikes = if (newIsLiked) oldState.likes + 1 else oldState.likes - 1
                 updateState { it.copy(isLiked = newIsLiked, likes = newLikes.coerceAtLeast(0)) }
 
                 likeJob?.cancel()
                 likeJob = scope.launch {
-                    val result = likeRepository.toggleLike(cardId, newIsLiked, oldLikes)
-                    updateState { it.copy(isLiked = result.isLiked, likes = result.likes.coerceAtLeast(0)) }
+                    try {
+                        val result = likeRepository.toggleLike(cardId, newIsLiked, oldState.likes)
+                        updateState { it.copy(isLiked = result.isLiked, likes = result.likes.coerceAtLeast(0)) }
+                    } catch (_: Exception) {
+                        updateState { oldState }
+                        dispatchBaseEffect(BaseEffect.ShowToast("操作失败，请重试"))
+                    }
                 }
             }
 
             is InfoBarEvent.OnShareClicked -> {
-                dispatchEffect(InfoBarEffect.ShowShareSheet(cardId))
+                scope.launch {
+                    try {
+                        val link = shareRepository.getShareLink(cardId)
+                        dispatchEffect(InfoBarEffect.ShowShareSheet(cardId, link))
+                    } catch (_: Exception) {
+                        dispatchBaseEffect(BaseEffect.ShowToast("网络失败"))
+                    }
+                }
             }
 
             is InfoBarEvent.OnCommentClicked -> {
@@ -48,8 +62,8 @@ class InfoBarUseCase(
                 dispatchEffect(InfoBarEffect.ShowHistory(cardId))
             }
 
-            is InfoBarEvent.OnCreatorClicked -> {
-                dispatchEffect(InfoBarEffect.NavigateToCreatorProfile(currentState.creatorHandle))
+            is InfoBarEvent.OnStoryTitleClicked -> {
+                dispatchEffect(InfoBarEffect.NavigateToStoryDetail(cardId))
             }
         }
     }

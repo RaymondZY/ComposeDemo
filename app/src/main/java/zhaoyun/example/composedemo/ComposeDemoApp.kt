@@ -16,6 +16,7 @@ import zhaoyun.example.composedemo.story.infobar.presentation.di.infoBarPresenta
 import zhaoyun.example.composedemo.story.input.presentation.di.inputPresentationModule
 import zhaoyun.example.composedemo.story.message.presentation.di.messagePresentationModule
 import zhaoyun.example.composedemo.story.presentation.di.storyPresentationModule
+import zhaoyun.example.composedemo.story.storypanel.presentation.di.storyPanelPresentationModule
 
 /**
  * Application 入口 —— 负责初始化 Koin 与服务发现绑定
@@ -37,6 +38,7 @@ class ComposeDemoApp : Application() {
                     infoBarPresentationModule,
                     inputPresentationModule,
                     backgroundPresentationModule,
+                    storyPanelPresentationModule,
                 ) +
                 listOf(
                     module {

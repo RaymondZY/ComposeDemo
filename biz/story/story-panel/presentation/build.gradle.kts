@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "zhaoyun.example.composedemo.story.infobar.presentation"
+    namespace = "zhaoyun.example.composedemo.story.storypanel.presentation"
     compileSdk = 36
     buildToolsVersion = "36.1.0"
 
@@ -32,8 +32,7 @@ android {
 }
 
 dependencies {
-    api(project(":biz:story:infobar:domain"))
-    implementation(project(":biz:story:story-panel:presentation"))
+    api(project(":biz:story:story-panel:domain"))
     implementation(project(":scaffold:android"))
 
     implementation(libs.koin.androidx.compose)
@@ -44,8 +43,6 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.material.icons.core)
-    implementation("androidx.compose.material:material-icons-extended")
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
