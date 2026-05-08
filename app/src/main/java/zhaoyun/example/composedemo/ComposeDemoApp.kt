@@ -12,6 +12,7 @@ import zhaoyun.example.composedemo.service.feed.mock.FakeFeedRepository
 import zhaoyun.example.composedemo.service.storage.impl.di.storageModule
 import zhaoyun.example.composedemo.service.usercenter.impl.di.userCenterModule
 import zhaoyun.example.composedemo.story.background.presentation.di.backgroundPresentationModule
+import zhaoyun.example.composedemo.story.commentpanel.presentation.di.commentPanelPresentationModule
 import zhaoyun.example.composedemo.story.infobar.presentation.di.infoBarPresentationModule
 import zhaoyun.example.composedemo.story.input.presentation.di.inputPresentationModule
 import zhaoyun.example.composedemo.story.message.presentation.di.messagePresentationModule
@@ -37,6 +38,7 @@ class ComposeDemoApp : Application() {
                     storyPresentationModule,
                     messagePresentationModule,
                     infoBarPresentationModule,
+                    commentPanelPresentationModule,
                     sharePanelPresentationModule,
                     inputPresentationModule,
                     backgroundPresentationModule,

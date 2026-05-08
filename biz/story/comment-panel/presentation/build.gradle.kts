@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "zhaoyun.example.composedemo.story.presentation"
+    namespace = "zhaoyun.example.composedemo.story.commentpanel.presentation"
     compileSdk = 36
     buildToolsVersion = "36.1.0"
 
@@ -32,13 +32,7 @@ android {
 }
 
 dependencies {
-    api(project(":biz:story:domain"))
-    implementation(project(":biz:story:background:presentation"))
-    implementation(project(":biz:story:message:presentation"))
-    implementation(project(":biz:story:infobar:presentation"))
-    implementation(project(":biz:story:comment-panel:presentation"))
-    implementation(project(":biz:story:share-panel:presentation"))
-    implementation(project(":biz:story:input:presentation"))
+    api(project(":biz:story:comment-panel:domain"))
     implementation(project(":scaffold:android"))
 
     implementation(libs.koin.androidx.compose)
@@ -48,7 +42,14 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.core)
+    implementation("androidx.compose.material:material-icons-extended")
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

@@ -114,14 +114,14 @@ class InfoBarUseCaseTest {
     }
 
     @Test
-    fun `点击评论发送NavigateToComments效果且不改变状态`() = runTest {
+    fun `点击评论发送OpenCommentPanel效果且不改变状态`() = runTest {
         val initialState = InfoBarState(likes = 3, shares = 2, comments = 1, isLiked = true)
         val useCase = createUseCase(cardId = "story-1", initialState = initialState)
 
         val effectDeferred = async { useCase.effect.first() }
         useCase.receiveEvent(InfoBarEvent.OnCommentClicked)
 
-        assertEquals(InfoBarEffect.NavigateToComments("story-1"), effectDeferred.await())
+        assertEquals(InfoBarEffect.OpenCommentPanel("story-1"), effectDeferred.await())
         assertEquals(initialState, useCase.state.value)
     }
 

@@ -47,7 +47,7 @@ class InfoBarUseCase(
             }
 
             is InfoBarEvent.OnCommentClicked -> {
-                dispatchEffect(InfoBarEffect.NavigateToComments(cardId))
+                dispatchEffect(InfoBarEffect.OpenCommentPanel(cardId))
             }
 
             is InfoBarEvent.OnHistoryClicked -> {

@@ -44,11 +44,11 @@ fun InfoBarArea(
     viewModel: InfoBarViewModel,
     cardId: String,
     onSharePanelRequested: (String) -> Unit,
+    onCommentPanelRequested: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    var showCommentSheet by remember { mutableStateOf(false) }
     var showHistorySheet by remember { mutableStateOf(false) }
     var showDetailPanel by remember { mutableStateOf(false) }
 
@@ -56,7 +56,7 @@ fun InfoBarArea(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is InfoBarEffect.OpenSharePanel -> onSharePanelRequested(effect.cardId)
-                is InfoBarEffect.NavigateToComments -> showCommentSheet = true
+                is InfoBarEffect.OpenCommentPanel -> onCommentPanelRequested(effect.cardId)
                 is InfoBarEffect.ShowHistory -> showHistorySheet = true
                 is InfoBarEffect.NavigateToStoryDetail -> showDetailPanel = true
             }
@@ -157,15 +157,6 @@ fun InfoBarArea(
                     )
                 }
             }
-        }
-    }
-
-    if (showCommentSheet) {
-        androidx.compose.material3.ModalBottomSheet(
-            onDismissRequest = { showCommentSheet = false },
-            sheetState = androidx.compose.material3.rememberModalBottomSheetState(),
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) { }
         }
     }
 

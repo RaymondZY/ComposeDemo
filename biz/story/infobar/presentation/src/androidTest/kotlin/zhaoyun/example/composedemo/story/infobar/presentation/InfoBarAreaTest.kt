@@ -55,6 +55,7 @@ class InfoBarAreaTest {
                 viewModel = viewModel,
                 cardId = "story-1",
                 onSharePanelRequested = {},
+                onCommentPanelRequested = {},
             )
         }
     }

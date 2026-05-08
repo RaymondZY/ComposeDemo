@@ -32,6 +32,7 @@ import zhaoyun.example.composedemo.scaffold.android.screenViewModel
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
 import zhaoyun.example.composedemo.story.background.presentation.BackgroundViewModel
 import zhaoyun.example.composedemo.story.background.presentation.StoryBackground
+import zhaoyun.example.composedemo.story.commentpanel.presentation.CommentPanelSheet
 import zhaoyun.example.composedemo.story.infobar.presentation.InfoBarArea
 import zhaoyun.example.composedemo.story.infobar.presentation.InfoBarViewModel
 import zhaoyun.example.composedemo.story.input.presentation.InputArea
@@ -51,6 +52,7 @@ fun StoryCardPage(
     // 键盘弹出期间不更新，避免 graphicsLayer 变换污染 positionInRoot 读数引发反馈循环振荡。
     var inputAreaBottom by remember { mutableFloatStateOf(0f) }
     var sharePanelCardId by remember { mutableStateOf<String?>(null) }
+    var commentPanelCardId by remember { mutableStateOf<String?>(null) }
     val imeBottom = WindowInsets.ime.getBottom(density).toFloat()
     val safetyMarginPx = with(density) { 10.dp.toPx() }
     // 坐标系：y 轴向下，原点为窗口左上角。
@@ -117,6 +119,7 @@ fun StoryCardPage(
                         viewModel = infoBarViewModel,
                         cardId = card.cardId,
                         onSharePanelRequested = { sharePanelCardId = it },
+                        onCommentPanelRequested = { commentPanelCardId = it },
                     )
                     InputArea(
                         viewModel = inputViewModel,
@@ -143,6 +146,13 @@ fun StoryCardPage(
                 cardId = sharePanelCardId.orEmpty(),
                 backgroundImageUrl = card.backgroundImageUrl,
                 onDismissRequest = { sharePanelCardId = null },
+            )
+        }
+
+        if (commentPanelCardId != null) {
+            CommentPanelSheet(
+                cardId = commentPanelCardId.orEmpty(),
+                onDismissRequest = { commentPanelCardId = null },
             )
         }
     }
