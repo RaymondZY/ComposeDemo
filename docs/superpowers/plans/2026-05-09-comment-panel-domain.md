@@ -1,42 +1,42 @@
-# Comment Panel Domain Implementation Plan
+# 评论面板领域层实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **给执行代理：** 必须使用 `superpowers:subagent-driven-development`（推荐）或 `superpowers:executing-plans` 按任务执行。步骤使用 勾选框（`- [ ]`）跟踪。
 
-**Goal:** Implement the full comment-panel domain behavior described by UC-01 through UC-18.
+**目标：** 实现 `:biz:story:comment-panel:domain` 的完整评论面板业务能力，覆盖 `feature.md` 中 UC-01 到 UC-18。
 
-**Architecture:** Keep all business rules inside `:biz:story:comment-panel:domain`. The presentation layer remains an empty MVI screen and will later render the domain state and send domain events. Domain state is immutable, repository access is abstracted behind `CommentRepository`, and fake data stays deterministic for JVM tests.
+**架构：** 业务规则全部放在 `biz/story/comment-panel/domain`，presentation 继续保留空 `MviScreen`，后续只消费 domain state 并发送 event。Domain state 保持不可变；数据访问通过 `CommentRepository` 抽象；`FakeCommentRepository` 提供稳定、可测试的 mock 数据。
 
-**Tech Stack:** Kotlin, Kotlin Coroutines, custom MVI scaffold, JUnit, kotlinx-coroutines-test
-
----
-
-## File Map
-
-| File | Responsibility |
-|------|----------------|
-| `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelState.kt` | State plus comment, reply, pagination, user, dialogue-entry models |
-| `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelEvent.kt` | UI/domain event contract for UC-01 through UC-18 |
-| `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelEffect.kt` | One-shot domain effects |
-| `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentRepository.kt` | Repository contract and result/page models |
-| `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/FakeCommentRepository.kt` | Deterministic fake implementation for local development and tests |
-| `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCase.kt` | Business rules for loading, pagination, dialogue navigation, likes, replies, input and sending |
-| `biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt` | JVM test coverage for all UC-01 through UC-18 paths |
-| `biz/story/comment-panel/domain/feature.md` | Only sync if implementation names reveal a mismatch with the already approved feature text |
+**技术栈：** Kotlin、Kotlin Coroutines、自定义 MVI scaffold、JUnit、kotlinx-coroutines-test。
 
 ---
 
-### Task 1: Define Domain Models, Events, Effects, And Repository Contract
+## 文件职责
 
-**Files:**
-- Modify: `biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt`
-- Modify: `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelState.kt`
-- Modify: `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelEvent.kt`
-- Modify: `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelEffect.kt`
-- Create: `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentRepository.kt`
+| 文件 | 职责 |
+|------|------|
+| `CommentPanelState.kt` | 定义面板 State、评论、回复、分页、用户、剧情入口等领域模型 |
+| `CommentPanelEvent.kt` | 定义 UC-01 到 UC-18 所需的输入事件 |
+| `CommentPanelEffect.kt` | 定义一次性领域效果 |
+| `CommentRepository.kt` | 定义评论数据源接口及返回模型 |
+| `FakeCommentRepository.kt` | 提供稳定 fake 数据源，供本地开发和单测使用 |
+| `CommentPanelUseCase.kt` | 实现加载、分页、剧情入口、点赞、回复、输入校验和发送评论 |
+| `CommentPanelUseCaseTest.kt` | 纯 JVM 单测覆盖全部业务路径 |
+| `feature.md` | 仅在实现命名和需求文档不一致时做同步修正 |
 
-- [ ] **Step 1: Write the failing model contract test**
+---
 
-Replace `CommentPanelUseCaseTest.kt` with this first test class:
+## 任务 1：定义 Domain 模型、事件、效果和 Repository 合约
+
+**文件：**
+- 修改：`biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt`
+- 修改：`biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelState.kt`
+- 修改：`biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelEvent.kt`
+- 修改：`biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelEffect.kt`
+- 新增：`biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentRepository.kt`
+
+- [ ] **步骤 1：先写失败的模型契约测试**
+
+将 `CommentPanelUseCaseTest.kt` 替换为以下测试：
 
 ```kotlin
 package zhaoyun.example.composedemo.story.commentpanel.domain
@@ -48,7 +48,7 @@ import org.junit.Test
 
 class CommentPanelUseCaseTest {
     @Test
-    fun `initial state exposes empty loadable comment panel`() {
+    fun `初始状态表达可加载的空评论面板`() {
         val state = CommentPanelState(cardId = "story-1")
 
         assertEquals("story-1", state.cardId)
@@ -64,7 +64,7 @@ class CommentPanelUseCaseTest {
     }
 
     @Test
-    fun `comment item carries user like expansion and reply state`() {
+    fun `评论模型包含用户点赞展开和回复状态`() {
         val user = CommentUser(
             userId = "user-1",
             nickname = "小云",
@@ -94,13 +94,19 @@ class CommentPanelUseCaseTest {
 }
 ```
 
-- [ ] **Step 2: Run the model test and verify red**
+- [ ] **步骤 2：运行测试确认红灯**
 
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
+运行：
 
-Expected: FAIL with unresolved references such as `LoadStatus`, `DialogueEntryState`, `CommentItem`, `CommentUser`, and `ReplyItem`.
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
 
-- [ ] **Step 3: Replace `CommentPanelState.kt`**
+预期：编译失败，提示 `LoadStatus`、`DialogueEntryState`、`CommentItem`、`CommentUser`、`ReplyItem` 等未定义。
+
+- [ ] **步骤 3：实现 `CommentPanelState.kt`**
+
+将 `CommentPanelState.kt` 替换为完整状态模型：
 
 ```kotlin
 package zhaoyun.example.composedemo.story.commentpanel.domain
@@ -191,7 +197,7 @@ data class ReplyItem(
 )
 ```
 
-- [ ] **Step 4: Replace `CommentPanelEvent.kt`**
+- [ ] **步骤 4：实现 `CommentPanelEvent.kt`**
 
 ```kotlin
 package zhaoyun.example.composedemo.story.commentpanel.domain
@@ -213,7 +219,7 @@ sealed class CommentPanelEvent : UiEvent {
 }
 ```
 
-- [ ] **Step 5: Replace `CommentPanelEffect.kt`**
+- [ ] **步骤 5：实现 `CommentPanelEffect.kt`**
 
 ```kotlin
 package zhaoyun.example.composedemo.story.commentpanel.domain
@@ -228,7 +234,7 @@ sealed class CommentPanelEffect : UiEffect {
 }
 ```
 
-- [ ] **Step 6: Create `CommentRepository.kt`**
+- [ ] **步骤 6：新增 `CommentRepository.kt`**
 
 ```kotlin
 package zhaoyun.example.composedemo.story.commentpanel.domain
@@ -271,13 +277,17 @@ data class SendCommentResult(
 )
 ```
 
-- [ ] **Step 7: Run model test and verify green**
+- [ ] **步骤 7：运行测试确认绿灯**
 
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
+运行：
 
-Expected: BUILD SUCCESSFUL.
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
 
-- [ ] **Step 8: Commit Task 1**
+预期：`BUILD SUCCESSFUL`。
+
+- [ ] **步骤 8：提交任务 1**
 
 ```bash
 git add biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelState.kt biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelEvent.kt biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelEffect.kt biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentRepository.kt biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt
@@ -286,15 +296,15 @@ git commit -m "feat(comment-panel): define domain contract"
 
 ---
 
-### Task 2: Add Deterministic Fake Repository
+## 任务 2：新增稳定 Fake Repository
 
-**Files:**
-- Create: `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/FakeCommentRepository.kt`
-- Modify: `biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt`
+**文件：**
+- 新增：`biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/FakeCommentRepository.kt`
+- 修改：`biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt`
 
-- [ ] **Step 1: Add failing fake repository tests**
+- [ ] **步骤 1：添加失败的 fake repository 测试**
 
-Append these tests to `CommentPanelUseCaseTest`:
+在 `CommentPanelUseCaseTest` 追加：
 
 ```kotlin
 @Test
@@ -329,15 +339,17 @@ fun `fake repository supports comments replies like and send`() = kotlinx.corout
 }
 ```
 
-- [ ] **Step 2: Run fake repository tests and verify red**
+- [ ] **步骤 2：运行测试确认红灯**
 
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
 
-Expected: FAIL with unresolved reference `FakeCommentRepository`.
+预期：失败，提示 `FakeCommentRepository` 未定义。
 
-- [ ] **Step 3: Create `FakeCommentRepository.kt`**
+- [ ] **步骤 3：实现 `FakeCommentRepository.kt`**
 
-Implement a deterministic repository with these exact behaviors:
+实现稳定数据池：
 
 ```kotlin
 package zhaoyun.example.composedemo.story.commentpanel.domain
@@ -441,13 +453,15 @@ class FakeCommentRepository : CommentRepository {
 }
 ```
 
-- [ ] **Step 4: Run fake repository tests and verify green**
+- [ ] **步骤 4：运行测试确认绿灯**
 
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
 
-Expected: BUILD SUCCESSFUL.
+预期：`BUILD SUCCESSFUL`。
 
-- [ ] **Step 5: Commit Task 2**
+- [ ] **步骤 5：提交任务 2**
 
 ```bash
 git add biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/FakeCommentRepository.kt biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt
@@ -456,93 +470,45 @@ git commit -m "feat(comment-panel): add fake comment repository"
 
 ---
 
-### Task 3: Implement Initial Load, Retry, Dialogue Entry, And Comment Pagination
+## 任务 3：实现首屏加载、重试、剧情入口和评论分页
 
-**Files:**
-- Modify: `biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt`
-- Modify: `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCase.kt`
+**文件：**
+- 修改：`CommentPanelUseCaseTest.kt`
+- 修改：`CommentPanelUseCase.kt`
 
-- [ ] **Step 1: Add failing load and pagination tests**
+- [ ] **步骤 1：添加首屏加载与分页红灯测试**
 
-Append tests covering these exact names and assertions:
+追加以下测试：
 
 ```kotlin
 @Test
-fun `panel shown loads first page and dialogue entry`() = runTest {
-    val useCase = createUseCase(repository = FakeCommentRepository())
-
-    useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
-
-    assertEquals(LoadStatus.Success, useCase.state.value.initialLoadStatus)
-    assertEquals(5, useCase.state.value.totalCount)
-    assertEquals(listOf("comment-1", "comment-2", "comment-3", "comment-4", "comment-5"), useCase.state.value.comments.map { it.commentId })
-    assertTrue(useCase.state.value.dialogueEntry is DialogueEntryState.Available)
-}
+fun `panel shown loads first page and dialogue entry`() = runTest
 
 @Test
-fun `initial load empty page enters empty state`() = runTest {
-    val useCase = createUseCase(repository = EmptyCommentRepository())
-
-    useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
-
-    assertEquals(LoadStatus.Empty, useCase.state.value.initialLoadStatus)
-    assertEquals(emptyList<CommentItem>(), useCase.state.value.comments)
-}
+fun `initial load empty page enters empty state`() = runTest
 
 @Test
-fun `initial load failure keeps existing comments`() = runTest {
-    val existing = sampleComment("existing")
-    val useCase = createUseCase(
-        initialState = CommentPanelState(cardId = "story-1", comments = listOf(existing), initialLoadStatus = LoadStatus.Success),
-        repository = FailingCommentRepository(failInitial = true),
-    )
-
-    useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
-
-    assertEquals(LoadStatus.Error, useCase.state.value.initialLoadStatus)
-    assertEquals(listOf(existing), useCase.state.value.comments)
-}
+fun `initial load failure keeps existing comments`() = runTest
 
 @Test
-fun `dialogue entry click emits navigation when available`() = runTest {
-    val useCase = createUseCase(repository = FakeCommentRepository())
-    useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
-    val effectDeferred = async { useCase.effect.first() }
-
-    useCase.receiveEvent(CommentPanelEvent.OnDialogueEntryClicked)
-
-    assertEquals(CommentPanelEffect.NavigateToDialogue("story-1", "story-1-dialogue"), effectDeferred.await())
-}
+fun `dialogue entry click emits navigation when available`() = runTest
 
 @Test
-fun `load more comments appends and preserves existing comments on failure`() = runTest {
-    val repository = PagedThenFailingCommentRepository()
-    val useCase = createUseCase(repository = repository)
-
-    useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
-    useCase.receiveEvent(CommentPanelEvent.OnLoadMoreComments)
-    val beforeFailure = useCase.state.value.comments
-    useCase.receiveEvent(CommentPanelEvent.OnLoadMoreComments)
-
-    assertEquals(listOf("comment-1", "comment-2", "comment-3", "comment-4"), beforeFailure.map { it.commentId })
-    assertEquals(beforeFailure, useCase.state.value.comments)
-    assertEquals("评论加载失败", useCase.state.value.commentPagination.errorMessage)
-}
+fun `load more comments appends and preserves existing comments on failure`() = runTest
 ```
 
-Also add test helpers in the test file:
+测试断言必须覆盖：
+- `OnPanelShown` 后 `initialLoadStatus == LoadStatus.Success`
+- 成功加载 `totalCount == 5`
+- 剧情入口为 `DialogueEntryState.Available`
+- 空首屏进入 `LoadStatus.Empty`
+- 首屏失败时保留已有评论
+- 剧情入口点击发出 `CommentPanelEffect.NavigateToDialogue("story-1", "story-1-dialogue")`
+- 评论分页成功追加，第二次分页失败时保留已有评论并写入 `"评论加载失败"`
+
+测试文件需要加入这些 helper：
 
 ```kotlin
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.runTest
-import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
-import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
-import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
-
 private fun createUseCase(
     initialState: CommentPanelState = CommentPanelState(cardId = "story-1"),
     repository: CommentRepository = FakeCommentRepository(),
@@ -553,191 +519,34 @@ private fun createUseCase(
     stateHolder = initialState.toStateHolder(),
     serviceRegistry = MutableServiceRegistryImpl(),
 )
-
-private fun sampleUser(id: String = "user-1") = CommentUser(
-    userId = id,
-    nickname = "测试用户",
-    avatarUrl = "https://example.com/$id.png",
-)
-
-private fun sampleComment(id: String, replySection: ReplySectionState = ReplySectionState()) = CommentItem(
-    commentId = id,
-    user = sampleUser(),
-    content = "测试评论",
-    createdAtText = "刚刚",
-    likeCount = 0,
-    replySection = replySection,
-)
-
-private fun sampleReply(id: String, parentId: String = "comment-1") = ReplyItem(
-    replyId = id,
-    parentCommentId = parentId,
-    user = sampleUser("reply-user"),
-    content = "测试回复",
-    createdAtText = "刚刚",
-)
-
-private class EmptyCommentRepository : CommentRepository by FakeCommentRepository() {
-    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
-        return CommentInitialResult(
-            totalCount = 0,
-            dialogueEntry = DialogueEntryState.Hidden,
-            page = CommentPage(emptyList(), nextCursor = null, hasMore = false),
-        )
-    }
-}
-
-private class FailingCommentRepository(
-    private val failInitial: Boolean = false,
-    private val failLike: Boolean = false,
-    private val failReplies: Boolean = false,
-    private val failSend: Boolean = false,
-) : CommentRepository by FakeCommentRepository() {
-    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
-        if (failInitial) error("initial failed")
-        return FakeCommentRepository().loadInitial(cardId, pageSize)
-    }
-
-    override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
-        if (failLike) error("like failed")
-        return FakeCommentRepository().setCommentLiked(cardId, commentId, liked)
-    }
-
-    override suspend fun loadReplies(cardId: String, commentId: String, cursor: String?, pageSize: Int): ReplyPage {
-        if (failReplies) error("replies failed")
-        return FakeCommentRepository().loadReplies(cardId, commentId, cursor, pageSize)
-    }
-
-    override suspend fun sendComment(cardId: String, content: String): SendCommentResult {
-        if (failSend) error("send failed")
-        return FakeCommentRepository().sendComment(cardId, content)
-    }
-}
-
-private class PagedThenFailingCommentRepository : CommentRepository by FakeCommentRepository() {
-    private var loadMoreCalls = 0
-
-    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
-        val fake = FakeCommentRepository()
-        return fake.loadInitial(cardId, pageSize = 2)
-    }
-
-    override suspend fun loadMoreComments(cardId: String, cursor: String, pageSize: Int): CommentPage {
-        loadMoreCalls += 1
-        if (loadMoreCalls > 1) error("load more failed")
-        return FakeCommentRepository().loadMoreComments(cardId, cursor, pageSize = 2)
-    }
-}
-
-private class LikeResultCommentRepository(
-    private val result: CommentLikeResult,
-) : CommentRepository by FakeCommentRepository() {
-    override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
-        return result
-    }
-}
-
-private class PagedRepliesRepository : CommentRepository by FakeCommentRepository() {
-    override suspend fun loadReplies(cardId: String, commentId: String, cursor: String?, pageSize: Int): ReplyPage {
-        val replies = listOf(sampleReply("reply-2", commentId))
-        return ReplyPage(replies = replies, nextCursor = null, hasMore = false)
-    }
-}
 ```
 
-- [ ] **Step 2: Run tests and verify red**
+同时加入 `sampleUser`、`sampleComment`、`sampleReply`、`EmptyCommentRepository`、`FailingCommentRepository`、`PagedThenFailingCommentRepository` 等测试辅助类。它们的职责是：构造测试用户/评论/回复，模拟空首屏、失败场景、分页先成功后失败。
 
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
+- [ ] **步骤 2：运行测试确认红灯**
 
-Expected: FAIL because `CommentPanelUseCase` does not accept `commentRepository` and does not process the new events.
-
-- [ ] **Step 3: Implement load, retry, dialogue, and pagination in `CommentPanelUseCase.kt`**
-
-Replace the constructor and event dispatch shape with:
-
-```kotlin
-class CommentPanelUseCase(
-    private val commentRepository: CommentRepository = FakeCommentRepository(),
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-    stateHolder: StateHolder<CommentPanelState>,
-    serviceRegistry: MutableServiceRegistry,
-) : BaseUseCase<CommentPanelState, CommentPanelEvent, CommentPanelEffect>(stateHolder, serviceRegistry) {
-    override suspend fun onEvent(event: CommentPanelEvent) {
-        when (event) {
-            is CommentPanelEvent.OnPanelShown -> loadInitialIfNeeded()
-            is CommentPanelEvent.OnRetryInitialLoad -> loadInitial(force = true)
-            is CommentPanelEvent.OnLoadMoreComments -> loadMoreComments()
-            is CommentPanelEvent.OnDialogueEntryClicked -> navigateDialogueIfAvailable()
-            is CommentPanelEvent.OnCommentExpanded -> expandComment(event.commentId)
-            is CommentPanelEvent.OnCommentLikeClicked -> toggleCommentLike(event.commentId)
-            is CommentPanelEvent.OnRepliesExpanded -> expandReplies(event.commentId)
-            is CommentPanelEvent.OnRepliesCollapsed -> collapseReplies(event.commentId)
-            is CommentPanelEvent.OnLoadMoreReplies -> loadMoreReplies(event.commentId)
-            is CommentPanelEvent.OnInputChanged -> updateInput(event.text)
-            is CommentPanelEvent.OnSendClicked -> sendComment()
-        }
-    }
-}
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
 ```
 
-Implement these functions in the same file:
+预期：失败，因为 `CommentPanelUseCase` 还没有 `commentRepository` 参数，也没有处理新事件。
 
-```kotlin
-private fun loadInitialIfNeeded() {
-    if (currentState.initialLoadStatus == LoadStatus.Idle) loadInitial(force = false)
-}
+- [ ] **步骤 3：实现 UseCase 的加载类逻辑**
 
-private fun loadInitial(force: Boolean) {
-    if (currentState.initialLoadStatus == LoadStatus.Loading) return
-    updateState { it.copy(initialLoadStatus = LoadStatus.Loading) }
-    scope.launch {
-        try {
-            val result = commentRepository.loadInitial(currentState.cardId, CommentPanelInitialPageSize)
-            updateState {
-                it.copy(
-                    totalCount = result.totalCount,
-                    dialogueEntry = result.dialogueEntry,
-                    comments = result.page.comments,
-                    initialLoadStatus = if (result.page.comments.isEmpty()) LoadStatus.Empty else LoadStatus.Success,
-                    commentPagination = PaginationState(result.page.nextCursor, result.page.hasMore),
-                )
-            }
-        } catch (_: Exception) {
-            updateState { it.copy(initialLoadStatus = LoadStatus.Error) }
-            dispatchBaseEffect(BaseEffect.ShowToast("评论加载失败"))
-        }
-    }
-}
+在 `CommentPanelUseCase.kt` 中：
+- 构造函数增加 `commentRepository: CommentRepository = FakeCommentRepository()`
+- 构造函数增加 `scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)`
+- `onEvent` 覆盖所有 `CommentPanelEvent`
+- 实现 `loadInitialIfNeeded`
+- 实现 `loadInitial`
+- 实现 `loadMoreComments`
+- 实现 `navigateDialogueIfAvailable`
 
-private fun loadMoreComments() {
-    val pagination = currentState.commentPagination
-    val cursor = pagination.nextCursor ?: return
-    if (!pagination.hasMore || pagination.isLoading) return
-    updateState { it.copy(commentPagination = pagination.copy(isLoading = true, errorMessage = null)) }
-    scope.launch {
-        try {
-            val page = commentRepository.loadMoreComments(currentState.cardId, cursor, CommentPanelInitialPageSize)
-            updateState {
-                it.copy(
-                    comments = (it.comments + page.comments).distinctBy { comment -> comment.commentId },
-                    commentPagination = PaginationState(page.nextCursor, page.hasMore),
-                )
-            }
-        } catch (_: Exception) {
-            updateState {
-                it.copy(commentPagination = it.commentPagination.copy(isLoading = false, errorMessage = "评论加载失败"))
-            }
-        }
-    }
-}
+错误文案固定为：
+- 首屏加载失败 toast：`评论加载失败`
+- 评论分页失败 state error：`评论加载失败`
 
-private fun navigateDialogueIfAvailable() {
-    val entry = currentState.dialogueEntry as? DialogueEntryState.Available ?: return
-    dispatchEffect(CommentPanelEffect.NavigateToDialogue(currentState.cardId, entry.targetId))
-}
-```
-
-Leave the later functions as no-op private functions returning `Unit` so the file compiles during this task:
+未到本任务的函数先保留可编译的最小实现：
 
 ```kotlin
 private fun expandComment(commentId: String) = Unit
@@ -749,13 +558,15 @@ private fun updateInput(text: String) = updateState { it.copy(inputText = text) 
 private fun sendComment() = Unit
 ```
 
-- [ ] **Step 4: Run tests and verify green**
+- [ ] **步骤 4：运行测试确认绿灯**
 
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
 
-Expected: BUILD SUCCESSFUL.
+预期：`BUILD SUCCESSFUL`。
 
-- [ ] **Step 5: Commit Task 3**
+- [ ] **步骤 5：提交任务 3**
 
 ```bash
 git add biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCase.kt biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt
@@ -764,132 +575,70 @@ git commit -m "feat(comment-panel): load comments and dialogue entry"
 
 ---
 
-### Task 4: Implement Comment Expansion And Like Toggle
+## 任务 4：实现长评论展开和评论点赞
 
-**Files:**
-- Modify: `biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt`
-- Modify: `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCase.kt`
+**文件：**
+- 修改：`CommentPanelUseCaseTest.kt`
+- 修改：`CommentPanelUseCase.kt`
 
-- [ ] **Step 1: Add failing expansion and like tests**
+- [ ] **步骤 1：添加展开和点赞红灯测试**
 
-Append tests for:
-
-```kotlin
-@Test
-fun `expand comment only changes target comment`() = runTest {
-    val useCase = createUseCase()
-    useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
-
-    useCase.receiveEvent(CommentPanelEvent.OnCommentExpanded("comment-1"))
-
-    assertTrue(useCase.state.value.comments.first { it.commentId == "comment-1" }.isExpanded)
-    assertFalse(useCase.state.value.comments.first { it.commentId == "comment-2" }.isExpanded)
-}
-
-@Test
-fun `like comment uses optimistic update and server result`() = runTest {
-    val useCase = createUseCase()
-    useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
-
-    useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
-
-    val comment = useCase.state.value.comments.first { it.commentId == "comment-1" }
-    assertTrue(comment.isLiked)
-    assertFalse(comment.isLikeSubmitting)
-    assertEquals(13, comment.likeCount)
-}
-
-@Test
-fun `unlike comment never produces negative like count`() = runTest {
-    val liked = sampleComment("liked").copy(isLiked = true, likeCount = 0)
-    val useCase = createUseCase(
-        initialState = CommentPanelState(cardId = "story-1", comments = listOf(liked)),
-        repository = LikeResultCommentRepository(CommentLikeResult("liked", isLiked = false, likeCount = 0)),
-    )
-
-    useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("liked"))
-
-    val comment = useCase.state.value.comments.single()
-    assertFalse(comment.isLiked)
-    assertEquals(0, comment.likeCount)
-}
-
-@Test
-fun `like failure rolls back target comment and emits toast`() = runTest {
-    val initial = sampleComment("comment-1").copy(isLiked = false, likeCount = 4)
-    val useCase = createUseCase(
-        initialState = CommentPanelState(cardId = "story-1", comments = listOf(initial)),
-        repository = FailingCommentRepository(failLike = true),
-    )
-    val toastDeferred = async { useCase.baseEffect.first() }
-
-    useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
-
-    assertEquals(initial, useCase.state.value.comments.single())
-    assertEquals(BaseEffect.ShowToast("点赞失败，请重试"), toastDeferred.await())
-}
-```
-
-- [ ] **Step 2: Run tests and verify red**
-
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
-
-Expected: FAIL because expansion and like functions are no-op.
-
-- [ ] **Step 3: Implement comment mutation helpers and like logic**
-
-Add helper functions:
+追加测试：
 
 ```kotlin
-private fun updateComment(commentId: String, transform: (CommentItem) -> CommentItem) {
-    updateState {
-        it.copy(comments = it.comments.map { comment ->
-            if (comment.commentId == commentId) transform(comment) else comment
-        })
-    }
-}
+@Test
+fun `expand comment only changes target comment`() = runTest
 
-private fun findComment(commentId: String): CommentItem? {
-    return currentState.comments.firstOrNull { it.commentId == commentId }
-}
+@Test
+fun `like comment uses optimistic update and server result`() = runTest
+
+@Test
+fun `unlike comment never produces negative like count`() = runTest
+
+@Test
+fun `like failure rolls back target comment and emits toast`() = runTest
 ```
 
-Replace expansion and like functions:
+断言必须覆盖：
+- 展开只影响目标评论
+- 点赞成功后 `isLiked == true`、`isLikeSubmitting == false`、`likeCount` 使用服务端结果
+- 取消点赞时点赞数不低于 0
+- 点赞失败回滚旧评论并发出 `BaseEffect.ShowToast("点赞失败，请重试")`
+
+- [ ] **步骤 2：运行测试确认红灯**
+
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
+
+预期：失败，因为展开和点赞还是 no-op。
+
+- [ ] **步骤 3：实现评论更新 helper 和点赞逻辑**
+
+在 `CommentPanelUseCase.kt` 中新增：
 
 ```kotlin
-private fun expandComment(commentId: String) {
-    updateComment(commentId) { it.copy(isExpanded = true) }
-}
-
-private fun toggleCommentLike(commentId: String) {
-    val oldComment = findComment(commentId) ?: return
-    if (oldComment.isLikeSubmitting) return
-    val newLiked = !oldComment.isLiked
-    val optimisticLikeCount = if (newLiked) oldComment.likeCount + 1 else (oldComment.likeCount - 1).coerceAtLeast(0)
-    updateComment(commentId) {
-        it.copy(isLiked = newLiked, likeCount = optimisticLikeCount, isLikeSubmitting = true)
-    }
-    scope.launch {
-        try {
-            val result = commentRepository.setCommentLiked(currentState.cardId, commentId, newLiked)
-            updateComment(commentId) {
-                it.copy(isLiked = result.isLiked, likeCount = result.likeCount.coerceAtLeast(0), isLikeSubmitting = false)
-            }
-        } catch (_: Exception) {
-            updateComment(commentId) { oldComment.copy(isLikeSubmitting = false) }
-            dispatchBaseEffect(BaseEffect.ShowToast("点赞失败，请重试"))
-        }
-    }
-}
+private fun updateComment(commentId: String, transform: (CommentItem) -> CommentItem)
+private fun findComment(commentId: String): CommentItem?
 ```
 
-- [ ] **Step 4: Run tests and verify green**
+实现规则：
+- `expandComment(commentId)` 只把目标评论 `isExpanded` 置为 `true`
+- `toggleCommentLike(commentId)` 先乐观更新
+- 乐观更新时设置 `isLikeSubmitting = true`
+- 服务端成功后回写 `CommentLikeResult`
+- 服务端失败后恢复旧评论并发 toast
+- 同一评论 `isLikeSubmitting == true` 时忽略重复点击
 
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
+- [ ] **步骤 4：运行测试确认绿灯**
 
-Expected: BUILD SUCCESSFUL.
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
 
-- [ ] **Step 5: Commit Task 4**
+预期：`BUILD SUCCESSFUL`。
+
+- [ ] **步骤 5：提交任务 4**
 
 ```bash
 git add biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCase.kt biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt
@@ -898,163 +647,69 @@ git commit -m "feat(comment-panel): handle comment expansion and likes"
 
 ---
 
-### Task 5: Implement Replies Expand, Load More, Failure, And Collapse
+## 任务 5：实现回复展开、分页、失败和收起
 
-**Files:**
-- Modify: `biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt`
-- Modify: `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCase.kt`
+**文件：**
+- 修改：`CommentPanelUseCaseTest.kt`
+- 修改：`CommentPanelUseCase.kt`
 
-- [ ] **Step 1: Add failing reply tests**
+- [ ] **步骤 1：添加回复红灯测试**
 
-Append these tests:
-
-```kotlin
-@Test
-fun `expand replies loads first reply page for target comment`() = runTest {
-    val useCase = createUseCase(repository = FakeCommentRepository())
-    useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
-
-    useCase.receiveEvent(CommentPanelEvent.OnRepliesExpanded("comment-1"))
-
-    val comment = useCase.state.value.comments.first { it.commentId == "comment-1" }
-    assertTrue(comment.replySection.isExpanded)
-    assertEquals(listOf("reply-1", "reply-2", "reply-3"), comment.replySection.replies.map { it.replyId })
-    assertEquals(null, comment.replySection.errorMessage)
-}
-
-@Test
-fun `reply load failure only marks target comment reply section`() = runTest {
-    val first = sampleComment("comment-1")
-    val second = sampleComment("comment-2")
-    val useCase = createUseCase(
-        initialState = CommentPanelState(cardId = "story-1", comments = listOf(first, second)),
-        repository = FailingCommentRepository(failReplies = true),
-    )
-
-    useCase.receiveEvent(CommentPanelEvent.OnRepliesExpanded("comment-1"))
-
-    val failed = useCase.state.value.comments.first { it.commentId == "comment-1" }
-    val untouched = useCase.state.value.comments.first { it.commentId == "comment-2" }
-    assertTrue(failed.replySection.isExpanded)
-    assertEquals("回复加载失败", failed.replySection.errorMessage)
-    assertEquals(null, untouched.replySection.errorMessage)
-}
-
-@Test
-fun `load more replies appends and deduplicates target replies`() = runTest {
-    val initialReply = sampleReply("reply-1")
-    val comment = sampleComment(
-        "comment-1",
-        replySection = ReplySectionState(
-            isExpanded = true,
-            replies = listOf(initialReply),
-            pagination = PaginationState(nextCursor = "cursor-1", hasMore = true),
-        ),
-    )
-    val useCase = createUseCase(
-        initialState = CommentPanelState(cardId = "story-1", comments = listOf(comment)),
-        repository = PagedRepliesRepository(),
-    )
-
-    useCase.receiveEvent(CommentPanelEvent.OnLoadMoreReplies("comment-1"))
-
-    val updated = useCase.state.value.comments.single()
-    assertEquals(listOf("reply-1", "reply-2"), updated.replySection.replies.map { it.replyId })
-    assertFalse(updated.replySection.pagination.hasMore)
-}
-
-@Test
-fun `collapse replies keeps loaded replies`() = runTest {
-    val comment = sampleComment(
-        "comment-1",
-        replySection = ReplySectionState(
-            isExpanded = true,
-            replies = listOf(sampleReply("reply-1")),
-            pagination = PaginationState(nextCursor = null, hasMore = false),
-        ),
-    )
-    val useCase = createUseCase(initialState = CommentPanelState(cardId = "story-1", comments = listOf(comment)))
-
-    useCase.receiveEvent(CommentPanelEvent.OnRepliesCollapsed("comment-1"))
-
-    val updated = useCase.state.value.comments.single()
-    assertFalse(updated.replySection.isExpanded)
-    assertEquals(listOf("reply-1"), updated.replySection.replies.map { it.replyId })
-}
-```
-
-- [ ] **Step 2: Run tests and verify red**
-
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
-
-Expected: FAIL because reply functions are no-op.
-
-- [ ] **Step 3: Implement reply functions**
-
-Replace reply functions:
+追加测试：
 
 ```kotlin
-private fun expandReplies(commentId: String) {
-    val comment = findComment(commentId) ?: return
-    updateComment(commentId) {
-        it.copy(replySection = it.replySection.copy(isExpanded = true, errorMessage = null))
-    }
-    if (comment.replySection.replies.isEmpty()) {
-        loadReplies(commentId, cursor = null)
-    }
-}
+@Test
+fun `expand replies loads first reply page for target comment`() = runTest
 
-private fun loadMoreReplies(commentId: String) {
-    val comment = findComment(commentId) ?: return
-    val pagination = comment.replySection.pagination
-    val cursor = pagination.nextCursor ?: return
-    if (!pagination.hasMore || pagination.isLoading) return
-    loadReplies(commentId, cursor)
-}
+@Test
+fun `reply load failure only marks target comment reply section`() = runTest
 
-private fun loadReplies(commentId: String, cursor: String?) {
-    val comment = findComment(commentId) ?: return
-    if (comment.replySection.isLoading) return
-    updateComment(commentId) {
-        it.copy(replySection = it.replySection.copy(isLoading = true, errorMessage = null))
-    }
-    scope.launch {
-        try {
-            val page = commentRepository.loadReplies(currentState.cardId, commentId, cursor, CommentPanelReplyPageSize)
-            updateComment(commentId) {
-                val existing = if (cursor == null) emptyList() else it.replySection.replies
-                it.copy(
-                    replySection = it.replySection.copy(
-                        isExpanded = true,
-                        isLoading = false,
-                        replies = (existing + page.replies).distinctBy { reply -> reply.replyId },
-                        pagination = PaginationState(page.nextCursor, page.hasMore),
-                        errorMessage = null,
-                    ),
-                )
-            }
-        } catch (_: Exception) {
-            updateComment(commentId) {
-                it.copy(replySection = it.replySection.copy(isLoading = false, errorMessage = "回复加载失败"))
-            }
-        }
-    }
-}
+@Test
+fun `load more replies appends and deduplicates target replies`() = runTest
 
-private fun collapseReplies(commentId: String) {
-    updateComment(commentId) {
-        it.copy(replySection = it.replySection.copy(isExpanded = false))
-    }
-}
+@Test
+fun `collapse replies keeps loaded replies`() = runTest
 ```
 
-- [ ] **Step 4: Run tests and verify green**
+断言必须覆盖：
+- 展开回复只更新目标评论
+- 首次展开会加载回复
+- 回复加载失败只写入目标评论 `replySection.errorMessage == "回复加载失败"`
+- 加载更多回复追加并按 `replyId` 去重
+- 收起回复只改 `isExpanded = false`，保留已加载回复
 
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
+- [ ] **步骤 2：运行测试确认红灯**
 
-Expected: BUILD SUCCESSFUL.
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
 
-- [ ] **Step 5: Commit Task 5**
+预期：失败，因为回复相关函数仍是 no-op。
+
+- [ ] **步骤 3：实现回复逻辑**
+
+实现：
+- `expandReplies(commentId)`
+- `loadReplies(commentId, cursor)`
+- `loadMoreReplies(commentId)`
+- `collapseReplies(commentId)`
+
+规则：
+- 已有回复时再次展开不重新请求
+- `isLoading == true` 时忽略重复加载
+- 失败只影响目标评论回复区
+- 成功后 `ReplySectionState.isExpanded = true`
+- 分页状态使用 `PaginationState(nextCursor, hasMore)`
+
+- [ ] **步骤 4：运行测试确认绿灯**
+
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
+
+预期：`BUILD SUCCESSFUL`。
+
+- [ ] **步骤 5：提交任务 5**
 
 ```bash
 git add biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCase.kt biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt
@@ -1063,150 +718,69 @@ git commit -m "feat(comment-panel): manage comment replies"
 
 ---
 
-### Task 6: Implement Input Validation And Sending
+## 任务 6：实现输入校验和发送评论
 
-**Files:**
-- Modify: `biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt`
-- Modify: `biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCase.kt`
+**文件：**
+- 修改：`CommentPanelUseCaseTest.kt`
+- 修改：`CommentPanelUseCase.kt`
 
-- [ ] **Step 1: Add failing input and send tests**
+- [ ] **步骤 1：添加输入和发送红灯测试**
 
-Append these tests:
-
-```kotlin
-@Test
-fun `input change updates text and clears input error`() = runTest {
-    val useCase = createUseCase(
-        initialState = CommentPanelState(cardId = "story-1", inputErrorMessage = "旧错误", sendErrorMessage = "旧发送错误"),
-    )
-
-    useCase.receiveEvent(CommentPanelEvent.OnInputChanged("新评论"))
-
-    assertEquals("新评论", useCase.state.value.inputText)
-    assertEquals(null, useCase.state.value.inputErrorMessage)
-    assertEquals(null, useCase.state.value.sendErrorMessage)
-}
-
-@Test
-fun `blank comment does not send and emits validation toast`() = runTest {
-    val useCase = createUseCase(initialState = CommentPanelState(cardId = "story-1", inputText = "   "))
-    val toastDeferred = async { useCase.baseEffect.first() }
-
-    useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
-
-    assertEquals("请输入评论内容", useCase.state.value.inputErrorMessage)
-    assertFalse(useCase.state.value.isSendingComment)
-    assertEquals(BaseEffect.ShowToast("请输入评论内容"), toastDeferred.await())
-}
-
-@Test
-fun `overlong comment does not send and emits validation toast`() = runTest {
-    val overlong = "a".repeat(CommentPanelMaxInputLength + 1)
-    val useCase = createUseCase(initialState = CommentPanelState(cardId = "story-1", inputText = overlong))
-    val toastDeferred = async { useCase.baseEffect.first() }
-
-    useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
-
-    assertEquals("评论不能超过200字", useCase.state.value.inputErrorMessage)
-    assertEquals(BaseEffect.ShowToast("评论不能超过200字"), toastDeferred.await())
-}
-
-@Test
-fun `send success prepends comment clears input and updates total count`() = runTest {
-    val existing = sampleComment("existing")
-    val useCase = createUseCase(
-        initialState = CommentPanelState(cardId = "story-1", totalCount = 5, comments = listOf(existing), inputText = "新评论"),
-        repository = FakeCommentRepository(),
-    )
-
-    useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
-
-    assertEquals("新评论", useCase.state.value.comments.first().content)
-    assertEquals("existing", useCase.state.value.comments[1].commentId)
-    assertEquals("", useCase.state.value.inputText)
-    assertFalse(useCase.state.value.isSendingComment)
-    assertEquals(6, useCase.state.value.totalCount)
-}
-
-@Test
-fun `send failure keeps input and does not add failed comment`() = runTest {
-    val existing = sampleComment("existing")
-    val useCase = createUseCase(
-        initialState = CommentPanelState(cardId = "story-1", comments = listOf(existing), inputText = "失败评论"),
-        repository = FailingCommentRepository(failSend = true),
-    )
-    val toastDeferred = async { useCase.baseEffect.first() }
-
-    useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
-
-    assertEquals("失败评论", useCase.state.value.inputText)
-    assertEquals(listOf(existing), useCase.state.value.comments)
-    assertFalse(useCase.state.value.isSendingComment)
-    assertEquals("发送失败，请重试", useCase.state.value.sendErrorMessage)
-    assertEquals(BaseEffect.ShowToast("发送失败，请重试"), toastDeferred.await())
-}
-```
-
-- [ ] **Step 2: Run tests and verify red**
-
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
-
-Expected: FAIL because `sendComment` is no-op and `updateInput` only updates text.
-
-- [ ] **Step 3: Implement input and send logic**
-
-Replace input/send functions:
+追加测试：
 
 ```kotlin
-private fun updateInput(text: String) {
-    updateState {
-        it.copy(inputText = text, inputErrorMessage = null, sendErrorMessage = null)
-    }
-}
+@Test
+fun `input change updates text and clears input error`() = runTest
 
-private fun sendComment() {
-    if (currentState.isSendingComment) return
-    val content = currentState.inputText.trim()
-    val validationError = when {
-        content.isBlank() -> "请输入评论内容"
-        content.length > CommentPanelMaxInputLength -> "评论不能超过200字"
-        else -> null
-    }
-    if (validationError != null) {
-        updateState { it.copy(inputErrorMessage = validationError) }
-        dispatchBaseEffect(BaseEffect.ShowToast(validationError))
-        return
-    }
-    updateState { it.copy(isSendingComment = true, sendErrorMessage = null) }
-    scope.launch {
-        try {
-            val result = commentRepository.sendComment(currentState.cardId, content)
-            updateState {
-                it.copy(
-                    comments = (listOf(result.comment) + it.comments).distinctBy { comment -> comment.commentId },
-                    totalCount = result.totalCount,
-                    inputText = "",
-                    isSendingComment = false,
-                    inputErrorMessage = null,
-                    sendErrorMessage = null,
-                    initialLoadStatus = LoadStatus.Success,
-                )
-            }
-        } catch (_: Exception) {
-            updateState { it.copy(isSendingComment = false, sendErrorMessage = "发送失败，请重试") }
-            dispatchBaseEffect(BaseEffect.ShowToast("发送失败，请重试"))
-        }
-    }
-}
+@Test
+fun `blank comment does not send and emits validation toast`() = runTest
+
+@Test
+fun `overlong comment does not send and emits validation toast`() = runTest
+
+@Test
+fun `send success prepends comment clears input and updates total count`() = runTest
+
+@Test
+fun `send failure keeps input and does not add failed comment`() = runTest
 ```
 
-- [ ] **Step 4: Run tests and verify green**
+断言必须覆盖：
+- 输入变化更新 `inputText`
+- 输入变化清理 `inputErrorMessage` 和 `sendErrorMessage`
+- 空评论不发送，错误文案 `请输入评论内容`
+- 超长评论不发送，错误文案 `评论不能超过200字`
+- 发送成功把新评论插入顶部、清空输入、更新总数
+- 发送失败保留输入、不新增评论、错误文案 `发送失败，请重试`
 
-Run: `./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest`
+- [ ] **步骤 2：运行测试确认红灯**
 
-Expected: BUILD SUCCESSFUL.
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
 
-- [ ] **Step 5: Commit Task 6**
+预期：失败，因为发送仍是 no-op，输入更新逻辑也不完整。
+
+- [ ] **步骤 3：实现输入和发送逻辑**
+
+实现规则：
+- `OnInputChanged` 更新输入并清理旧错误
+- `OnSendClicked` 时如果 `isSendingComment == true`，直接忽略
+- trim 后为空：写入 `inputErrorMessage = "请输入评论内容"` 并 toast
+- 超过 `CommentPanelMaxInputLength`：写入 `inputErrorMessage = "评论不能超过200字"` 并 toast
+- 有效内容：进入 `isSendingComment = true`
+- 发送成功：新评论插入顶部、清空输入、退出发送中、更新 `totalCount`
+- 发送失败：退出发送中、保留输入、不新增评论、写入 `sendErrorMessage = "发送失败，请重试"` 并 toast
+
+- [ ] **步骤 4：运行测试确认绿灯**
+
+```bash
+./gradlew :biz:story:comment-panel:domain:test --tests zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelUseCaseTest
+```
+
+预期：`BUILD SUCCESSFUL`。
+
+- [ ] **步骤 5：提交任务 6**
 
 ```bash
 git add biz/story/comment-panel/domain/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCase.kt biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt
@@ -1215,68 +789,70 @@ git commit -m "feat(comment-panel): validate and send comments"
 
 ---
 
-### Task 7: Feature Coverage Review And Final Verification
+## 任务 7：Feature 覆盖 Review 和最终验证
 
-**Files:**
-- Modify if needed: `biz/story/comment-panel/domain/feature.md`
-- Inspect: `docs/superpowers/specs/2026-05-09-comment-panel-domain-design.md`
-- Inspect: `biz/story/comment-panel/domain/src/test/kotlin/zhaoyun/example/composedemo/story/commentpanel/domain/CommentPanelUseCaseTest.kt`
+**文件：**
+- 可能修改：`biz/story/comment-panel/domain/feature.md`
+- 检查：`docs/superpowers/specs/2026-05-09-comment-panel-domain-design.md`
+- 检查：`CommentPanelUseCaseTest.kt`
 
-- [ ] **Step 1: Review feature coverage**
+- [ ] **步骤 1：逐项 review feature 覆盖**
 
-Create a local checklist in the terminal output mapping:
+在终端输出以下映射并逐项确认：
 
 ```text
-UC-01 -> initial state + OnPanelShown tests
-UC-02 -> first page success test
-UC-03 -> first page failure preservation test
-UC-04 -> dialogue entry state in first page success test
-UC-05 -> NavigateToDialogue effect test
-UC-06 -> CommentItem model contract test
-UC-07 -> expand comment test
-UC-08 -> like success test
-UC-09 -> unlike non-negative test
-UC-10 -> like failure rollback test
-UC-11 -> expand replies success test
-UC-12 -> reply load failure test
-UC-13 -> load more replies test
-UC-14 -> collapse replies test
-UC-15 -> send success test
-UC-16 -> blank and overlong validation tests
-UC-17 -> send failure test
-UC-18 -> load more comments success and failure test
+UC-01 -> 初始状态 + OnPanelShown 测试
+UC-02 -> 首屏加载成功测试
+UC-03 -> 首屏失败保留已有数据测试
+UC-04 -> 首屏成功中的 dialogueEntry 状态测试
+UC-05 -> NavigateToDialogue effect 测试
+UC-06 -> CommentItem 模型契约测试
+UC-07 -> 展开长评论测试
+UC-08 -> 点赞成功测试
+UC-09 -> 取消点赞不低于 0 测试
+UC-10 -> 点赞失败回滚测试
+UC-11 -> 展开回复成功测试
+UC-12 -> 回复加载失败测试
+UC-13 -> 加载更多回复测试
+UC-14 -> 收起回复测试
+UC-15 -> 发送成功测试
+UC-16 -> 空评论和超长评论校验测试
+UC-17 -> 发送失败测试
+UC-18 -> 加载更多评论成功和失败测试
 ```
 
-- [ ] **Step 2: Run full domain verification**
+- [ ] **步骤 2：运行完整 domain 验证**
 
-Run: `./gradlew :biz:story:comment-panel:domain:test`
+```bash
+./gradlew :biz:story:comment-panel:domain:test
+```
 
-Expected: BUILD SUCCESSFUL.
+预期：`BUILD SUCCESSFUL`。
 
-- [ ] **Step 3: Run affected presentation compile check**
+- [ ] **步骤 3：运行受影响 presentation 和 app 编译**
 
-Run: `./gradlew :biz:story:comment-panel:presentation:compileDebugKotlin :app:compileDebugKotlin`
+```bash
+./gradlew :biz:story:comment-panel:presentation:compileDebugKotlin :app:compileDebugKotlin
+```
 
-Expected: BUILD SUCCESSFUL. This verifies the presentation module still resolves `CommentPanelViewModel` after the domain constructor changes.
+预期：`BUILD SUCCESSFUL`。这一步验证 domain 构造函数变化没有破坏 presentation 的 `CommentPanelViewModel`。
 
-- [ ] **Step 4: Inspect git diff**
-
-Run:
+- [ ] **步骤 4：检查 git diff 范围**
 
 ```bash
 git status --short
 git diff --stat
 ```
 
-Expected: only comment-panel domain files and any intentional feature doc sync are modified.
+预期：只包含 comment-panel domain 文件，以及必要的 presentation 编译适配或 feature 文档同步。
 
-- [ ] **Step 5: Commit final review fixes**
+- [ ] **步骤 5：提交最终修正**
 
-If Step 1 or Step 3 required corrections, stage only those files:
+如果 步骤 1 或 步骤 3 有修正，提交：
 
 ```bash
 git add biz/story/comment-panel/domain biz/story/comment-panel/presentation/src/main/kotlin/zhaoyun/example/composedemo/story/commentpanel/presentation/CommentPanelViewModel.kt
 git commit -m "test(comment-panel): complete domain coverage"
 ```
 
-If no corrections were needed after Task 6, do not create an empty commit.
+如果 任务 6 后无额外修正，不创建空提交。
