@@ -292,7 +292,57 @@ class CommentPanelUseCase(
         }
     }
 
-    private fun sendComment() = Unit
+    private suspend fun sendComment() {
+        val stateBeforeSend = currentState
+        if (stateBeforeSend.isSendingComment) return
+
+        val trimmedContent = stateBeforeSend.inputText.trim()
+        val validationError = when {
+            trimmedContent.isBlank() -> "请输入评论内容"
+            trimmedContent.length > CommentPanelMaxInputLength -> "评论不能超过200字"
+            else -> null
+        }
+        if (validationError != null) {
+            updateState { it.copy(inputErrorMessage = validationError) }
+            dispatchBaseEffect(BaseEffect.ShowToast(validationError))
+            return
+        }
+
+        val cardId = stateBeforeSend.cardId
+        updateState {
+            it.copy(
+                isSendingComment = true,
+                sendErrorMessage = null,
+            )
+        }
+        scope.launch {
+            try {
+                val result = commentRepository.sendComment(cardId, trimmedContent)
+                updateState {
+                    it.copy(
+                        totalCount = result.totalCount,
+                        comments = listOf(result.comment.toCommentItem()) + it.comments,
+                        inputText = "",
+                        isSendingComment = false,
+                        inputErrorMessage = null,
+                        sendErrorMessage = null,
+                    )
+                }
+            } catch (cancellation: CancellationException) {
+                updateState { it.copy(isSendingComment = false) }
+                throw cancellation
+            } catch (_: Exception) {
+                val message = "发送失败，请重试"
+                updateState {
+                    it.copy(
+                        isSendingComment = false,
+                        sendErrorMessage = message,
+                    )
+                }
+                dispatchBaseEffect(BaseEffect.ShowToast(message))
+            }
+        }
+    }
 
     private fun CommentPage.toPaginationState(): PaginationState = PaginationState(
         nextCursor = nextCursor,

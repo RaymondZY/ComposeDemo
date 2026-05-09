@@ -155,6 +155,138 @@ class CommentPanelUseCaseTest {
     }
 
     @Test
+    fun `input change updates text and clears input error`() = runTest {
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                inputText = "旧输入",
+                inputErrorMessage = "请输入评论内容",
+                sendErrorMessage = "发送失败，请重试",
+            ),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnInputChanged("新输入"))
+
+        assertEquals("新输入", useCase.state.value.inputText)
+        assertEquals(null, useCase.state.value.inputErrorMessage)
+        assertEquals(null, useCase.state.value.sendErrorMessage)
+    }
+
+    @Test
+    fun `blank comment does not send and emits validation toast`() = runTest {
+        val repository = RecordingSendRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                inputText = "  \n\t  ",
+            ),
+            repository = repository,
+        )
+        val toastDeferred = async { useCase.baseEffect.first() }
+
+        useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
+
+        assertEquals(0, repository.callCount)
+        assertFalse(useCase.state.value.isSendingComment)
+        assertEquals("请输入评论内容", useCase.state.value.inputErrorMessage)
+        assertEquals(BaseEffect.ShowToast("请输入评论内容"), toastDeferred.await())
+    }
+
+    @Test
+    fun `overlong comment does not send and emits validation toast`() = runTest {
+        val repository = RecordingSendRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                inputText = "a".repeat(CommentPanelMaxInputLength + 1),
+            ),
+            repository = repository,
+        )
+        val toastDeferred = async { useCase.baseEffect.first() }
+
+        useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
+
+        assertEquals(0, repository.callCount)
+        assertFalse(useCase.state.value.isSendingComment)
+        assertEquals("评论不能超过200字", useCase.state.value.inputErrorMessage)
+        assertEquals(BaseEffect.ShowToast("评论不能超过200字"), toastDeferred.await())
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `send success prepends comment clears input and updates total count`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val existing = sampleComment("existing")
+        val sentComment = commentData("sent-comment", content = "新评论")
+        val repository = SuspendedSendRepository(
+            result = SendCommentResult(
+                comment = sentComment,
+                totalCount = 2,
+            ),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                totalCount = 1,
+                comments = listOf(existing),
+                inputText = "  新评论  ",
+                inputErrorMessage = "旧输入错误",
+                sendErrorMessage = "旧发送错误",
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
+
+        assertTrue(useCase.state.value.isSendingComment)
+        assertEquals(null, useCase.state.value.sendErrorMessage)
+
+        runCurrent()
+        assertEquals(1, repository.callCount)
+        assertEquals("story-1", repository.cardId)
+        assertEquals("新评论", repository.content)
+
+        useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
+        runCurrent()
+        assertEquals(1, repository.callCount)
+
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals(false, useCase.state.value.isSendingComment)
+        assertEquals("", useCase.state.value.inputText)
+        assertEquals(null, useCase.state.value.inputErrorMessage)
+        assertEquals(null, useCase.state.value.sendErrorMessage)
+        assertEquals(2, useCase.state.value.totalCount)
+        assertEquals(listOf(sentComment.toCommentItem(), existing), useCase.state.value.comments)
+    }
+
+    @Test
+    fun `send failure keeps input and does not add failed comment`() = runTest {
+        val existing = sampleComment("existing")
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                totalCount = 1,
+                comments = listOf(existing),
+                inputText = "  保留内容  ",
+            ),
+            repository = FailingCommentRepository(failSend = true),
+        )
+        val toastDeferred = async { useCase.baseEffect.first() }
+
+        useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
+
+        assertFalse(useCase.state.value.isSendingComment)
+        assertEquals("  保留内容  ", useCase.state.value.inputText)
+        assertEquals(listOf(existing), useCase.state.value.comments)
+        assertEquals(1, useCase.state.value.totalCount)
+        assertEquals("发送失败，请重试", useCase.state.value.sendErrorMessage)
+        assertEquals(BaseEffect.ShowToast("发送失败，请重试"), toastDeferred.await())
+    }
+
+    @Test
     fun `panel shown loads first page and dialogue entry`() = runTest {
         val useCase = createUseCase(repository = FakeCommentRepository())
 
@@ -844,6 +976,18 @@ private fun replyData(id: String, parentId: String = "comment-1") = ReplyData(
     createdAtText = "刚刚",
 )
 
+private fun commentData(id: String, content: String = "测试评论") = CommentData(
+    commentId = id,
+    user = sampleUser(),
+    content = content,
+    createdAtText = "刚刚",
+    likeCount = 0,
+    isLiked = false,
+    isPinned = false,
+    canExpand = false,
+    replyCount = 0,
+)
+
 private class EmptyCommentRepository : CommentRepository by FakeCommentRepository() {
     override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
         return CommentInitialResult(
@@ -924,6 +1068,47 @@ private class FixedRepliesRepository(
         this.cursor = cursor
         this.pageSize = pageSize
         return result
+    }
+}
+
+private class RecordingSendRepository : CommentRepository by FakeCommentRepository() {
+    var cardId: String? = null
+        private set
+    var content: String? = null
+        private set
+    var callCount: Int = 0
+        private set
+
+    override suspend fun sendComment(cardId: String, content: String): SendCommentResult {
+        callCount += 1
+        this.cardId = cardId
+        this.content = content
+        return SendCommentResult(commentData("sent-comment", content), totalCount = 1)
+    }
+}
+
+private class SuspendedSendRepository(
+    private val result: SendCommentResult,
+) : CommentRepository by FakeCommentRepository() {
+    private val canComplete = CompletableDeferred<Unit>()
+
+    var cardId: String? = null
+        private set
+    var content: String? = null
+        private set
+    var callCount: Int = 0
+        private set
+
+    override suspend fun sendComment(cardId: String, content: String): SendCommentResult {
+        callCount += 1
+        this.cardId = cardId
+        this.content = content
+        canComplete.await()
+        return result
+    }
+
+    fun complete() {
+        canComplete.complete(Unit)
     }
 }
 
