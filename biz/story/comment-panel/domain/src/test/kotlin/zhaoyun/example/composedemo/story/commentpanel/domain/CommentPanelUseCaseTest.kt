@@ -104,4 +104,35 @@ class CommentPanelUseCaseTest {
             reply,
         )
     }
+
+    @Test
+    fun `fake repository returns dialogue entry and first comment page`() = kotlinx.coroutines.test.runTest {
+        val repository = FakeCommentRepository()
+
+        val result = repository.loadInitial(cardId = "story-1", pageSize = 2)
+
+        assertEquals(5, result.totalCount)
+        assertTrue(result.dialogueEntry is DialogueEntryState.Available)
+        assertEquals(2, result.page.comments.size)
+        assertEquals("comment-1", result.page.comments.first().commentId)
+        assertEquals("cursor-2", result.page.nextCursor)
+        assertTrue(result.page.hasMore)
+    }
+
+    @Test
+    fun `fake repository supports comments replies like and send`() = kotlinx.coroutines.test.runTest {
+        val repository = FakeCommentRepository()
+
+        val moreComments = repository.loadMoreComments(cardId = "story-1", cursor = "cursor-2", pageSize = 2)
+        val replies = repository.loadReplies(cardId = "story-1", commentId = "comment-1", cursor = null, pageSize = 1)
+        val like = repository.setCommentLiked(cardId = "story-1", commentId = "comment-1", liked = true)
+        val send = repository.sendComment(cardId = "story-1", content = "新评论")
+
+        assertEquals(listOf("comment-3", "comment-4"), moreComments.comments.map { it.commentId })
+        assertEquals(1, replies.replies.size)
+        assertEquals("reply-1", replies.replies.first().replyId)
+        assertEquals(CommentLikeResult("comment-1", isLiked = true, likeCount = 13), like)
+        assertEquals("新评论", send.comment.content)
+        assertEquals(6, send.totalCount)
+    }
 }
