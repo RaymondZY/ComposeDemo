@@ -312,6 +312,61 @@ class CommentPanelUseCaseTest {
         )
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `unlike comment uses optimistic submitting state`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = SuspendedLikeRepository(
+            result = CommentLikeResult("comment-1", isLiked = false, likeCount = 1),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("comment-1", likeCount = 2, isLiked = true)),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+
+        assertEquals(
+            sampleComment("comment-1", likeCount = 1, isLiked = false, isLikeSubmitting = true),
+            useCase.state.value.comments.single(),
+        )
+        runCurrent()
+        assertEquals(false, repository.liked)
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals(
+            sampleComment("comment-1", likeCount = 1, isLiked = false, isLikeSubmitting = false),
+            useCase.state.value.comments.single(),
+        )
+    }
+
+    @Test
+    fun `like missing comment does nothing`() = runTest {
+        val existing = sampleComment("comment-1", likeCount = 2, isLiked = false)
+        val repository = SuspendedLikeRepository(
+            result = CommentLikeResult("missing", isLiked = true, likeCount = 3),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(existing),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("missing"))
+
+        assertEquals(listOf(existing), useCase.state.value.comments)
+        assertEquals(0, repository.callCount)
+    }
+
     @Test
     fun `like failure rolls back target comment and emits toast`() = runTest {
         val oldTarget = sampleComment("comment-1", likeCount = 7, isLiked = false)
@@ -331,6 +386,24 @@ class CommentPanelUseCaseTest {
         assertEquals(oldTarget, useCase.state.value.comments[0])
         assertEquals(other, useCase.state.value.comments[1])
         assertEquals(BaseEffect.ShowToast("点赞失败，请重试"), toastDeferred.await())
+    }
+
+    @Test
+    fun `like cancellation rolls back without toast`() = runTest {
+        val oldTarget = sampleComment("comment-1", likeCount = 7, isLiked = false)
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(oldTarget),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = CancellingLikeRepository(),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+
+        assertEquals(listOf(oldTarget), useCase.state.value.comments)
+        assertEquals(null, withTimeoutOrNull(1) { useCase.baseEffect.first() })
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -556,6 +629,12 @@ private class SuspendedLikeRepository(
 
     fun complete() {
         canComplete.complete(Unit)
+    }
+}
+
+private class CancellingLikeRepository : CommentRepository by FakeCommentRepository() {
+    override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
+        throw CancellationException("like cancelled")
     }
 }
 
