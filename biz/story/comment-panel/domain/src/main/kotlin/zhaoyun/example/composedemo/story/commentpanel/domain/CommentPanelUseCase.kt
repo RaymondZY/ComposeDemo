@@ -21,6 +21,7 @@ class CommentPanelUseCase(
     serviceRegistry,
 ) {
     private var initialLoadJob: Job? = null
+    private var initialLoadRequestId = 0
 
     override suspend fun onEvent(event: CommentPanelEvent) {
         when (event) {
@@ -48,6 +49,7 @@ class CommentPanelUseCase(
         if (!force && currentState.initialLoadStatus == LoadStatus.Loading) return
 
         val cardId = currentState.cardId
+        val requestId = ++initialLoadRequestId
         initialLoadJob?.cancel()
         updateState {
             it.copy(
@@ -58,6 +60,7 @@ class CommentPanelUseCase(
         initialLoadJob = scope.launch {
             try {
                 val result = commentRepository.loadInitial(cardId, CommentPanelInitialPageSize)
+                if (requestId != initialLoadRequestId) return@launch
                 val comments = result.page.comments.map { it.toCommentItem() }
                 updateState {
                     it.copy(
@@ -71,6 +74,7 @@ class CommentPanelUseCase(
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (_: Exception) {
+                if (requestId != initialLoadRequestId) return@launch
                 updateState { it.copy(initialLoadStatus = LoadStatus.Error) }
                 dispatchBaseEffect(BaseEffect.ShowToast("评论加载失败"))
             }
@@ -98,6 +102,8 @@ class CommentPanelUseCase(
                         commentPagination = page.toPaginationState(),
                     )
                 }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
             } catch (_: Exception) {
                 updateState {
                     it.copy(

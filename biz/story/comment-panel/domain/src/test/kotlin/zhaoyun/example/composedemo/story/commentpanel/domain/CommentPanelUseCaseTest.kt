@@ -1,8 +1,10 @@
 package zhaoyun.example.composedemo.story.commentpanel.domain
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
@@ -11,6 +13,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -226,7 +229,7 @@ class CommentPanelUseCaseTest {
     @Test
     fun `retry result is not overwritten by stale initial load response`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
-        val repository = StaleInitialLoadRepository()
+        val repository = NonCooperativeStaleInitialLoadRepository()
         val useCase = createUseCase(
             repository = repository,
             scope = CoroutineScope(SupervisorJob() + dispatcher),
@@ -243,6 +246,24 @@ class CommentPanelUseCaseTest {
         assertEquals(1, useCase.state.value.totalCount)
         assertEquals(listOf("retry-comment"), useCase.state.value.comments.map { it.commentId })
         assertEquals("retry-dialogue", (useCase.state.value.dialogueEntry as DialogueEntryState.Available).targetId)
+    }
+
+    @Test
+    fun `load more cancellation is not reported as pagination failure`() = runTest {
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("existing")),
+                initialLoadStatus = LoadStatus.Success,
+                commentPagination = PaginationState(nextCursor = "cursor-1", hasMore = true),
+            ),
+            repository = CancellingLoadMoreRepository(),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreComments)
+
+        assertEquals(listOf("existing"), useCase.state.value.comments.map { it.commentId })
+        assertEquals(null, useCase.state.value.commentPagination.errorMessage)
     }
 }
 
@@ -332,14 +353,16 @@ private class PagedThenFailingCommentRepository : CommentRepository by FakeComme
     }
 }
 
-private class StaleInitialLoadRepository : CommentRepository by FakeCommentRepository() {
+private class NonCooperativeStaleInitialLoadRepository : CommentRepository by FakeCommentRepository() {
     private val firstLoadCanFinish = CompletableDeferred<Unit>()
     private var loadInitialCalls = 0
 
     override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
         loadInitialCalls += 1
         return if (loadInitialCalls == 1) {
-            firstLoadCanFinish.await()
+            withContext(NonCancellable) {
+                firstLoadCanFinish.await()
+            }
             result("stale-comment", totalCount = 9, targetId = "stale-dialogue")
         } else {
             result("retry-comment", totalCount = 1, targetId = "retry-dialogue")
@@ -376,5 +399,11 @@ private class StaleInitialLoadRepository : CommentRepository by FakeCommentRepos
                 hasMore = false,
             ),
         )
+    }
+}
+
+private class CancellingLoadMoreRepository : CommentRepository by FakeCommentRepository() {
+    override suspend fun loadMoreComments(cardId: String, cursor: String, pageSize: Int): CommentPage {
+        throw CancellationException("load more cancelled")
     }
 }
