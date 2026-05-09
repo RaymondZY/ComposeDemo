@@ -1,9 +1,19 @@
 package zhaoyun.example.composedemo.story.commentpanel.domain
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
+import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
+import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 
 class CommentPanelUseCaseTest {
     @Test
@@ -134,5 +144,163 @@ class CommentPanelUseCaseTest {
         assertEquals(CommentLikeResult("comment-1", isLiked = true, likeCount = 13), like)
         assertEquals("新评论", send.comment.content)
         assertEquals(6, send.totalCount)
+    }
+
+    @Test
+    fun `panel shown loads first page and dialogue entry`() = runTest {
+        val useCase = createUseCase(repository = FakeCommentRepository())
+
+        useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
+
+        assertEquals(LoadStatus.Success, useCase.state.value.initialLoadStatus)
+        assertEquals(5, useCase.state.value.totalCount)
+        assertEquals(
+            listOf("comment-1", "comment-2", "comment-3", "comment-4", "comment-5"),
+            useCase.state.value.comments.map { it.commentId },
+        )
+        assertTrue(useCase.state.value.dialogueEntry is DialogueEntryState.Available)
+        assertTrue(useCase.state.value.comments.none { it.isExpanded || it.isLikeSubmitting || it.replySection != ReplySectionState() })
+    }
+
+    @Test
+    fun `initial load empty page enters empty state`() = runTest {
+        val useCase = createUseCase(repository = EmptyCommentRepository())
+
+        useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
+
+        assertEquals(LoadStatus.Empty, useCase.state.value.initialLoadStatus)
+        assertEquals(emptyList<CommentItem>(), useCase.state.value.comments)
+    }
+
+    @Test
+    fun `initial load failure keeps existing comments`() = runTest {
+        val existing = sampleComment("existing")
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(existing),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = FailingCommentRepository(failInitial = true),
+        )
+        val toastDeferred = async { useCase.baseEffect.first() }
+
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+
+        assertEquals(LoadStatus.Error, useCase.state.value.initialLoadStatus)
+        assertEquals(listOf(existing), useCase.state.value.comments)
+        assertEquals(BaseEffect.ShowToast("评论加载失败"), toastDeferred.await())
+    }
+
+    @Test
+    fun `dialogue entry click emits navigation when available`() = runTest {
+        val useCase = createUseCase(repository = FakeCommentRepository())
+        useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
+        val effectDeferred = async { useCase.effect.first() }
+
+        useCase.receiveEvent(CommentPanelEvent.OnDialogueEntryClicked)
+
+        assertEquals(CommentPanelEffect.NavigateToDialogue("story-1", "story-1-dialogue"), effectDeferred.await())
+    }
+
+    @Test
+    fun `load more comments appends and preserves existing comments on failure`() = runTest {
+        val repository = PagedThenFailingCommentRepository()
+        val useCase = createUseCase(repository = repository)
+
+        useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreComments)
+        val beforeFailure = useCase.state.value.comments
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreComments)
+
+        assertEquals(listOf("comment-1", "comment-2", "comment-3", "comment-4"), beforeFailure.map { it.commentId })
+        assertEquals(beforeFailure, useCase.state.value.comments)
+        assertEquals("评论加载失败", useCase.state.value.commentPagination.errorMessage)
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun createUseCase(
+    initialState: CommentPanelState = CommentPanelState(cardId = "story-1"),
+    repository: CommentRepository = FakeCommentRepository(),
+    scope: CoroutineScope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher()),
+) = CommentPanelUseCase(
+    commentRepository = repository,
+    scope = scope,
+    stateHolder = initialState.toStateHolder(),
+    serviceRegistry = MutableServiceRegistryImpl(),
+)
+
+private fun sampleUser(id: String = "user-1") = CommentUser(
+    userId = id,
+    nickname = "测试用户",
+    avatarUrl = "https://example.com/$id.png",
+)
+
+private fun sampleComment(id: String, replySection: ReplySectionState = ReplySectionState()) = CommentItem(
+    commentId = id,
+    user = sampleUser(),
+    content = "测试评论",
+    createdAtText = "刚刚",
+    likeCount = 0,
+    replySection = replySection,
+)
+
+private fun sampleReply(id: String, parentId: String = "comment-1") = ReplyItem(
+    replyId = id,
+    parentCommentId = parentId,
+    user = sampleUser("reply-user"),
+    content = "测试回复",
+    createdAtText = "刚刚",
+)
+
+private class EmptyCommentRepository : CommentRepository by FakeCommentRepository() {
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        return CommentInitialResult(
+            totalCount = 0,
+            dialogueEntry = DialogueEntryState.Hidden,
+            page = CommentPage(emptyList(), nextCursor = null, hasMore = false),
+        )
+    }
+}
+
+private class FailingCommentRepository(
+    private val failInitial: Boolean = false,
+    private val failLike: Boolean = false,
+    private val failReplies: Boolean = false,
+    private val failSend: Boolean = false,
+) : CommentRepository by FakeCommentRepository() {
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        if (failInitial) error("initial failed")
+        return FakeCommentRepository().loadInitial(cardId, pageSize)
+    }
+
+    override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
+        if (failLike) error("like failed")
+        return FakeCommentRepository().setCommentLiked(cardId, commentId, liked)
+    }
+
+    override suspend fun loadReplies(cardId: String, commentId: String, cursor: String?, pageSize: Int): ReplyPage {
+        if (failReplies) error("replies failed")
+        return FakeCommentRepository().loadReplies(cardId, commentId, cursor, pageSize)
+    }
+
+    override suspend fun sendComment(cardId: String, content: String): SendCommentResult {
+        if (failSend) error("send failed")
+        return FakeCommentRepository().sendComment(cardId, content)
+    }
+}
+
+private class PagedThenFailingCommentRepository : CommentRepository by FakeCommentRepository() {
+    private var loadMoreCalls = 0
+
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        return FakeCommentRepository().loadInitial(cardId, pageSize = 2)
+    }
+
+    override suspend fun loadMoreComments(cardId: String, cursor: String, pageSize: Int): CommentPage {
+        loadMoreCalls += 1
+        if (loadMoreCalls > 1) error("load more failed")
+        return FakeCommentRepository().loadMoreComments(cardId, cursor, pageSize = 2)
     }
 }
