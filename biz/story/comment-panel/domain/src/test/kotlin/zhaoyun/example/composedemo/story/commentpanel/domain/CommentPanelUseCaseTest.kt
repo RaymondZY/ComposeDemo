@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -270,6 +271,53 @@ class CommentPanelUseCaseTest {
         assertEquals(false, useCase.state.value.commentPagination.isLoading)
         assertEquals(null, useCase.state.value.commentPagination.errorMessage)
     }
+
+    @Test
+    fun `initial load cancellation restores non loading state and remains retryable without error`() = runTest {
+        val repository = CancellingThenSuccessfulInitialLoadRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("existing")),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+        assertEquals(LoadStatus.Success, useCase.state.value.initialLoadStatus)
+        assertEquals(listOf("existing"), useCase.state.value.comments.map { it.commentId })
+        assertEquals(null, withTimeoutOrNull(1) { useCase.baseEffect.first() })
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+
+        assertEquals(LoadStatus.Success, useCase.state.value.initialLoadStatus)
+        assertEquals(listOf("retry-initial-comment"), useCase.state.value.comments.map { it.commentId })
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `stale initial load cancellation does not restore old state over retry result`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = StaleCancellingInitialLoadRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                initialLoadStatus = LoadStatus.Error,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+        runCurrent()
+        repository.releaseFirstCancellation()
+        advanceUntilIdle()
+
+        assertEquals(LoadStatus.Success, useCase.state.value.initialLoadStatus)
+        assertEquals(listOf("retry-after-stale-cancel"), useCase.state.value.comments.map { it.commentId })
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -430,5 +478,76 @@ private class CancellingThenSuccessfulLoadMoreRepository : CommentRepository by 
             nextCursor = null,
             hasMore = false,
         )
+    }
+}
+
+private class CancellingThenSuccessfulInitialLoadRepository : CommentRepository by FakeCommentRepository() {
+    private var calls = 0
+
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        calls += 1
+        if (calls == 1) throw CancellationException("initial load cancelled")
+        return CommentInitialResult(
+            totalCount = 1,
+            dialogueEntry = DialogueEntryState.Hidden,
+            page = CommentPage(
+                comments = listOf(
+                    CommentData(
+                        commentId = "retry-initial-comment",
+                        user = sampleUser(),
+                        content = "重试首屏评论",
+                        createdAtText = "刚刚",
+                        likeCount = 0,
+                        isLiked = false,
+                        isPinned = false,
+                        canExpand = false,
+                        replyCount = 0,
+                    ),
+                ),
+                nextCursor = null,
+                hasMore = false,
+            ),
+        )
+    }
+}
+
+private class StaleCancellingInitialLoadRepository : CommentRepository by FakeCommentRepository() {
+    private val firstLoadCanCancel = CompletableDeferred<Unit>()
+    private var calls = 0
+
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        calls += 1
+        return if (calls == 1) {
+            withContext(NonCancellable) {
+                firstLoadCanCancel.await()
+                throw CancellationException("stale initial load cancelled")
+            }
+        } else {
+            CommentInitialResult(
+                totalCount = 1,
+                dialogueEntry = DialogueEntryState.Hidden,
+                page = CommentPage(
+                    comments = listOf(
+                        CommentData(
+                            commentId = "retry-after-stale-cancel",
+                            user = sampleUser(),
+                            content = "重试首屏评论",
+                            createdAtText = "刚刚",
+                            likeCount = 0,
+                            isLiked = false,
+                            isPinned = false,
+                            canExpand = false,
+                            replyCount = 0,
+                        ),
+                    ),
+                    nextCursor = null,
+                    hasMore = false,
+                ),
+            )
+        }
+    }
+
+    fun releaseFirstCancellation() {
+        firstLoadCanCancel.complete(Unit)
     }
 }

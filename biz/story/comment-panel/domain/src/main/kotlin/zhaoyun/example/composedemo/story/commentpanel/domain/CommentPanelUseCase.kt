@@ -48,7 +48,9 @@ class CommentPanelUseCase(
     private fun loadInitial(force: Boolean) {
         if (!force && currentState.initialLoadStatus == LoadStatus.Loading) return
 
-        val cardId = currentState.cardId
+        val stateBeforeLoad = currentState
+        val cardId = stateBeforeLoad.cardId
+        val cancellationFallbackStatus = stateBeforeLoad.initialLoadCancellationFallbackStatus()
         val requestId = ++initialLoadRequestId
         initialLoadJob?.cancel()
         updateState {
@@ -72,12 +74,22 @@ class CommentPanelUseCase(
                     )
                 }
             } catch (cancellation: CancellationException) {
+                if (requestId == initialLoadRequestId) {
+                    updateState { it.copy(initialLoadStatus = cancellationFallbackStatus) }
+                }
                 throw cancellation
             } catch (_: Exception) {
                 if (requestId != initialLoadRequestId) return@launch
                 updateState { it.copy(initialLoadStatus = LoadStatus.Error) }
                 dispatchBaseEffect(BaseEffect.ShowToast("评论加载失败"))
             }
+        }
+    }
+
+    private fun CommentPanelState.initialLoadCancellationFallbackStatus(): LoadStatus {
+        return when (initialLoadStatus) {
+            LoadStatus.Loading -> if (comments.isEmpty()) LoadStatus.Idle else LoadStatus.Success
+            else -> initialLoadStatus
         }
     }
 
