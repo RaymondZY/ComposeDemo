@@ -249,7 +249,8 @@ class CommentPanelUseCaseTest {
     }
 
     @Test
-    fun `load more cancellation is not reported as pagination failure`() = runTest {
+    fun `load more cancellation clears loading and remains retryable without error`() = runTest {
+        val repository = CancellingThenSuccessfulLoadMoreRepository()
         val useCase = createUseCase(
             initialState = CommentPanelState(
                 cardId = "story-1",
@@ -257,12 +258,16 @@ class CommentPanelUseCaseTest {
                 initialLoadStatus = LoadStatus.Success,
                 commentPagination = PaginationState(nextCursor = "cursor-1", hasMore = true),
             ),
-            repository = CancellingLoadMoreRepository(),
+            repository = repository,
         )
 
         useCase.receiveEvent(CommentPanelEvent.OnLoadMoreComments)
+        assertEquals(false, useCase.state.value.commentPagination.isLoading)
+        assertEquals(null, useCase.state.value.commentPagination.errorMessage)
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreComments)
 
-        assertEquals(listOf("existing"), useCase.state.value.comments.map { it.commentId })
+        assertEquals(listOf("existing", "retry-comment"), useCase.state.value.comments.map { it.commentId })
+        assertEquals(false, useCase.state.value.commentPagination.isLoading)
         assertEquals(null, useCase.state.value.commentPagination.errorMessage)
     }
 }
@@ -402,8 +407,28 @@ private class NonCooperativeStaleInitialLoadRepository : CommentRepository by Fa
     }
 }
 
-private class CancellingLoadMoreRepository : CommentRepository by FakeCommentRepository() {
+private class CancellingThenSuccessfulLoadMoreRepository : CommentRepository by FakeCommentRepository() {
+    private var calls = 0
+
     override suspend fun loadMoreComments(cardId: String, cursor: String, pageSize: Int): CommentPage {
-        throw CancellationException("load more cancelled")
+        calls += 1
+        if (calls == 1) throw CancellationException("load more cancelled")
+        return CommentPage(
+            comments = listOf(
+                CommentData(
+                    commentId = "retry-comment",
+                    user = sampleUser(),
+                    content = "重试评论",
+                    createdAtText = "刚刚",
+                    likeCount = 0,
+                    isLiked = false,
+                    isPinned = false,
+                    canExpand = false,
+                    replyCount = 0,
+                ),
+            ),
+            nextCursor = null,
+            hasMore = false,
+        )
     }
 }

@@ -103,6 +103,14 @@ class CommentPanelUseCase(
                     )
                 }
             } catch (cancellation: CancellationException) {
+                updateState {
+                    it.copy(
+                        commentPagination = it.commentPagination.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                        ),
+                    )
+                }
                 throw cancellation
             } catch (_: Exception) {
                 updateState {
