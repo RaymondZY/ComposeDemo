@@ -473,6 +473,7 @@ class FakeCommentRepository : CommentRepository {
         content: String,
         likeCount: Int,
         replyCount: Int,
+        isLiked: Boolean = false,
         isPinned: Boolean = false,
     ): CommentData = CommentData(
         commentId = id,
@@ -480,6 +481,7 @@ class FakeCommentRepository : CommentRepository {
         content = content,
         createdAtText = "刚刚",
         likeCount = likeCount,
+        isLiked = isLiked,
         isPinned = isPinned,
         canExpand = content.length > 18,
         replyCount = replyCount,
