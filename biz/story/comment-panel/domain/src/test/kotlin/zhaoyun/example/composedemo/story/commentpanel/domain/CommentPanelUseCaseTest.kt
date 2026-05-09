@@ -367,6 +367,198 @@ class CommentPanelUseCaseTest {
         assertEquals(0, repository.callCount)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `expand replies loads first reply page for target comment`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = SuspendedRepliesRepository(
+            result = ReplyPage(
+                replies = listOf(replyData("reply-1", parentId = "comment-1")),
+                nextCursor = "cursor-1",
+                hasMore = true,
+            ),
+        )
+        val target = sampleComment("comment-1")
+        val other = sampleComment("comment-2")
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(target, other),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnRepliesExpanded("comment-1"))
+
+        assertEquals(
+            target.copy(
+                replySection = ReplySectionState(
+                    isExpanded = true,
+                    isLoading = true,
+                ),
+            ),
+            useCase.state.value.comments[0],
+        )
+        assertEquals(other, useCase.state.value.comments[1])
+
+        runCurrent()
+        assertEquals(1, repository.callCount)
+        assertEquals("story-1", repository.cardId)
+        assertEquals("comment-1", repository.commentId)
+        assertEquals(null, repository.cursor)
+        assertEquals(CommentPanelReplyPageSize, repository.pageSize)
+
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals(
+            target.copy(
+                replySection = ReplySectionState(
+                    isExpanded = true,
+                    replies = listOf(sampleReply("reply-1", parentId = "comment-1")),
+                    pagination = PaginationState(nextCursor = "cursor-1", hasMore = true),
+                ),
+            ),
+            useCase.state.value.comments[0],
+        )
+        assertEquals(other, useCase.state.value.comments[1])
+
+        useCase.receiveEvent(CommentPanelEvent.OnRepliesExpanded("comment-1"))
+
+        assertEquals(1, repository.callCount)
+    }
+
+    @Test
+    fun `reply load failure only marks target comment reply section`() = runTest {
+        val loadedReply = sampleReply("reply-1", parentId = "comment-1")
+        val target = sampleComment(
+            "comment-1",
+            replySection = ReplySectionState(
+                isExpanded = true,
+                replies = listOf(loadedReply),
+                pagination = PaginationState(nextCursor = "cursor-1", hasMore = true),
+            ),
+        )
+        val other = sampleComment(
+            "comment-2",
+            replySection = ReplySectionState(
+                isExpanded = true,
+                replies = listOf(sampleReply("reply-other", parentId = "comment-2")),
+                pagination = PaginationState(nextCursor = "other-cursor", hasMore = true),
+            ),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(target, other),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = FailingCommentRepository(failReplies = true),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreReplies("comment-1"))
+
+        assertEquals(
+            target.copy(
+                replySection = target.replySection.copy(
+                    isLoading = false,
+                    errorMessage = "回复加载失败",
+                ),
+            ),
+            useCase.state.value.comments[0],
+        )
+        assertEquals(other, useCase.state.value.comments[1])
+    }
+
+    @Test
+    fun `load more replies appends and deduplicates target replies`() = runTest {
+        val existingReply = sampleReply("reply-1", parentId = "comment-1")
+        val target = sampleComment(
+            "comment-1",
+            replySection = ReplySectionState(
+                isExpanded = true,
+                replies = listOf(existingReply),
+                pagination = PaginationState(nextCursor = "cursor-1", hasMore = true),
+            ),
+        )
+        val other = sampleComment("comment-2")
+        val repository = FixedRepliesRepository(
+            result = ReplyPage(
+                replies = listOf(
+                    replyData("reply-1", parentId = "comment-1"),
+                    replyData("reply-2", parentId = "comment-1"),
+                ),
+                nextCursor = null,
+                hasMore = false,
+            ),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(target, other),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreReplies("comment-1"))
+
+        assertEquals("story-1", repository.cardId)
+        assertEquals("comment-1", repository.commentId)
+        assertEquals("cursor-1", repository.cursor)
+        assertEquals(CommentPanelReplyPageSize, repository.pageSize)
+        assertEquals(
+            target.copy(
+                replySection = ReplySectionState(
+                    isExpanded = true,
+                    replies = listOf(
+                        existingReply,
+                        sampleReply("reply-2", parentId = "comment-1"),
+                    ),
+                    pagination = PaginationState(nextCursor = null, hasMore = false),
+                ),
+            ),
+            useCase.state.value.comments[0],
+        )
+        assertEquals(other, useCase.state.value.comments[1])
+    }
+
+    @Test
+    fun `collapse replies keeps loaded replies`() = runTest {
+        val target = sampleComment(
+            "comment-1",
+            replySection = ReplySectionState(
+                isExpanded = true,
+                replies = listOf(sampleReply("reply-1", parentId = "comment-1")),
+                pagination = PaginationState(nextCursor = "cursor-1", hasMore = true),
+            ),
+        )
+        val other = sampleComment(
+            "comment-2",
+            replySection = ReplySectionState(
+                isExpanded = true,
+                replies = listOf(sampleReply("reply-other", parentId = "comment-2")),
+            ),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(target, other),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnRepliesCollapsed("comment-1"))
+
+        assertEquals(
+            target.copy(replySection = target.replySection.copy(isExpanded = false)),
+            useCase.state.value.comments[0],
+        )
+        assertEquals(other, useCase.state.value.comments[1])
+    }
+
     @Test
     fun `like failure rolls back target comment and emits toast`() = runTest {
         val oldTarget = sampleComment("comment-1", likeCount = 7, isLiked = false)
@@ -545,6 +737,14 @@ private fun sampleReply(id: String, parentId: String = "comment-1") = ReplyItem(
     createdAtText = "刚刚",
 )
 
+private fun replyData(id: String, parentId: String = "comment-1") = ReplyData(
+    replyId = id,
+    parentCommentId = parentId,
+    user = sampleUser("reply-user"),
+    content = "测试回复",
+    createdAtText = "刚刚",
+)
+
 private class EmptyCommentRepository : CommentRepository by FakeCommentRepository() {
     override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
         return CommentInitialResult(
@@ -604,6 +804,27 @@ private class FixedLikeRepository(
     }
 }
 
+private class FixedRepliesRepository(
+    private val result: ReplyPage,
+) : CommentRepository by FakeCommentRepository() {
+    var cardId: String? = null
+        private set
+    var commentId: String? = null
+        private set
+    var cursor: String? = null
+        private set
+    var pageSize: Int? = null
+        private set
+
+    override suspend fun loadReplies(cardId: String, commentId: String, cursor: String?, pageSize: Int): ReplyPage {
+        this.cardId = cardId
+        this.commentId = commentId
+        this.cursor = cursor
+        this.pageSize = pageSize
+        return result
+    }
+}
+
 private class SuspendedLikeRepository(
     private val result: CommentLikeResult,
 ) : CommentRepository by FakeCommentRepository() {
@@ -623,6 +844,37 @@ private class SuspendedLikeRepository(
         this.cardId = cardId
         this.commentId = commentId
         this.liked = liked
+        canComplete.await()
+        return result
+    }
+
+    fun complete() {
+        canComplete.complete(Unit)
+    }
+}
+
+private class SuspendedRepliesRepository(
+    private val result: ReplyPage,
+) : CommentRepository by FakeCommentRepository() {
+    private val canComplete = CompletableDeferred<Unit>()
+
+    var cardId: String? = null
+        private set
+    var commentId: String? = null
+        private set
+    var cursor: String? = null
+        private set
+    var pageSize: Int? = null
+        private set
+    var callCount: Int = 0
+        private set
+
+    override suspend fun loadReplies(cardId: String, commentId: String, cursor: String?, pageSize: Int): ReplyPage {
+        callCount += 1
+        this.cardId = cardId
+        this.commentId = commentId
+        this.cursor = cursor
+        this.pageSize = pageSize
         canComplete.await()
         return result
     }

@@ -201,11 +201,86 @@ class CommentPanelUseCase(
         return currentState.comments.firstOrNull { it.commentId == commentId }
     }
 
-    private fun expandReplies(commentId: String) = Unit
+    private fun expandReplies(commentId: String) {
+        val comment = findComment(commentId) ?: return
+        val replySection = comment.replySection
+        if (replySection.isLoading) return
+        if (replySection.replies.isNotEmpty()) {
+            updateComment(commentId) {
+                it.copy(replySection = it.replySection.copy(isExpanded = true))
+            }
+            return
+        }
 
-    private fun collapseReplies(commentId: String) = Unit
+        loadReplies(commentId, cursor = null)
+    }
 
-    private fun loadMoreReplies(commentId: String) = Unit
+    private fun collapseReplies(commentId: String) {
+        updateComment(commentId) {
+            it.copy(replySection = it.replySection.copy(isExpanded = false))
+        }
+    }
+
+    private fun loadMoreReplies(commentId: String) {
+        val comment = findComment(commentId) ?: return
+        val replySection = comment.replySection
+        val cursor = replySection.pagination.nextCursor ?: return
+        if (!replySection.isExpanded || replySection.isLoading || !replySection.pagination.hasMore) return
+
+        loadReplies(commentId, cursor)
+    }
+
+    private fun loadReplies(commentId: String, cursor: String?) {
+        val comment = findComment(commentId) ?: return
+        if (comment.replySection.isLoading) return
+
+        val cardId = currentState.cardId
+        updateComment(commentId) {
+            it.copy(
+                replySection = it.replySection.copy(
+                    isExpanded = true,
+                    isLoading = true,
+                    errorMessage = null,
+                ),
+            )
+        }
+        scope.launch {
+            try {
+                val page = commentRepository.loadReplies(cardId, commentId, cursor, CommentPanelReplyPageSize)
+                val nextReplies = page.replies.map { it.toReplyItem() }
+                updateComment(commentId) {
+                    it.copy(
+                        replySection = it.replySection.copy(
+                            isExpanded = true,
+                            isLoading = false,
+                            replies = (it.replySection.replies + nextReplies).distinctBy { reply -> reply.replyId },
+                            pagination = page.toPaginationState(),
+                            errorMessage = null,
+                        ),
+                    )
+                }
+            } catch (cancellation: CancellationException) {
+                updateComment(commentId) {
+                    it.copy(
+                        replySection = it.replySection.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                        ),
+                    )
+                }
+                throw cancellation
+            } catch (_: Exception) {
+                updateComment(commentId) {
+                    it.copy(
+                        replySection = it.replySection.copy(
+                            isLoading = false,
+                            errorMessage = "回复加载失败",
+                        ),
+                    )
+                }
+            }
+        }
+    }
 
     private fun updateInput(text: String) {
         updateState {
@@ -220,6 +295,13 @@ class CommentPanelUseCase(
     private fun sendComment() = Unit
 
     private fun CommentPage.toPaginationState(): PaginationState = PaginationState(
+        nextCursor = nextCursor,
+        hasMore = hasMore,
+        isLoading = false,
+        errorMessage = null,
+    )
+
+    private fun ReplyPage.toPaginationState(): PaginationState = PaginationState(
         nextCursor = nextCursor,
         hasMore = hasMore,
         isLoading = false,
