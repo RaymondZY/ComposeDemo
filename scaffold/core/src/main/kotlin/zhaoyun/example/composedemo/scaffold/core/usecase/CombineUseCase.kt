@@ -39,7 +39,10 @@ class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
 
     fun onCleared() {
         logger().i("Mvi", "Cleared CombineUseCase")
-        childUseCases.forEach { it.autoUnregister(serviceRegistry) }
+        childUseCases.forEach {
+            it.onCleared()
+            it.autoUnregister(serviceRegistry)
+        }
         this.autoUnregister(serviceRegistry)
     }
 }

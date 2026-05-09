@@ -262,6 +262,75 @@ class CommentPanelUseCaseTest {
         assertEquals(listOf(sentComment.toCommentItem(), existing), useCase.state.value.comments)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `send success keeps newer draft typed while sending`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val existing = sampleComment("existing")
+        val sentComment = commentData("sent-comment", content = "旧评论")
+        val repository = SuspendedSendRepository(
+            result = SendCommentResult(
+                comment = sentComment,
+                totalCount = 2,
+            ),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                totalCount = 1,
+                comments = listOf(existing),
+                inputText = "旧评论",
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnInputChanged("新草稿"))
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals("新草稿", useCase.state.value.inputText)
+        assertEquals(2, useCase.state.value.totalCount)
+        assertEquals(listOf(sentComment.toCommentItem(), existing), useCase.state.value.comments)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `send success keeps newer draft even when text matches sent content`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val existing = sampleComment("existing")
+        val sentComment = commentData("sent-comment", content = "旧评论")
+        val repository = SuspendedSendRepository(
+            result = SendCommentResult(
+                comment = sentComment,
+                totalCount = 2,
+            ),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                totalCount = 1,
+                comments = listOf(existing),
+                inputText = "旧评论",
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnInputChanged(""))
+        useCase.receiveEvent(CommentPanelEvent.OnInputChanged("旧评论"))
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals("旧评论", useCase.state.value.inputText)
+        assertEquals(2, useCase.state.value.totalCount)
+        assertEquals(listOf(sentComment.toCommentItem(), existing), useCase.state.value.comments)
+    }
+
     @Test
     fun `send failure keeps input and does not add failed comment`() = runTest {
         val existing = sampleComment("existing")
@@ -284,6 +353,54 @@ class CommentPanelUseCaseTest {
         assertEquals(1, useCase.state.value.totalCount)
         assertEquals("发送失败，请重试", useCase.state.value.sendErrorMessage)
         assertEquals(BaseEffect.ShowToast("发送失败，请重试"), toastDeferred.await())
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `cleared use case cancels in flight send without applying result`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val existing = sampleComment("existing")
+        val repository = SuspendedSendRepository(
+            result = SendCommentResult(
+                comment = commentData("sent-after-clear", content = "发送后清理"),
+                totalCount = 2,
+            ),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                totalCount = 1,
+                comments = listOf(existing),
+                inputText = "发送后清理",
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
+        runCurrent()
+        useCase.onCleared()
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.callCount)
+        assertEquals("发送后清理", useCase.state.value.inputText)
+        assertEquals(1, useCase.state.value.totalCount)
+        assertEquals(listOf(existing), useCase.state.value.comments)
+    }
+
+    @Test
+    fun `cleared use case ignores new events`() = runTest {
+        val initialState = CommentPanelState(
+            cardId = "story-1",
+            inputText = "原始草稿",
+        )
+        val useCase = createUseCase(initialState = initialState)
+
+        useCase.onCleared()
+        useCase.receiveEvent(CommentPanelEvent.OnInputChanged("清理后输入"))
+
+        assertEquals(initialState, useCase.state.value)
     }
 
     @Test
@@ -337,6 +454,37 @@ class CommentPanelUseCaseTest {
     }
 
     @Test
+    fun `initial load preserves unavailable dialogue entry state`() = runTest {
+        val useCase = createUseCase(repository = UnavailableDialogueRepository())
+
+        useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
+
+        assertEquals(DialogueEntryState.Unavailable("暂不可进入"), useCase.state.value.dialogueEntry)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `cleared use case ignores non cooperative initial load result`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = NonCooperativeInitialRepository()
+        val useCase = createUseCase(
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
+        runCurrent()
+        val stateAtClear = useCase.state.value
+        useCase.onCleared()
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.callCount)
+        assertEquals(stateAtClear, useCase.state.value)
+        assertEquals(null, withTimeoutOrNull(1) { useCase.baseEffect.first() })
+    }
+
+    @Test
     fun `initial load failure keeps existing comments`() = runTest {
         val existing = sampleComment("existing")
         val useCase = createUseCase(
@@ -380,6 +528,60 @@ class CommentPanelUseCaseTest {
         assertEquals(listOf("comment-1", "comment-2", "comment-3", "comment-4"), beforeFailure.map { it.commentId })
         assertEquals(beforeFailure, useCase.state.value.comments)
         assertEquals("评论加载失败", useCase.state.value.commentPagination.errorMessage)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `stale load more comments does not append after initial reload`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = StaleLoadMoreThenInitialRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("old-comment")),
+                initialLoadStatus = LoadStatus.Success,
+                commentPagination = PaginationState(nextCursor = "cursor-old", hasMore = true),
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreComments)
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+        runCurrent()
+        repository.releaseLoadMore()
+        advanceUntilIdle()
+
+        assertEquals(LoadStatus.Success, useCase.state.value.initialLoadStatus)
+        assertEquals(listOf("fresh-comment"), useCase.state.value.comments.map { it.commentId })
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `cleared use case ignores non cooperative load more result`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = NonCooperativeLoadMoreRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("existing")),
+                initialLoadStatus = LoadStatus.Success,
+                commentPagination = PaginationState(nextCursor = "cursor-1", hasMore = true),
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreComments)
+        runCurrent()
+        val stateAtClear = useCase.state.value
+        useCase.onCleared()
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.callCount)
+        assertEquals(stateAtClear, useCase.state.value)
     }
 
     @Test
@@ -715,6 +917,126 @@ class CommentPanelUseCaseTest {
         assertEquals(other, useCase.state.value.comments[1])
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `stale reply response does not reopen collapsed replies`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = SuspendedRepliesRepository(
+            result = ReplyPage(
+                replies = listOf(replyData("reply-1", parentId = "comment-1")),
+                nextCursor = null,
+                hasMore = false,
+            ),
+        )
+        val target = sampleComment("comment-1")
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(target),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnRepliesExpanded("comment-1"))
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnRepliesCollapsed("comment-1"))
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals(ReplySectionState(isExpanded = false), useCase.state.value.comments.single().replySection)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `stale reply response does not update comments after initial reload`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = StaleRepliesThenInitialRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("comment-1")),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnRepliesExpanded("comment-1"))
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+        runCurrent()
+        repository.releaseReplies()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(commentData("comment-1", content = "fresh comment").toCommentItem()),
+            useCase.state.value.comments,
+        )
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `cleared use case ignores non cooperative reply result`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = NonCooperativeRepliesRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("comment-1")),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnRepliesExpanded("comment-1"))
+        runCurrent()
+        val stateAtClear = useCase.state.value
+        useCase.onCleared()
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.callCount)
+        assertEquals(stateAtClear, useCase.state.value)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `reply result still applies when initial reload fails and keeps old comments`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = SuspendedRepliesAndFailingInitialRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("comment-1")),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnRepliesExpanded("comment-1"))
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+        runCurrent()
+        repository.finishReplies()
+        advanceUntilIdle()
+
+        assertEquals(LoadStatus.Error, useCase.state.value.initialLoadStatus)
+        assertEquals(
+            sampleComment(
+                "comment-1",
+                replySection = ReplySectionState(
+                    isExpanded = true,
+                    replies = listOf(sampleReply("reply-after-failed-reload", parentId = "comment-1")),
+                ),
+            ),
+            useCase.state.value.comments.single(),
+        )
+    }
+
     @Test
     fun `reply cancellation clears loading without error`() = runTest {
         val existingReply = sampleReply("reply-1", parentId = "comment-1")
@@ -833,6 +1155,178 @@ class CommentPanelUseCaseTest {
         assertEquals(oldTarget, useCase.state.value.comments[0])
         assertEquals(other, useCase.state.value.comments[1])
         assertEquals(BaseEffect.ShowToast("点赞失败，请重试"), toastDeferred.await())
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `like failure preserves newer non like comment state`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val oldTarget = sampleComment("comment-1", likeCount = 7, isLiked = false, isExpanded = false)
+        val repository = SuspendedFailingLikeRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(oldTarget),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+        val toastDeferred = async { useCase.baseEffect.first() }
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnCommentExpanded("comment-1"))
+        repository.fail()
+        advanceUntilIdle()
+
+        assertEquals(
+            oldTarget.copy(isExpanded = true),
+            useCase.state.value.comments.single(),
+        )
+        assertEquals(BaseEffect.ShowToast("点赞失败，请重试"), toastDeferred.await())
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `cleared use case ignores non cooperative like failure without toast`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = NonCooperativeFailingLikeRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("comment-1", likeCount = 7, isLiked = false)),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+        runCurrent()
+        val stateAtClear = useCase.state.value
+        useCase.onCleared()
+        repository.fail()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.callCount)
+        assertEquals(stateAtClear, useCase.state.value)
+        assertEquals(null, withTimeoutOrNull(1) { useCase.baseEffect.first() })
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `stale like success after initial reload does not complete newer like request`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = ControlledStaleLikeThenInitialRepository(firstFails = false)
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("comment-1", likeCount = 1, isLiked = false)),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+        runCurrent()
+        repository.finishFirst()
+        runCurrent()
+
+        assertEquals(2, repository.likeCallCount)
+        assertEquals(
+            commentData("comment-1", content = "fresh comment", likeCount = 10)
+                .toCommentItem()
+                .copy(likeCount = 11, isLiked = true, isLikeSubmitting = true),
+            useCase.state.value.comments.single(),
+        )
+
+        repository.finishSecond()
+        advanceUntilIdle()
+
+        assertEquals(
+            commentData("comment-1", content = "fresh comment", likeCount = 10)
+                .toCommentItem()
+                .copy(likeCount = 12, isLiked = true),
+            useCase.state.value.comments.single(),
+        )
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `stale like failure after initial reload does not rollback newer like request or toast`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = ControlledStaleLikeThenInitialRepository(firstFails = true)
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("comment-1", likeCount = 1, isLiked = false)),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+        runCurrent()
+        repository.finishFirst()
+        runCurrent()
+
+        assertEquals(
+            commentData("comment-1", content = "fresh comment", likeCount = 10)
+                .toCommentItem()
+                .copy(likeCount = 11, isLiked = true, isLikeSubmitting = true),
+            useCase.state.value.comments.single(),
+        )
+        assertEquals(null, withTimeoutOrNull(1) { useCase.baseEffect.first() })
+
+        repository.finishSecond()
+        advanceUntilIdle()
+
+        assertEquals(
+            commentData("comment-1", content = "fresh comment", likeCount = 10)
+                .toCommentItem()
+                .copy(likeCount = 12, isLiked = true),
+            useCase.state.value.comments.single(),
+        )
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `like result still applies when initial reload fails and keeps old comments`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = SuspendedLikeAndFailingInitialRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("comment-1", likeCount = 1, isLiked = false)),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+        runCurrent()
+        repository.finishLike()
+        advanceUntilIdle()
+
+        assertEquals(LoadStatus.Error, useCase.state.value.initialLoadStatus)
+        assertEquals(
+            sampleComment("comment-1", likeCount = 2, isLiked = true, isLikeSubmitting = false),
+            useCase.state.value.comments.single(),
+        )
     }
 
     @Test
@@ -1000,16 +1494,24 @@ private fun replyData(id: String, parentId: String = "comment-1") = ReplyData(
     createdAtText = "刚刚",
 )
 
-private fun commentData(id: String, content: String = "测试评论") = CommentData(
+private fun commentData(
+    id: String,
+    content: String = "测试评论",
+    likeCount: Int = 0,
+    isLiked: Boolean = false,
+    isPinned: Boolean = false,
+    canExpand: Boolean = false,
+    replyCount: Int = 0,
+) = CommentData(
     commentId = id,
     user = sampleUser(),
     content = content,
     createdAtText = "刚刚",
-    likeCount = 0,
-    isLiked = false,
-    isPinned = false,
-    canExpand = false,
-    replyCount = 0,
+    likeCount = likeCount,
+    isLiked = isLiked,
+    isPinned = isPinned,
+    canExpand = canExpand,
+    replyCount = replyCount,
 )
 
 private class EmptyCommentRepository : CommentRepository by FakeCommentRepository() {
@@ -1019,6 +1521,43 @@ private class EmptyCommentRepository : CommentRepository by FakeCommentRepositor
             dialogueEntry = DialogueEntryState.Hidden,
             page = CommentPage(emptyList(), nextCursor = null, hasMore = false),
         )
+    }
+}
+
+private class UnavailableDialogueRepository : CommentRepository by FakeCommentRepository() {
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        return CommentInitialResult(
+            totalCount = 0,
+            dialogueEntry = DialogueEntryState.Unavailable("暂不可进入"),
+            page = CommentPage(emptyList(), nextCursor = null, hasMore = false),
+        )
+    }
+}
+
+private class NonCooperativeInitialRepository : CommentRepository by FakeCommentRepository() {
+    private val canComplete = CompletableDeferred<Unit>()
+
+    var callCount: Int = 0
+        private set
+
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        callCount += 1
+        withContext(NonCancellable) {
+            canComplete.await()
+        }
+        return CommentInitialResult(
+            totalCount = 1,
+            dialogueEntry = DialogueEntryState.Hidden,
+            page = CommentPage(
+                comments = listOf(commentData("initial-after-clear")),
+                nextCursor = null,
+                hasMore = false,
+            ),
+        )
+    }
+
+    fun complete() {
+        canComplete.complete(Unit)
     }
 }
 
@@ -1060,6 +1599,58 @@ private class PagedThenFailingCommentRepository : CommentRepository by FakeComme
         loadMoreCalls += 1
         if (loadMoreCalls > 1) error("load more failed")
         return FakeCommentRepository().loadMoreComments(cardId, cursor, pageSize = 2)
+    }
+}
+
+private class StaleLoadMoreThenInitialRepository : CommentRepository by FakeCommentRepository() {
+    private val loadMoreCanFinish = CompletableDeferred<Unit>()
+
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        return CommentInitialResult(
+            totalCount = 1,
+            dialogueEntry = DialogueEntryState.Hidden,
+            page = CommentPage(
+                comments = listOf(commentData("fresh-comment")),
+                nextCursor = null,
+                hasMore = false,
+            ),
+        )
+    }
+
+    override suspend fun loadMoreComments(cardId: String, cursor: String, pageSize: Int): CommentPage {
+        loadMoreCanFinish.await()
+        return CommentPage(
+            comments = listOf(commentData("stale-load-more-comment")),
+            nextCursor = null,
+            hasMore = false,
+        )
+    }
+
+    fun releaseLoadMore() {
+        loadMoreCanFinish.complete(Unit)
+    }
+}
+
+private class NonCooperativeLoadMoreRepository : CommentRepository by FakeCommentRepository() {
+    private val canComplete = CompletableDeferred<Unit>()
+
+    var callCount: Int = 0
+        private set
+
+    override suspend fun loadMoreComments(cardId: String, cursor: String, pageSize: Int): CommentPage {
+        callCount += 1
+        withContext(NonCancellable) {
+            canComplete.await()
+        }
+        return CommentPage(
+            comments = listOf(commentData("load-more-after-clear")),
+            nextCursor = null,
+            hasMore = false,
+        )
+    }
+
+    fun complete() {
+        canComplete.complete(Unit)
     }
 }
 
@@ -1174,6 +1765,97 @@ private class SuspendedLikeRepository(
     }
 }
 
+private class SuspendedFailingLikeRepository : CommentRepository by FakeCommentRepository() {
+    private val canFail = CompletableDeferred<Unit>()
+
+    override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
+        canFail.await()
+        error("like failed")
+    }
+
+    fun fail() {
+        canFail.complete(Unit)
+    }
+}
+
+private class NonCooperativeFailingLikeRepository : CommentRepository by FakeCommentRepository() {
+    private val canFail = CompletableDeferred<Unit>()
+
+    var callCount: Int = 0
+        private set
+
+    override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
+        callCount += 1
+        withContext(NonCancellable) {
+            canFail.await()
+        }
+        error("like failed")
+    }
+
+    fun fail() {
+        canFail.complete(Unit)
+    }
+}
+
+private class ControlledStaleLikeThenInitialRepository(
+    private val firstFails: Boolean,
+) : CommentRepository by FakeCommentRepository() {
+    private val firstCanFinish = CompletableDeferred<Unit>()
+    private val secondCanFinish = CompletableDeferred<Unit>()
+
+    var likeCallCount: Int = 0
+        private set
+
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        return CommentInitialResult(
+            totalCount = 1,
+            dialogueEntry = DialogueEntryState.Hidden,
+            page = CommentPage(
+                comments = listOf(commentData("comment-1", content = "fresh comment", likeCount = 10)),
+                nextCursor = null,
+                hasMore = false,
+            ),
+        )
+    }
+
+    override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
+        likeCallCount += 1
+        return if (likeCallCount == 1) {
+            firstCanFinish.await()
+            if (firstFails) error("stale like failed")
+            CommentLikeResult(commentId, isLiked = liked, likeCount = 99)
+        } else {
+            secondCanFinish.await()
+            CommentLikeResult(commentId, isLiked = liked, likeCount = 12)
+        }
+    }
+
+    fun finishFirst() {
+        firstCanFinish.complete(Unit)
+    }
+
+    fun finishSecond() {
+        secondCanFinish.complete(Unit)
+    }
+}
+
+private class SuspendedLikeAndFailingInitialRepository : CommentRepository by FakeCommentRepository() {
+    private val likeCanFinish = CompletableDeferred<Unit>()
+
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        error("initial failed")
+    }
+
+    override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
+        likeCanFinish.await()
+        return CommentLikeResult(commentId, isLiked = liked, likeCount = 2)
+    }
+
+    fun finishLike() {
+        likeCanFinish.complete(Unit)
+    }
+}
+
 private class SuspendedRepliesRepository(
     private val result: ReplyPage,
 ) : CommentRepository by FakeCommentRepository() {
@@ -1198,6 +1880,79 @@ private class SuspendedRepliesRepository(
         this.pageSize = pageSize
         canComplete.await()
         return result
+    }
+
+    fun complete() {
+        canComplete.complete(Unit)
+    }
+}
+
+private class SuspendedRepliesAndFailingInitialRepository : CommentRepository by FakeCommentRepository() {
+    private val repliesCanFinish = CompletableDeferred<Unit>()
+
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        error("initial failed")
+    }
+
+    override suspend fun loadReplies(cardId: String, commentId: String, cursor: String?, pageSize: Int): ReplyPage {
+        repliesCanFinish.await()
+        return ReplyPage(
+            replies = listOf(replyData("reply-after-failed-reload", parentId = commentId)),
+            nextCursor = null,
+            hasMore = false,
+        )
+    }
+
+    fun finishReplies() {
+        repliesCanFinish.complete(Unit)
+    }
+}
+
+private class StaleRepliesThenInitialRepository : CommentRepository by FakeCommentRepository() {
+    private val repliesCanFinish = CompletableDeferred<Unit>()
+
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        return CommentInitialResult(
+            totalCount = 1,
+            dialogueEntry = DialogueEntryState.Hidden,
+            page = CommentPage(
+                comments = listOf(commentData("comment-1", content = "fresh comment")),
+                nextCursor = null,
+                hasMore = false,
+            ),
+        )
+    }
+
+    override suspend fun loadReplies(cardId: String, commentId: String, cursor: String?, pageSize: Int): ReplyPage {
+        repliesCanFinish.await()
+        return ReplyPage(
+            replies = listOf(replyData("stale-reply", parentId = commentId)),
+            nextCursor = null,
+            hasMore = false,
+        )
+    }
+
+    fun releaseReplies() {
+        repliesCanFinish.complete(Unit)
+    }
+}
+
+private class NonCooperativeRepliesRepository : CommentRepository by FakeCommentRepository() {
+    private val canComplete = CompletableDeferred<Unit>()
+
+    var callCount: Int = 0
+        private set
+
+    override suspend fun loadReplies(cardId: String, commentId: String, cursor: String?, pageSize: Int): ReplyPage {
+        callCount += 1
+        withContext(NonCancellable) {
+            canComplete.await()
+        }
+        return ReplyPage(
+            replies = listOf(replyData("reply-after-clear", parentId = commentId)),
+            nextCursor = null,
+            hasMore = false,
+        )
     }
 
     fun complete() {

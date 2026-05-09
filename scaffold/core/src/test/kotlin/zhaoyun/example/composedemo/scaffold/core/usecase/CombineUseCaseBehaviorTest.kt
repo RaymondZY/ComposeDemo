@@ -4,6 +4,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
@@ -64,6 +65,24 @@ class CombineUseCaseBehaviorTest {
         assertEquals(BaseEffect.NavigateBack, ownBaseEffect.await())
     }
 
+    @Test
+    fun `combine use case forwards cleared callback to child use cases`() {
+        lateinit var childUseCase: ClearTrackingUseCase
+        val combineUseCase = CombineUseCase(
+            DemoState().toStateHolder(),
+            MutableServiceRegistryImpl(),
+            { holder: StateHolder<DemoState>, registry ->
+                ClearTrackingUseCase(stateHolder = holder, serviceRegistry = registry).also {
+                    childUseCase = it
+                }
+            },
+        )
+
+        combineUseCase.onCleared()
+
+        assertTrue(childUseCase.wasCleared)
+    }
+
     private data class DemoState(
         val leftCount: Int = 0,
         val rightCount: Int = 0,
@@ -120,6 +139,23 @@ class CombineUseCaseBehaviorTest {
                 DemoEvent.EmitBaseEffect -> dispatchBaseEffect(BaseEffect.ShowToast("child"))
                 else -> Unit
             }
+        }
+    }
+
+    private class ClearTrackingUseCase(
+        stateHolder: StateHolder<DemoState>? = null,
+        serviceRegistry: MutableServiceRegistry = MutableServiceRegistryImpl(),
+    ) : BaseUseCase<DemoState, DemoEvent, DemoEffect>(
+        stateHolder = stateHolder ?: DemoState().toStateHolder(),
+        serviceRegistry = serviceRegistry,
+    ) {
+        var wasCleared: Boolean = false
+            private set
+
+        override suspend fun onEvent(event: DemoEvent) = Unit
+
+        override fun onCleared() {
+            wasCleared = true
         }
     }
 }

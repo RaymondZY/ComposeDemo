@@ -28,4 +28,6 @@ abstract class BaseUseCase<S : UiState, E : UiEvent, F : UiEffect>(
     final override val effectDispatcher: EffectDispatcher<F> = EffectDispatcherImpl()
 
     abstract suspend fun onEvent(event: E)
+
+    open fun onCleared() = Unit
 }
