@@ -287,6 +287,30 @@ class CommentPanelUseCaseTest {
     }
 
     @Test
+    fun `send cancellation exits sending without toast`() = runTest {
+        val existing = sampleComment("existing")
+        val repository = CancellingSendRepository()
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                totalCount = 1,
+                comments = listOf(existing),
+                inputText = "  取消发送  ",
+            ),
+            repository = repository,
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnSendClicked)
+
+        assertEquals(1, repository.callCount)
+        assertFalse(useCase.state.value.isSendingComment)
+        assertEquals("  取消发送  ", useCase.state.value.inputText)
+        assertEquals(listOf(existing), useCase.state.value.comments)
+        assertEquals(null, useCase.state.value.sendErrorMessage)
+        assertEquals(null, withTimeoutOrNull(1) { useCase.baseEffect.first() })
+    }
+
+    @Test
     fun `panel shown loads first page and dialogue entry`() = runTest {
         val useCase = createUseCase(repository = FakeCommentRepository())
 
@@ -1109,6 +1133,16 @@ private class SuspendedSendRepository(
 
     fun complete() {
         canComplete.complete(Unit)
+    }
+}
+
+private class CancellingSendRepository : CommentRepository by FakeCommentRepository() {
+    var callCount: Int = 0
+        private set
+
+    override suspend fun sendComment(cardId: String, content: String): SendCommentResult {
+        callCount += 1
+        throw CancellationException("send cancelled")
     }
 }
 
