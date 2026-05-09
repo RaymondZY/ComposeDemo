@@ -1,12 +1,16 @@
 package zhaoyun.example.composedemo.story.commentpanel.domain
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -217,6 +221,29 @@ class CommentPanelUseCaseTest {
         assertEquals(beforeFailure, useCase.state.value.comments)
         assertEquals("评论加载失败", useCase.state.value.commentPagination.errorMessage)
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `retry result is not overwritten by stale initial load response`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = StaleInitialLoadRepository()
+        val useCase = createUseCase(
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnPanelShown)
+        runCurrent()
+        useCase.receiveEvent(CommentPanelEvent.OnRetryInitialLoad)
+        runCurrent()
+        repository.releaseFirstLoad()
+        advanceUntilIdle()
+
+        assertEquals(LoadStatus.Success, useCase.state.value.initialLoadStatus)
+        assertEquals(1, useCase.state.value.totalCount)
+        assertEquals(listOf("retry-comment"), useCase.state.value.comments.map { it.commentId })
+        assertEquals("retry-dialogue", (useCase.state.value.dialogueEntry as DialogueEntryState.Available).targetId)
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -302,5 +329,52 @@ private class PagedThenFailingCommentRepository : CommentRepository by FakeComme
         loadMoreCalls += 1
         if (loadMoreCalls > 1) error("load more failed")
         return FakeCommentRepository().loadMoreComments(cardId, cursor, pageSize = 2)
+    }
+}
+
+private class StaleInitialLoadRepository : CommentRepository by FakeCommentRepository() {
+    private val firstLoadCanFinish = CompletableDeferred<Unit>()
+    private var loadInitialCalls = 0
+
+    override suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult {
+        loadInitialCalls += 1
+        return if (loadInitialCalls == 1) {
+            firstLoadCanFinish.await()
+            result("stale-comment", totalCount = 9, targetId = "stale-dialogue")
+        } else {
+            result("retry-comment", totalCount = 1, targetId = "retry-dialogue")
+        }
+    }
+
+    fun releaseFirstLoad() {
+        firstLoadCanFinish.complete(Unit)
+    }
+
+    private fun result(commentId: String, totalCount: Int, targetId: String): CommentInitialResult {
+        return CommentInitialResult(
+            totalCount = totalCount,
+            dialogueEntry = DialogueEntryState.Available(
+                title = "进入对话剧情",
+                description = "和角色继续聊下去",
+                targetId = targetId,
+            ),
+            page = CommentPage(
+                comments = listOf(
+                    CommentData(
+                        commentId = commentId,
+                        user = sampleUser(),
+                        content = "测试评论",
+                        createdAtText = "刚刚",
+                        likeCount = 0,
+                        isLiked = false,
+                        isPinned = false,
+                        canExpand = false,
+                        replyCount = 0,
+                    ),
+                ),
+                nextCursor = null,
+                hasMore = false,
+            ),
+        )
     }
 }

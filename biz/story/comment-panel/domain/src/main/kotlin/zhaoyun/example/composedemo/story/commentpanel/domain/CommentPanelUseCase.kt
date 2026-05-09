@@ -1,7 +1,9 @@
 package zhaoyun.example.composedemo.story.commentpanel.domain
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
@@ -18,6 +20,8 @@ class CommentPanelUseCase(
     stateHolder,
     serviceRegistry,
 ) {
+    private var initialLoadJob: Job? = null
+
     override suspend fun onEvent(event: CommentPanelEvent) {
         when (event) {
             CommentPanelEvent.OnPanelShown -> loadInitialIfNeeded()
@@ -44,13 +48,14 @@ class CommentPanelUseCase(
         if (!force && currentState.initialLoadStatus == LoadStatus.Loading) return
 
         val cardId = currentState.cardId
+        initialLoadJob?.cancel()
         updateState {
             it.copy(
                 initialLoadStatus = LoadStatus.Loading,
                 commentPagination = it.commentPagination.copy(isLoading = false, errorMessage = null),
             )
         }
-        scope.launch {
+        initialLoadJob = scope.launch {
             try {
                 val result = commentRepository.loadInitial(cardId, CommentPanelInitialPageSize)
                 val comments = result.page.comments.map { it.toCommentItem() }
@@ -63,6 +68,8 @@ class CommentPanelUseCase(
                         commentPagination = result.page.toPaginationState(),
                     )
                 }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
             } catch (_: Exception) {
                 updateState { it.copy(initialLoadStatus = LoadStatus.Error) }
                 dispatchBaseEffect(BaseEffect.ShowToast("评论加载失败"))
