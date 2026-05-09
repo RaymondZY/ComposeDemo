@@ -226,6 +226,113 @@ class CommentPanelUseCaseTest {
         assertEquals("评论加载失败", useCase.state.value.commentPagination.errorMessage)
     }
 
+    @Test
+    fun `expand comment only changes target comment`() = runTest {
+        val first = sampleComment("comment-1", isExpanded = false)
+        val target = sampleComment("comment-2", isExpanded = false)
+        val last = sampleComment("comment-3", isExpanded = true)
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(first, target, last),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentExpanded("comment-2"))
+
+        assertEquals(first, useCase.state.value.comments[0])
+        assertEquals(target.copy(isExpanded = true), useCase.state.value.comments[1])
+        assertEquals(last, useCase.state.value.comments[2])
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `like comment uses optimistic update and server result`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val repository = SuspendedLikeRepository(
+            result = CommentLikeResult("comment-1", isLiked = true, likeCount = 42),
+        )
+        val other = sampleComment("comment-2", likeCount = 8, isLiked = false)
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(
+                    sampleComment("comment-1", likeCount = 3, isLiked = false),
+                    other,
+                ),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+
+        assertEquals(
+            sampleComment("comment-1", likeCount = 4, isLiked = true, isLikeSubmitting = true),
+            useCase.state.value.comments[0],
+        )
+        assertEquals(other, useCase.state.value.comments[1])
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+        runCurrent()
+
+        assertEquals(1, repository.callCount)
+        assertEquals("story-1", repository.cardId)
+        assertEquals("comment-1", repository.commentId)
+        assertEquals(true, repository.liked)
+
+        repository.complete()
+        advanceUntilIdle()
+
+        assertEquals(
+            sampleComment("comment-1", likeCount = 42, isLiked = true, isLikeSubmitting = false),
+            useCase.state.value.comments[0],
+        )
+        assertEquals(other, useCase.state.value.comments[1])
+    }
+
+    @Test
+    fun `unlike comment never produces negative like count`() = runTest {
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(sampleComment("comment-1", likeCount = 0, isLiked = true)),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = FixedLikeRepository(CommentLikeResult("comment-1", isLiked = false, likeCount = -1)),
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+
+        assertEquals(
+            sampleComment("comment-1", likeCount = 0, isLiked = false, isLikeSubmitting = false),
+            useCase.state.value.comments.single(),
+        )
+    }
+
+    @Test
+    fun `like failure rolls back target comment and emits toast`() = runTest {
+        val oldTarget = sampleComment("comment-1", likeCount = 7, isLiked = false)
+        val other = sampleComment("comment-2", likeCount = 2, isLiked = true)
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(oldTarget, other),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = FailingCommentRepository(failLike = true),
+        )
+        val toastDeferred = async { useCase.baseEffect.first() }
+
+        useCase.receiveEvent(CommentPanelEvent.OnCommentLikeClicked("comment-1"))
+
+        assertEquals(oldTarget, useCase.state.value.comments[0])
+        assertEquals(other, useCase.state.value.comments[1])
+        assertEquals(BaseEffect.ShowToast("点赞失败，请重试"), toastDeferred.await())
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `retry result is not overwritten by stale initial load response`() = runTest {
@@ -338,12 +445,22 @@ private fun sampleUser(id: String = "user-1") = CommentUser(
     avatarUrl = "https://example.com/$id.png",
 )
 
-private fun sampleComment(id: String, replySection: ReplySectionState = ReplySectionState()) = CommentItem(
+private fun sampleComment(
+    id: String,
+    likeCount: Int = 0,
+    isLiked: Boolean = false,
+    isLikeSubmitting: Boolean = false,
+    isExpanded: Boolean = false,
+    replySection: ReplySectionState = ReplySectionState(),
+) = CommentItem(
     commentId = id,
     user = sampleUser(),
     content = "测试评论",
     createdAtText = "刚刚",
-    likeCount = 0,
+    likeCount = likeCount,
+    isLiked = isLiked,
+    isLikeSubmitting = isLikeSubmitting,
+    isExpanded = isExpanded,
     replySection = replySection,
 )
 
@@ -403,6 +520,42 @@ private class PagedThenFailingCommentRepository : CommentRepository by FakeComme
         loadMoreCalls += 1
         if (loadMoreCalls > 1) error("load more failed")
         return FakeCommentRepository().loadMoreComments(cardId, cursor, pageSize = 2)
+    }
+}
+
+private class FixedLikeRepository(
+    private val result: CommentLikeResult,
+) : CommentRepository by FakeCommentRepository() {
+    override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
+        return result
+    }
+}
+
+private class SuspendedLikeRepository(
+    private val result: CommentLikeResult,
+) : CommentRepository by FakeCommentRepository() {
+    private val canComplete = CompletableDeferred<Unit>()
+
+    var cardId: String? = null
+        private set
+    var commentId: String? = null
+        private set
+    var liked: Boolean? = null
+        private set
+    var callCount: Int = 0
+        private set
+
+    override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
+        callCount += 1
+        this.cardId = cardId
+        this.commentId = commentId
+        this.liked = liked
+        canComplete.await()
+        return result
+    }
+
+    fun complete() {
+        canComplete.complete(Unit)
     }
 }
 

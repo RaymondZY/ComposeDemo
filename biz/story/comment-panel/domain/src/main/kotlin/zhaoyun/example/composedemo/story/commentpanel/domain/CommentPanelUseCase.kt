@@ -144,9 +144,62 @@ class CommentPanelUseCase(
         }
     }
 
-    private fun expandComment(commentId: String) = Unit
+    private fun expandComment(commentId: String) {
+        updateComment(commentId) { it.copy(isExpanded = true) }
+    }
 
-    private fun toggleCommentLike(commentId: String) = Unit
+    private fun toggleCommentLike(commentId: String) {
+        val oldComment = findComment(commentId) ?: return
+        if (oldComment.isLikeSubmitting) return
+
+        val targetLiked = !oldComment.isLiked
+        val optimisticLikeCount = if (targetLiked) {
+            oldComment.likeCount + 1
+        } else {
+            (oldComment.likeCount - 1).coerceAtLeast(0)
+        }
+        updateComment(commentId) {
+            it.copy(
+                likeCount = optimisticLikeCount,
+                isLiked = targetLiked,
+                isLikeSubmitting = true,
+            )
+        }
+
+        val cardId = currentState.cardId
+        scope.launch {
+            try {
+                val result = commentRepository.setCommentLiked(cardId, commentId, targetLiked)
+                updateComment(commentId) {
+                    it.copy(
+                        likeCount = result.likeCount.coerceAtLeast(0),
+                        isLiked = result.isLiked,
+                        isLikeSubmitting = false,
+                    )
+                }
+            } catch (cancellation: CancellationException) {
+                updateComment(commentId) { oldComment }
+                throw cancellation
+            } catch (_: Exception) {
+                updateComment(commentId) { oldComment }
+                dispatchBaseEffect(BaseEffect.ShowToast("点赞失败，请重试"))
+            }
+        }
+    }
+
+    private fun updateComment(commentId: String, transform: (CommentItem) -> CommentItem) {
+        updateState { state ->
+            state.copy(
+                comments = state.comments.map { comment ->
+                    if (comment.commentId == commentId) transform(comment) else comment
+                },
+            )
+        }
+    }
+
+    private fun findComment(commentId: String): CommentItem? {
+        return currentState.comments.firstOrNull { it.commentId == commentId }
+    }
 
     private fun expandReplies(commentId: String) = Unit
 
