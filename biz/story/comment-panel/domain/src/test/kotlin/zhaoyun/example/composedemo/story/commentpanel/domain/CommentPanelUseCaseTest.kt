@@ -1,19 +1,53 @@
 package zhaoyun.example.composedemo.story.commentpanel.domain
 
-import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
-import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 
 class CommentPanelUseCaseTest {
     @Test
-    fun initialState_keepsCardIdOnly() = runTest {
-        val useCase = CommentPanelUseCase(
-            stateHolder = CommentPanelState(cardId = "story-1").toStateHolder(),
-            serviceRegistry = MutableServiceRegistryImpl(),
+    fun `初始状态表达可加载的空评论面板`() {
+        val state = CommentPanelState(cardId = "story-1")
+
+        assertEquals("story-1", state.cardId)
+        assertEquals(0, state.totalCount)
+        assertEquals(LoadStatus.Idle, state.initialLoadStatus)
+        assertEquals(DialogueEntryState.Hidden, state.dialogueEntry)
+        assertEquals(emptyList<CommentItem>(), state.comments)
+        assertFalse(state.commentPagination.hasMore)
+        assertEquals("", state.inputText)
+        assertFalse(state.isSendingComment)
+        assertEquals(null, state.inputErrorMessage)
+        assertEquals(null, state.sendErrorMessage)
+    }
+
+    @Test
+    fun `评论模型包含用户点赞展开和回复状态`() {
+        val user = CommentUser(
+            userId = "user-1",
+            nickname = "小云",
+            avatarUrl = "https://example.com/u.png",
+            isAuthor = true,
+        )
+        val comment = CommentItem(
+            commentId = "comment-1",
+            user = user,
+            content = "这是一条评论",
+            createdAtText = "刚刚",
+            likeCount = 3,
+            isLiked = false,
+            isPinned = true,
+            canExpand = true,
+            replyCount = 2,
         )
 
-        assertEquals(CommentPanelState(cardId = "story-1"), useCase.state.value)
+        assertEquals("comment-1", comment.commentId)
+        assertEquals(user, comment.user)
+        assertFalse(comment.isLikeSubmitting)
+        assertFalse(comment.isExpanded)
+        assertFalse(comment.replySection.isExpanded)
+        assertEquals(emptyList<ReplyItem>(), comment.replySection.replies)
+        assertTrue(comment.canExpand)
     }
 }
