@@ -206,7 +206,7 @@ inline fun <reified VM : BaseViewModel<*, *, *>> MviScreen(
 1. 创建独立的 **Koin Scope**（`MviKoinScopes.Screen`）
 2. 创建独立的 `MutableServiceRegistryImpl`（支持 parent chain 查找）
 3. 在 Scope 内实例化 ViewModel
-4. 收集 `BaseEffect`，要求每个 `BaseEffect` 必须被 `onBaseEffect` 处理（返回 `true`），否则抛异常
+4. 收集 `BaseEffect`；框架内置处理 `BaseEffect.ShowSnackbar`，其他 `BaseEffect` 必须被 `onBaseEffect` 处理（返回 `true`），否则抛异常
 
 ### 5.6 MviScope / MviItemScope — 嵌套作用域
 
@@ -303,12 +303,20 @@ UseCase 之间除了共享 State 和 Effect 外，还可以通过 **ServiceRegis
 ```kotlin
 // scaffold/core/.../spi/ServiceRegistry.kt
 interface ServiceRegistry {
-    fun <T : Any> find(clazz: Class<T>): T?
+    fun <T : Any> find(clazz: Class<T>, tag: String? = null): T?
 }
 
 interface MutableServiceRegistry : ServiceRegistry {
-    fun <T : Any> register(clazz: Class<T>, instance: T)
-    fun <T : Any> unregister(clazz: Class<T>, instance: T)
+    fun <T : Any> register(clazz: Class<T>, instance: T, tag: String? = null)
+    fun unregister(clazz: Class<*>, tag: String? = null)
+    fun unregister(instance: Any)
+    fun clear()
+}
+
+interface MviService
+
+interface TaggedMviService : MviService {
+    val serviceTag: String
 }
 ```
 
@@ -323,7 +331,7 @@ findService<Analytics>()
 
 ### 7.3 自动注册
 
-`BaseUseCase` 在 `init` 中调用 `autoRegister(serviceRegistry)`，通过反射扫描自身实现的所有 `MviService` 接口并注册到 Registry。`onCleared()` 时自动 `autoUnregister` 清理。
+`CombineUseCase` 创建 child UseCase 后调用 `autoRegister(serviceRegistry)`，通过反射扫描 child 实现的所有 `MviService` 接口并注册到 Registry；`BaseViewModel` 也会注册自身实现的服务接口。`onCleared()` 时通过 `autoUnregister` 清理。
 
 ---
 

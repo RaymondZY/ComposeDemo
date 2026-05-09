@@ -14,13 +14,22 @@ ComposeDemo 是一个基于 **Jetpack Compose** + **Kotlin Coroutines** 的 Andr
 
 所有项目文档统一存放在 `docs/` 下，按类型分目录：
 
-| 目录             | 内容      | 关键文件                                                                                                 |
-|----------------|---------|------------------------------------------------------------------------------------------------------|
-| `docs/arch/`   | 架构设计文档  | `overview.md`（项目架构总览）、`mvi.md`（MVI 框架实现）、`di.md`（DI 配置）、`usecase.md`（UseCase 与测试）                    |
-| `docs/rules/`  | 项目规范与规则 | `module-development.md`（开发顺序与规范）、`environment.md`（JDK/Gradle 版本）、`documentation_location.md`（文档存放规则） |
-| `docs/skills/` | 技能与工具说明 | `doc-sync`（文档同步技能）                                                                                   |
+| 目录                  | 内容         | 关键文件                                                                                                 |
+|---------------------|------------|------------------------------------------------------------------------------------------------------|
+| `docs/arch/`        | 架构设计文档     | `overview.md`（项目架构总览）、`mvi.md`（MVI 框架实现）、`di.md`（DI 配置）、`usecase.md`（UseCase 与测试）                    |
+| `docs/rules/`       | 项目规范与规则    | `module-development.md`（开发顺序与规范）、`environment.md`（JDK/Gradle 版本）、`documentation_location.md`（文档存放规则） |
+| `docs/skills/`      | 项目级 Skills | `doc-sync`（文档同步技能）、`declare-feature`（feature.md 声明技能）                                                |
+| `docs/superpowers/` | 历史规格与计划归档  | `specs/`、`plans/`（仅作历史参考，不作为当前架构权威来源）                                                                |
 
 **Agent 应先阅读 `docs/arch/overview.md` 了解整体架构，再根据任务深入对应子文档。**
+
+### 项目级 Skills 加载规则
+
+本项目的本地 skills 以 `docs/skills/*/SKILL.md` 为唯一项目级来源。Agent/CLI 在处理任务前应扫描这些文件的 frontmatter：
+
+- 当用户点名 skill，或任务与 `description` 匹配时，先阅读对应 `SKILL.md` 并按其流程执行。
+- 项目级 skill 以仓库内 `docs/skills/` 为准；用户级 skill 目录只适合跨项目通用能力。
+- 如果 CLI 不能原生自动发现 `docs/skills/`，应通过本文件或该 CLI 的项目指令文件显式转发到此目录。
 
 ## 构建与测试
 

@@ -34,14 +34,14 @@ class MessageUseCase(
 
 ### 1.3 服务发现
 
-UseCase 可通过 `findService<T>()` 查找同级 UseCase 暴露的 `MviService` 接口：
+UseCase 可通过 `findService<T>()` 或 `findServiceOrNull<T>()` 查找同级 UseCase 暴露的 `MviService` 接口：
 
 ```kotlin
-val analytics = findService<Analytics>()
+val analytics = findServiceOrNull<Analytics>()
 analytics?.track("message_click")
 ```
 
-自动注册机制会在 `init` 时扫描当前 UseCase 实现的所有 `MviService` 接口并注册到 Registry（详见 [mvi.md §7.3](./mvi.md)）。
+`findService<T>()` 找不到服务时会直接报错；可选依赖应使用 `findServiceOrNull<T>()`。自动注册机制会在 `CombineUseCase` 创建 child UseCase 后扫描其实现的所有 `MviService` 接口并注册到 Registry（详见 [mvi.md §7.3](./mvi.md)）。
 
 ---
 
