@@ -92,10 +92,14 @@ interface CommentRepository {
 | 类型 | 说明 |
 |------|------|
 | `CommentInitialResult` | `totalCount`、`dialogueEntry`、首屏 `CommentPage` |
-| `CommentPage` | `comments`、`nextCursor`、`hasMore` |
-| `ReplyPage` | `replies`、`nextCursor`、`hasMore` |
+| `CommentPage` | `comments: List<CommentData>`、`nextCursor`、`hasMore` |
+| `ReplyPage` | `replies: List<ReplyData>`、`nextCursor`、`hasMore` |
 | `CommentLikeResult` | 评论 id、最终点赞状态、最终点赞数 |
-| `SendCommentResult` | 新评论、服务端评论总数 |
+| `SendCommentResult` | `comment: CommentData`、服务端评论总数 |
+| `CommentData` | repository 持久评论字段，不包含 `isLikeSubmitting`、`isExpanded`、`replySection` 等面板本地状态 |
+| `ReplyData` | repository 持久回复字段 |
+
+UseCase 通过 `CommentData.toCommentItem()` 和 `ReplyData.toReplyItem()` 将 repository 记录转换为面板状态模型；转换时必须重置面板本地瞬态状态，避免数据源泄漏 UI/usecase 状态。
 
 Fake 数据源提供固定内容池、分页数据、可配置失败场景，供单元测试稳定覆盖成功和失败路径。
 

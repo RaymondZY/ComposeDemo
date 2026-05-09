@@ -15,13 +15,13 @@ data class CommentInitialResult(
 )
 
 data class CommentPage(
-    val comments: List<CommentItem>,
+    val comments: List<CommentData>,
     val nextCursor: String?,
     val hasMore: Boolean,
 )
 
 data class ReplyPage(
-    val replies: List<ReplyItem>,
+    val replies: List<ReplyData>,
     val nextCursor: String?,
     val hasMore: Boolean,
 )
@@ -33,6 +33,49 @@ data class CommentLikeResult(
 )
 
 data class SendCommentResult(
-    val comment: CommentItem,
+    val comment: CommentData,
     val totalCount: Int,
+)
+
+data class CommentData(
+    val commentId: String,
+    val user: CommentUser,
+    val content: String,
+    val createdAtText: String,
+    val likeCount: Int,
+    val isLiked: Boolean,
+    val isPinned: Boolean,
+    val canExpand: Boolean,
+    val replyCount: Int,
+)
+
+data class ReplyData(
+    val replyId: String,
+    val parentCommentId: String,
+    val user: CommentUser,
+    val content: String,
+    val createdAtText: String,
+)
+
+fun CommentData.toCommentItem(): CommentItem = CommentItem(
+    commentId = commentId,
+    user = user,
+    content = content,
+    createdAtText = createdAtText,
+    likeCount = likeCount,
+    isLiked = isLiked,
+    isLikeSubmitting = false,
+    isPinned = isPinned,
+    canExpand = canExpand,
+    isExpanded = false,
+    replyCount = replyCount,
+    replySection = ReplySectionState(),
+)
+
+fun ReplyData.toReplyItem(): ReplyItem = ReplyItem(
+    replyId = replyId,
+    parentCommentId = parentCommentId,
+    user = user,
+    content = content,
+    createdAtText = createdAtText,
 )

@@ -254,13 +254,13 @@ data class CommentInitialResult(
 )
 
 data class CommentPage(
-    val comments: List<CommentItem>,
+    val comments: List<CommentData>,
     val nextCursor: String?,
     val hasMore: Boolean,
 )
 
 data class ReplyPage(
-    val replies: List<ReplyItem>,
+    val replies: List<ReplyData>,
     val nextCursor: String?,
     val hasMore: Boolean,
 )
@@ -272,8 +272,51 @@ data class CommentLikeResult(
 )
 
 data class SendCommentResult(
-    val comment: CommentItem,
+    val comment: CommentData,
     val totalCount: Int,
+)
+
+data class CommentData(
+    val commentId: String,
+    val user: CommentUser,
+    val content: String,
+    val createdAtText: String,
+    val likeCount: Int,
+    val isLiked: Boolean,
+    val isPinned: Boolean,
+    val canExpand: Boolean,
+    val replyCount: Int,
+)
+
+data class ReplyData(
+    val replyId: String,
+    val parentCommentId: String,
+    val user: CommentUser,
+    val content: String,
+    val createdAtText: String,
+)
+
+fun CommentData.toCommentItem(): CommentItem = CommentItem(
+    commentId = commentId,
+    user = user,
+    content = content,
+    createdAtText = createdAtText,
+    likeCount = likeCount,
+    isLiked = isLiked,
+    isLikeSubmitting = false,
+    isPinned = isPinned,
+    canExpand = canExpand,
+    isExpanded = false,
+    replyCount = replyCount,
+    replySection = ReplySectionState(),
+)
+
+fun ReplyData.toReplyItem(): ReplyItem = ReplyItem(
+    replyId = replyId,
+    parentCommentId = parentCommentId,
+    user = user,
+    content = content,
+    createdAtText = createdAtText,
 )
 ```
 
@@ -371,16 +414,16 @@ class FakeCommentRepository : CommentRepository {
 
     private val replies = mapOf(
         "comment-1" to listOf(
-            ReplyItem("reply-1", "comment-1", users[0], "谢谢喜欢。", "刚刚"),
-            ReplyItem("reply-2", "comment-1", users[2], "我也想看后续。", "1分钟前"),
-            ReplyItem("reply-3", "comment-1", users[1], "已经收藏了。", "2分钟前"),
+            ReplyData("reply-1", "comment-1", users[0], "谢谢喜欢。", "刚刚"),
+            ReplyData("reply-2", "comment-1", users[2], "我也想看后续。", "1分钟前"),
+            ReplyData("reply-3", "comment-1", users[1], "已经收藏了。", "2分钟前"),
         ),
         "comment-3" to listOf(
-            ReplyItem("reply-4", "comment-3", users[1], "坐等更新。", "3分钟前"),
+            ReplyData("reply-4", "comment-3", users[1], "坐等更新。", "3分钟前"),
         ),
         "comment-5" to listOf(
-            ReplyItem("reply-5", "comment-5", users[0], "会加互动。", "5分钟前"),
-            ReplyItem("reply-6", "comment-5", users[2], "太好了。", "6分钟前"),
+            ReplyData("reply-5", "comment-5", users[0], "会加互动。", "5分钟前"),
+            ReplyData("reply-6", "comment-5", users[2], "太好了。", "6分钟前"),
         ),
     )
 
@@ -431,7 +474,7 @@ class FakeCommentRepository : CommentRepository {
         likeCount: Int,
         replyCount: Int,
         isPinned: Boolean = false,
-    ): CommentItem = CommentItem(
+    ): CommentData = CommentData(
         commentId = id,
         user = user,
         content = content,
@@ -442,7 +485,7 @@ class FakeCommentRepository : CommentRepository {
         replyCount = replyCount,
     )
 
-    private fun page(items: List<CommentItem>, start: Int, pageSize: Int): CommentPage {
+    private fun page(items: List<CommentData>, start: Int, pageSize: Int): CommentPage {
         val end = minOf(start + pageSize, items.size)
         return CommentPage(
             comments = items.subList(start, end),
@@ -541,6 +584,7 @@ private fun createUseCase(
 - 实现 `loadInitial`
 - 实现 `loadMoreComments`
 - 实现 `navigateDialogueIfAvailable`
+- repository 返回的 `CommentData` 必须通过 `toCommentItem()` 转换后写入 `CommentPanelState.comments`
 
 错误文案固定为：
 - 首屏加载失败 toast：`评论加载失败`
@@ -699,6 +743,7 @@ fun `collapse replies keeps loaded replies`() = runTest
 - `isLoading == true` 时忽略重复加载
 - 失败只影响目标评论回复区
 - 成功后 `ReplySectionState.isExpanded = true`
+- repository 返回的 `ReplyData` 必须通过 `toReplyItem()` 转换后写入 `ReplySectionState.replies`
 - 分页状态使用 `PaginationState(nextCursor, hasMore)`
 
 - [ ] **步骤 4：运行测试确认绿灯**
@@ -770,6 +815,7 @@ fun `send failure keeps input and does not add failed comment`() = runTest
 - 超过 `CommentPanelMaxInputLength`：写入 `inputErrorMessage = "评论不能超过200字"` 并 toast
 - 有效内容：进入 `isSendingComment = true`
 - 发送成功：新评论插入顶部、清空输入、退出发送中、更新 `totalCount`
+- `sendComment` 返回的 `CommentData` 必须通过 `toCommentItem()` 转换后插入顶部
 - 发送失败：退出发送中、保留输入、不新增评论、写入 `sendErrorMessage = "发送失败，请重试"` 并 toast
 
 - [ ] **步骤 4：运行测试确认绿灯**

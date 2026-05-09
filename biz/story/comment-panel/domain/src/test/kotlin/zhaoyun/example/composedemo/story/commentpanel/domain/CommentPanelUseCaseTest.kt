@@ -50,4 +50,58 @@ class CommentPanelUseCaseTest {
         assertEquals(emptyList<ReplyItem>(), comment.replySection.replies)
         assertTrue(comment.canExpand)
     }
+
+    @Test
+    fun `仓库数据转换为面板模型时重置本地瞬态状态`() {
+        val user = CommentUser(
+            userId = "user-1",
+            nickname = "小云",
+            avatarUrl = "https://example.com/u.png",
+            isAuthor = true,
+        )
+        val commentData = CommentData(
+            commentId = "comment-1",
+            user = user,
+            content = "这是一条评论",
+            createdAtText = "刚刚",
+            likeCount = 3,
+            isLiked = true,
+            isPinned = true,
+            canExpand = true,
+            replyCount = 2,
+        )
+        val replyData = ReplyData(
+            replyId = "reply-1",
+            parentCommentId = "comment-1",
+            user = user,
+            content = "这是一条回复",
+            createdAtText = "1分钟前",
+        )
+
+        val comment = commentData.toCommentItem()
+        val reply = replyData.toReplyItem()
+
+        assertEquals("comment-1", comment.commentId)
+        assertEquals(user, comment.user)
+        assertEquals("这是一条评论", comment.content)
+        assertEquals("刚刚", comment.createdAtText)
+        assertEquals(3, comment.likeCount)
+        assertTrue(comment.isLiked)
+        assertTrue(comment.isPinned)
+        assertTrue(comment.canExpand)
+        assertEquals(2, comment.replyCount)
+        assertFalse(comment.isLikeSubmitting)
+        assertFalse(comment.isExpanded)
+        assertEquals(ReplySectionState(), comment.replySection)
+        assertEquals(
+            ReplyItem(
+                replyId = "reply-1",
+                parentCommentId = "comment-1",
+                user = user,
+                content = "这是一条回复",
+                createdAtText = "1分钟前",
+            ),
+            reply,
+        )
+    }
 }
