@@ -560,6 +560,105 @@ class CommentPanelUseCaseTest {
     }
 
     @Test
+    fun `reply cancellation clears loading without error`() = runTest {
+        val existingReply = sampleReply("reply-1", parentId = "comment-1")
+        val repository = CancellingRepliesRepository()
+        val target = sampleComment(
+            "comment-1",
+            replySection = ReplySectionState(
+                isExpanded = true,
+                replies = listOf(existingReply),
+                pagination = PaginationState(nextCursor = "cursor-1", hasMore = true),
+            ),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = listOf(target),
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreReplies("comment-1"))
+
+        assertEquals(1, repository.callCount)
+        assertEquals(
+            target.copy(
+                replySection = target.replySection.copy(
+                    isLoading = false,
+                    errorMessage = null,
+                ),
+            ),
+            useCase.state.value.comments.single(),
+        )
+    }
+
+    @Test
+    fun `reply loading guards leave comments unchanged`() = runTest {
+        val loading = sampleComment(
+            "comment-1",
+            replySection = ReplySectionState(isExpanded = true, isLoading = true),
+        )
+        val loadingMore = sampleComment(
+            "comment-5",
+            replySection = ReplySectionState(
+                isExpanded = true,
+                isLoading = true,
+                pagination = PaginationState(nextCursor = "cursor-5", hasMore = true),
+            ),
+        )
+        val collapsed = sampleComment(
+            "comment-2",
+            replySection = ReplySectionState(
+                isExpanded = false,
+                pagination = PaginationState(nextCursor = "cursor-1", hasMore = true),
+            ),
+        )
+        val noMore = sampleComment(
+            "comment-3",
+            replySection = ReplySectionState(
+                isExpanded = true,
+                pagination = PaginationState(nextCursor = "cursor-2", hasMore = false),
+            ),
+        )
+        val noCursor = sampleComment(
+            "comment-4",
+            replySection = ReplySectionState(
+                isExpanded = true,
+                pagination = PaginationState(nextCursor = null, hasMore = true),
+            ),
+        )
+        val comments = listOf(loading, loadingMore, collapsed, noMore, noCursor)
+        val repository = FixedRepliesRepository(
+            result = ReplyPage(
+                replies = listOf(replyData("reply-guard")),
+                nextCursor = null,
+                hasMore = false,
+            ),
+        )
+        val useCase = createUseCase(
+            initialState = CommentPanelState(
+                cardId = "story-1",
+                comments = comments,
+                initialLoadStatus = LoadStatus.Success,
+            ),
+            repository = repository,
+        )
+
+        useCase.receiveEvent(CommentPanelEvent.OnRepliesExpanded("missing"))
+        useCase.receiveEvent(CommentPanelEvent.OnRepliesExpanded("comment-1"))
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreReplies("missing"))
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreReplies("comment-5"))
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreReplies("comment-2"))
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreReplies("comment-3"))
+        useCase.receiveEvent(CommentPanelEvent.OnLoadMoreReplies("comment-4"))
+
+        assertEquals(comments, useCase.state.value.comments)
+        assertEquals(0, repository.callCount)
+    }
+
+    @Test
     fun `like failure rolls back target comment and emits toast`() = runTest {
         val oldTarget = sampleComment("comment-1", likeCount = 7, isLiked = false)
         val other = sampleComment("comment-2", likeCount = 2, isLiked = true)
@@ -815,8 +914,11 @@ private class FixedRepliesRepository(
         private set
     var pageSize: Int? = null
         private set
+    var callCount: Int = 0
+        private set
 
     override suspend fun loadReplies(cardId: String, commentId: String, cursor: String?, pageSize: Int): ReplyPage {
+        callCount += 1
         this.cardId = cardId
         this.commentId = commentId
         this.cursor = cursor
@@ -887,6 +989,16 @@ private class SuspendedRepliesRepository(
 private class CancellingLikeRepository : CommentRepository by FakeCommentRepository() {
     override suspend fun setCommentLiked(cardId: String, commentId: String, liked: Boolean): CommentLikeResult {
         throw CancellationException("like cancelled")
+    }
+}
+
+private class CancellingRepliesRepository : CommentRepository by FakeCommentRepository() {
+    var callCount: Int = 0
+        private set
+
+    override suspend fun loadReplies(cardId: String, commentId: String, cursor: String?, pageSize: Int): ReplyPage {
+        callCount += 1
+        throw CancellationException("replies cancelled")
     }
 }
 
