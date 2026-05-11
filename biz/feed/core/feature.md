@@ -83,7 +83,7 @@
 
 ## UC-07 刷新失败提示
 
-**前置条件**：platform 观测到 refresh load state 为失败  
+**前置条件**：platform 观测到 refresh load state 为失败
 **步骤**：
 
 1. platform 发送刷新失败事件
@@ -94,7 +94,7 @@
 
 ## UC-08 加载更多失败提示
 
-**前置条件**：platform 观测到 append load state 为失败  
+**前置条件**：platform 观测到 append load state 为失败
 **步骤**：
 
 1. platform 发送加载更多失败事件
