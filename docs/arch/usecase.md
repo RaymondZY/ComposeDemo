@@ -105,8 +105,8 @@ class BaseViewModelTest {
 
 使用 `ComposeTestRule` 测试 Composable 交互，需运行在模拟器或真机上：
 
-- `scaffold/android/src/androidTest/.../ServiceRegistryComposeTest.kt`
-- `scaffold/android/src/androidTest/.../ScreenViewModelTest.kt`
+- `scaffold/platform/src/androidTest/.../ServiceRegistryComposeTest.kt`
+- `scaffold/platform/src/androidTest/.../ScreenViewModelTest.kt`
 
 ---
 

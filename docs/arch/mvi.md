@@ -172,7 +172,7 @@ class CombineUseCase<S : UiState, E : UiEvent, F : UiEffect>(
 ### 5.4 BaseViewModel — 生命周期桥接
 
 ```kotlin
-// scaffold/android/.../BaseViewModel.kt
+// scaffold/platform/.../BaseViewModel.kt
 open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
     stateHolder: StateHolder<S>,
     serviceRegistry: MutableServiceRegistry,
@@ -193,7 +193,7 @@ open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
 ### 5.5 MviScreen — Screen 级 Composable 作用域
 
 ```kotlin
-// scaffold/android/.../MviScreen.kt
+// scaffold/platform/.../MviScreen.kt
 inline fun <reified VM : BaseViewModel<*, *, *>> MviScreen(
     noinline onBaseEffect: suspend (BaseEffect) -> Boolean = { false },
     noinline parameters: (() -> ParametersHolder)? = null,
@@ -211,7 +211,7 @@ inline fun <reified VM : BaseViewModel<*, *, *>> MviScreen(
 ### 5.6 MviScope / MviItemScope — 嵌套作用域
 
 ```kotlin
-// scaffold/android/.../MviScope.kt
+// scaffold/platform/.../MviScope.kt
 @Composable
 fun MviScope(scopeId: String = ..., parentRegistry: ServiceRegistry? = null, content: @Composable () -> Unit)
 
@@ -224,7 +224,7 @@ fun MviItemScope(scopeId: String = ..., content: @Composable () -> Unit)
 ### 5.7 screenViewModel — Scope 内 ViewModel 解析
 
 ```kotlin
-// scaffold/android/.../ScreenViewModel.kt
+// scaffold/platform/.../ScreenViewModel.kt
 inline fun <reified VM : BaseViewModel<*, *, *>> screenViewModel(
     key: String? = null,
     noinline parameters: (() -> ParametersHolder)? = null,
