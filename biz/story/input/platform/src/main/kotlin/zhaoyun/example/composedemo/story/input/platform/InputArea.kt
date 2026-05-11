@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.input.presentation
+package zhaoyun.example.composedemo.story.input.platform
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -48,9 +48,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
 
-import zhaoyun.example.composedemo.story.input.domain.InputEffect
-import zhaoyun.example.composedemo.story.input.domain.InputEvent
-import zhaoyun.example.composedemo.story.input.domain.InputKeyboardCoordinator
+import zhaoyun.example.composedemo.story.input.core.InputEffect
+import zhaoyun.example.composedemo.story.input.core.InputEvent
+import zhaoyun.example.composedemo.story.input.core.InputKeyboardCoordinator
 import kotlin.math.abs
 
 object InputAreaTestTags {

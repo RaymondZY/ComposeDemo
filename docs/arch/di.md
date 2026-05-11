@@ -16,14 +16,14 @@ startKoin {
         userCenterModule + storageModule +
             homeModules + feedModules +
             listOf(
-                storyPresentationModule,
-                messagePresentationModule,
-                infoBarPresentationModule,
-                commentPanelPresentationModule,
-                sharePanelPresentationModule,
-                inputPresentationModule,
-                backgroundPresentationModule,
-                storyPanelPresentationModule,
+                storyPlatformModule,
+                messagePlatformModule,
+                infoBarPlatformModule,
+                commentPanelPlatformModule,
+                sharePanelPlatformModule,
+                inputPlatformModule,
+                backgroundPlatformModule,
+                storyPanelPlatformModule,
             ) +
             listOf(
                 module {
@@ -42,8 +42,8 @@ startKoin {
 需要注入 `StateHolder` 的子 ViewModel 使用带参数的 factory：
 
 ```kotlin
-// biz/story/message/presentation/di/MessagePresentationModule.kt
-val messagePresentationModule = module {
+// biz/story/message/platform/di/MessagePlatformModule.kt
+val messagePlatformModule = module {
     scope(MviKoinScopes.Item) {
         viewModel { (stateHolder: StateHolder<MessageState>) ->
             MessageViewModel(
@@ -90,17 +90,17 @@ scope.declare<MutableServiceRegistryImpl>(
 
 | 模块                                      | Koin Module                      | 说明                                      |
 |-----------------------------------------|----------------------------------|-----------------------------------------|
-| `:biz:story:presentation`               | `storyPresentationModule`        | StoryCard 页面 ViewModel                  |
-| `:biz:story:message:presentation`       | `messagePresentationModule`      | Message 子组件 ViewModel（带 StateHolder 参数） |
-| `:biz:story:infobar:presentation`       | `infoBarPresentationModule`      | InfoBar 子组件 ViewModel                   |
-| `:biz:story:input:presentation`         | `inputPresentationModule`        | Input 子组件 ViewModel                     |
-| `:biz:story:background:presentation`    | `backgroundPresentationModule`   | Background 子组件 ViewModel                |
-| `:biz:story:comment-panel:presentation` | `commentPanelPresentationModule` | CommentPanel 底部面板 ViewModel             |
-| `:biz:story:share-panel:presentation`   | `sharePanelPresentationModule`   | SharePanel 底部面板 ViewModel               |
-| `:biz:story:story-panel:presentation`   | `storyPanelPresentationModule`   | StoryPanel 详情占位页面 ViewModel             |
-| `:biz:feed:presentation`                | `feedModules`                    | Feed 页面相关模块                             |
-| `:biz:home:presentation`                | `homeModules`                    | Home 页面相关模块                             |
+| `:biz:story:platform`               | `storyPlatformModule`        | StoryCard 页面 ViewModel                  |
+| `:biz:story:message:platform`       | `messagePlatformModule`      | Message 子组件 ViewModel（带 StateHolder 参数） |
+| `:biz:story:infobar:platform`       | `infoBarPlatformModule`      | InfoBar 子组件 ViewModel                   |
+| `:biz:story:input:platform`         | `inputPlatformModule`        | Input 子组件 ViewModel                     |
+| `:biz:story:background:platform`    | `backgroundPlatformModule`   | Background 子组件 ViewModel                |
+| `:biz:story:comment-panel:platform` | `commentPanelPlatformModule` | CommentPanel 底部面板 ViewModel             |
+| `:biz:story:share-panel:platform`   | `sharePanelPlatformModule`   | SharePanel 底部面板 ViewModel               |
+| `:biz:story:story-panel:platform`   | `storyPanelPlatformModule`   | StoryPanel 详情占位页面 ViewModel             |
+| `:biz:feed:platform`                | `feedModules`                    | Feed 页面相关模块                             |
+| `:biz:home:platform`                | `homeModules`                    | Home 页面相关模块                             |
 | `:service:user-center`                  | `userCenterModule`               | 用户中心服务                                  |
 | `:service:storage`                      | `storageModule`                  | 存储服务                                    |
 | `:service:feed:mock`                    | `FakeFeedRepository`             | FeedRepository mock 实现                  |
-| `:biz:story:input:domain`               | `InputKeyboardCoordinator`       | 输入框焦点与键盘协调服务                            |
+| `:biz:story:input:core`               | `InputKeyboardCoordinator`       | 输入框焦点与键盘协调服务                            |

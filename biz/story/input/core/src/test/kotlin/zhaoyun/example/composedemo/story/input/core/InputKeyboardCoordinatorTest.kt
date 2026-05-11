@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.input.domain
+package zhaoyun.example.composedemo.story.input.core
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

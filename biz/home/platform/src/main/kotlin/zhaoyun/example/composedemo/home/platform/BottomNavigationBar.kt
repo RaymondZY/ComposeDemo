@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.home.presentation
+package zhaoyun.example.composedemo.home.platform
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,9 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import zhaoyun.example.composedemo.home.domain.HomeEvent
-import zhaoyun.example.composedemo.home.domain.Tab
-import zhaoyun.example.composedemo.home.domain.TabBadge
+import zhaoyun.example.composedemo.home.core.HomeEvent
+import zhaoyun.example.composedemo.home.core.Tab
+import zhaoyun.example.composedemo.home.core.TabBadge
 
 @Composable
 fun BottomNavigationBar(

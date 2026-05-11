@@ -1,4 +1,4 @@
-# Feature — Story Background Domain（故事背景业务）
+# Feature — Story Background Core（故事背景业务）
 
 > 参考：故事卡片背景图片地址的业务状态。
 

@@ -1,12 +1,12 @@
-package zhaoyun.example.composedemo.story.infobar.presentation
+package zhaoyun.example.composedemo.story.infobar.platform
 
-import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
+import zhaoyun.example.composedemo.scaffold.platform.BaseViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarEffect
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarEvent
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarState
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarUseCase
+import zhaoyun.example.composedemo.story.infobar.core.InfoBarEffect
+import zhaoyun.example.composedemo.story.infobar.core.InfoBarEvent
+import zhaoyun.example.composedemo.story.infobar.core.InfoBarState
+import zhaoyun.example.composedemo.story.infobar.core.InfoBarUseCase
 
 class InfoBarViewModel(
     cardId: String,

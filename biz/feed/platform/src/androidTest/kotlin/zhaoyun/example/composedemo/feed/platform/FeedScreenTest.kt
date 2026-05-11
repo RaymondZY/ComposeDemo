@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.feed.presentation
+package zhaoyun.example.composedemo.feed.platform
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,7 +23,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.delay
 import org.junit.Rule
 import org.junit.Test
-import zhaoyun.example.composedemo.feed.domain.FeedEvent
+import zhaoyun.example.composedemo.feed.core.FeedEvent
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.service.feed.api.FeedRepository

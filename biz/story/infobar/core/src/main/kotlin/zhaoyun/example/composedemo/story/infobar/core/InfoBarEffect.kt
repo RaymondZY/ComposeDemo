@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.infobar.domain
+package zhaoyun.example.composedemo.story.infobar.core
 
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEffect
 

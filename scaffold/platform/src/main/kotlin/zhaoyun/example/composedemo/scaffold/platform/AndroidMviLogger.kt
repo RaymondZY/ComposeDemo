@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.scaffold.android
+package zhaoyun.example.composedemo.scaffold.platform
 
 import android.util.Log
 import zhaoyun.example.composedemo.scaffold.core.context.MviLogger

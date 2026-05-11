@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.storypanel.domain
+package zhaoyun.example.composedemo.story.storypanel.core
 
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 

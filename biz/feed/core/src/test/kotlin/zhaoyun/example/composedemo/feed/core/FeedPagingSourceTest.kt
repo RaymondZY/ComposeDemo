@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.feed.domain
+package zhaoyun.example.composedemo.feed.core
 
 import androidx.paging.PagingSource
 import kotlinx.coroutines.test.runTest

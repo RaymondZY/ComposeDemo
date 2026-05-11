@@ -1,23 +1,23 @@
-package zhaoyun.example.composedemo.story.commentpanel.presentation.di
+package zhaoyun.example.composedemo.story.commentpanel.platform.di
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.koinApplication
-import zhaoyun.example.composedemo.scaffold.android.MviKoinScopes
+import zhaoyun.example.composedemo.scaffold.platform.MviKoinScopes
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
-import zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelState
-import zhaoyun.example.composedemo.story.commentpanel.presentation.CommentPanelViewModel
+import zhaoyun.example.composedemo.story.commentpanel.core.CommentPanelState
+import zhaoyun.example.composedemo.story.commentpanel.platform.CommentPanelViewModel
 
-class CommentPanelPresentationModuleTest {
+class CommentPanelPlatformModuleTest {
 
     @Test
     fun `comment panel view model resolves from screen scope`() {
         val koin = koinApplication {
-            modules(commentPanelPresentationModule)
+            modules(commentPanelPlatformModule)
         }.koin
         val scope = koin.createScope("comment-panel", MviKoinScopes.Screen).also {
             val registry = MutableServiceRegistryImpl()

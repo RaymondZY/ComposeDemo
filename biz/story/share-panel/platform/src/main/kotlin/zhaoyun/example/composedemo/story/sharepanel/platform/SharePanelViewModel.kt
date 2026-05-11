@@ -1,12 +1,12 @@
-package zhaoyun.example.composedemo.story.sharepanel.presentation
+package zhaoyun.example.composedemo.story.sharepanel.platform
 
-import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
+import zhaoyun.example.composedemo.scaffold.platform.BaseViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
-import zhaoyun.example.composedemo.story.sharepanel.domain.SharePanelEffect
-import zhaoyun.example.composedemo.story.sharepanel.domain.SharePanelEvent
-import zhaoyun.example.composedemo.story.sharepanel.domain.SharePanelState
-import zhaoyun.example.composedemo.story.sharepanel.domain.SharePanelUseCase
+import zhaoyun.example.composedemo.story.sharepanel.core.SharePanelEffect
+import zhaoyun.example.composedemo.story.sharepanel.core.SharePanelEvent
+import zhaoyun.example.composedemo.story.sharepanel.core.SharePanelState
+import zhaoyun.example.composedemo.story.sharepanel.core.SharePanelUseCase
 
 class SharePanelViewModel(
     cardId: String,

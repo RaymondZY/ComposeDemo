@@ -1,10 +1,10 @@
-package zhaoyun.example.composedemo.home.presentation
+package zhaoyun.example.composedemo.home.platform
 
-import zhaoyun.example.composedemo.home.domain.HomeEffect
-import zhaoyun.example.composedemo.home.domain.HomeEvent
-import zhaoyun.example.composedemo.home.domain.HomeState
-import zhaoyun.example.composedemo.home.domain.HomeUseCase
-import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
+import zhaoyun.example.composedemo.home.core.HomeEffect
+import zhaoyun.example.composedemo.home.core.HomeEvent
+import zhaoyun.example.composedemo.home.core.HomeState
+import zhaoyun.example.composedemo.home.core.HomeUseCase
+import zhaoyun.example.composedemo.scaffold.platform.BaseViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 

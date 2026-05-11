@@ -1,4 +1,4 @@
-# Feature — Feed Domain（信息流业务）
+# Feature — Feed Core（信息流业务）
 
 > 参考：信息流卡片列表的 Paging 数据源和失败提示。
 
@@ -66,7 +66,7 @@
 
 1. PagingSource 请求数据
 
-**预期结果**：返回 Paging error，由 presentation 的 load state 处理重试和提示
+**预期结果**：返回 Paging error，由 platform 的 load state 处理重试和提示
 
 ---
 
@@ -83,10 +83,10 @@
 
 ## UC-07 刷新失败提示
 
-**前置条件**：presentation 观测到 refresh load state 为失败  
+**前置条件**：platform 观测到 refresh load state 为失败  
 **步骤**：
 
-1. presentation 发送刷新失败事件
+1. platform 发送刷新失败事件
 
 **预期结果**：业务层产生“刷新失败，请重试” snackbar
 
@@ -94,9 +94,9 @@
 
 ## UC-08 加载更多失败提示
 
-**前置条件**：presentation 观测到 append load state 为失败  
+**前置条件**：platform 观测到 append load state 为失败  
 **步骤**：
 
-1. presentation 发送加载更多失败事件
+1. platform 发送加载更多失败事件
 
 **预期结果**：业务层产生“加载失败，请重试” snackbar

@@ -1,12 +1,12 @@
-package zhaoyun.example.composedemo.story.input.presentation
+package zhaoyun.example.composedemo.story.input.platform
 
-import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
+import zhaoyun.example.composedemo.scaffold.platform.BaseViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
-import zhaoyun.example.composedemo.story.input.domain.InputEffect
-import zhaoyun.example.composedemo.story.input.domain.InputEvent
-import zhaoyun.example.composedemo.story.input.domain.InputState
-import zhaoyun.example.composedemo.story.input.domain.InputUseCase
+import zhaoyun.example.composedemo.story.input.core.InputEffect
+import zhaoyun.example.composedemo.story.input.core.InputEvent
+import zhaoyun.example.composedemo.story.input.core.InputState
+import zhaoyun.example.composedemo.story.input.core.InputUseCase
 
 class InputViewModel(
     stateHolder: StateHolder<InputState>,

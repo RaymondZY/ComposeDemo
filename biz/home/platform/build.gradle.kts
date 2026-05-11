@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "zhaoyun.example.composedemo.home.presentation"
+    namespace = "zhaoyun.example.composedemo.home.platform"
     compileSdk = 36
     buildToolsVersion = "36.1.0"
 
@@ -32,9 +32,9 @@ android {
 }
 
 dependencies {
-    api(project(":biz:home:domain"))
-    implementation(project(":biz:feed:presentation"))
-    implementation(project(":scaffold:android"))
+    api(project(":biz:home:core"))
+    implementation(project(":biz:feed:platform"))
+    implementation(project(":scaffold:platform"))
 
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.core.ktx)

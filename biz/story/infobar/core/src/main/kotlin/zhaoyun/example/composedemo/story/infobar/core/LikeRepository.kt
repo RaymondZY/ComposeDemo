@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.infobar.domain
+package zhaoyun.example.composedemo.story.infobar.core
 
 interface LikeRepository {
     suspend fun toggleLike(cardId: String, isLiked: Boolean, currentLikes: Int): LikeResult

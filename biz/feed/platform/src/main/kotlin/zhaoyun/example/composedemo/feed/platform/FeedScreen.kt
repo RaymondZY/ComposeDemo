@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.feed.presentation
+package zhaoyun.example.composedemo.feed.platform
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,17 +41,17 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
-import zhaoyun.example.composedemo.feed.domain.FeedEvent
-import zhaoyun.example.composedemo.scaffold.android.MviItemScope
-import zhaoyun.example.composedemo.scaffold.android.MviScreen
-import zhaoyun.example.composedemo.scaffold.android.screenViewModel
+import zhaoyun.example.composedemo.feed.core.FeedEvent
+import zhaoyun.example.composedemo.scaffold.platform.MviItemScope
+import zhaoyun.example.composedemo.scaffold.platform.MviScreen
+import zhaoyun.example.composedemo.scaffold.platform.screenViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.service.feed.api.model.FeedCard
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
-import zhaoyun.example.composedemo.story.domain.StoryCardState
-import zhaoyun.example.composedemo.story.input.domain.InputKeyboardCoordinator
-import zhaoyun.example.composedemo.story.presentation.StoryCardPage
-import zhaoyun.example.composedemo.story.presentation.StoryCardViewModel
+import zhaoyun.example.composedemo.story.core.StoryCardState
+import zhaoyun.example.composedemo.story.input.core.InputKeyboardCoordinator
+import zhaoyun.example.composedemo.story.platform.StoryCardPage
+import zhaoyun.example.composedemo.story.platform.StoryCardViewModel
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max

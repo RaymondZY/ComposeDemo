@@ -1,4 +1,4 @@
-# Feature — Message Presentation（对白界面）
+# Feature — Message Platform（对白界面）
 
 > 参考：故事卡片中的角色名称、角色副标题和对白文本展示。
 

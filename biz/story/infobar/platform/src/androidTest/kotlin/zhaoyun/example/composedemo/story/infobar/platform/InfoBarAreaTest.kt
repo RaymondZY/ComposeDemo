@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.infobar.presentation
+package zhaoyun.example.composedemo.story.infobar.platform
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -9,7 +9,7 @@ import org.junit.Rule
 import org.junit.Test
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarState
+import zhaoyun.example.composedemo.story.infobar.core.InfoBarState
 
 class InfoBarAreaTest {
 

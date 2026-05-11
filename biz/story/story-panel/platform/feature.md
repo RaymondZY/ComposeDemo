@@ -1,4 +1,4 @@
-# Feature — Story Panel Presentation（故事详情面板展示）
+# Feature — Story Panel Platform（故事详情面板展示）
 
 ---
 

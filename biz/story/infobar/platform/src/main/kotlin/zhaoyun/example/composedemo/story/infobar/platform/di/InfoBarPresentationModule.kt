@@ -1,13 +1,13 @@
-package zhaoyun.example.composedemo.story.infobar.presentation.di
+package zhaoyun.example.composedemo.story.infobar.platform.di
 
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
-import zhaoyun.example.composedemo.scaffold.android.MviKoinScopes
+import zhaoyun.example.composedemo.scaffold.platform.MviKoinScopes
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarState
-import zhaoyun.example.composedemo.story.infobar.presentation.InfoBarViewModel
+import zhaoyun.example.composedemo.story.infobar.core.InfoBarState
+import zhaoyun.example.composedemo.story.infobar.platform.InfoBarViewModel
 
-val infoBarPresentationModule = module {
+val infoBarPlatformModule = module {
     scope(MviKoinScopes.Item) {
         viewModel { (cardId: String, stateHolder: StateHolder<InfoBarState>) ->
             InfoBarViewModel(

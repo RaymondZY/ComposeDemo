@@ -1,4 +1,4 @@
-# Feature — Home Domain（首页导航业务）
+# Feature — Home Core（首页导航业务）
 
 > 参考：首页底部导航的选中状态、中心按钮和角标状态。
 

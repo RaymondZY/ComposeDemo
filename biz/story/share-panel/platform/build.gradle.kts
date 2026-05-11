@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "zhaoyun.example.composedemo.story.sharepanel.presentation"
+    namespace = "zhaoyun.example.composedemo.story.sharepanel.platform"
     compileSdk = 36
     buildToolsVersion = "36.1.0"
 
@@ -32,8 +32,8 @@ android {
 }
 
 dependencies {
-    api(project(":biz:story:share-panel:domain"))
-    implementation(project(":scaffold:android"))
+    api(project(":biz:story:share-panel:core"))
+    implementation(project(":scaffold:platform"))
 
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.core.ktx)

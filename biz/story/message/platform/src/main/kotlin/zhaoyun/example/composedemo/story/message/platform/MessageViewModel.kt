@@ -1,12 +1,12 @@
-package zhaoyun.example.composedemo.story.message.presentation
+package zhaoyun.example.composedemo.story.message.platform
 
-import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
+import zhaoyun.example.composedemo.scaffold.platform.BaseViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
-import zhaoyun.example.composedemo.story.message.domain.MessageEffect
-import zhaoyun.example.composedemo.story.message.domain.MessageEvent
-import zhaoyun.example.composedemo.story.message.domain.MessageState
-import zhaoyun.example.composedemo.story.message.domain.MessageUseCase
+import zhaoyun.example.composedemo.story.message.core.MessageEffect
+import zhaoyun.example.composedemo.story.message.core.MessageEvent
+import zhaoyun.example.composedemo.story.message.core.MessageState
+import zhaoyun.example.composedemo.story.message.core.MessageUseCase
 
 class MessageViewModel(
     stateHolder: StateHolder<MessageState>,

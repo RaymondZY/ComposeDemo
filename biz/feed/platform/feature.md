@@ -1,4 +1,4 @@
-# Feature — Feed Presentation（信息流界面）
+# Feature — Feed Platform（信息流界面）
 
 > 参考：竖向卡片流的展示、官方下拉刷新、Paging 加载状态和键盘收起交互。
 

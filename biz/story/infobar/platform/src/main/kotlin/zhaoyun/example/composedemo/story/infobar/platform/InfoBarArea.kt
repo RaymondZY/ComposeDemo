@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.infobar.presentation
+package zhaoyun.example.composedemo.story.infobar.platform
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,9 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarEffect
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarEvent
-import zhaoyun.example.composedemo.story.storypanel.presentation.StoryPanelScreen
+import zhaoyun.example.composedemo.story.infobar.core.InfoBarEffect
+import zhaoyun.example.composedemo.story.infobar.core.InfoBarEvent
+import zhaoyun.example.composedemo.story.storypanel.platform.StoryPanelScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

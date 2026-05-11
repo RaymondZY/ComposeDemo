@@ -1,4 +1,4 @@
-# Feature — Story Input Presentation（故事输入界面）
+# Feature — Story Input Platform（故事输入界面）
 
 > 参考：页面底部的自由输入栏、按钮切换、焦点和键盘收起体验。
 

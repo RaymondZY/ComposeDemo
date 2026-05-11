@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "zhaoyun.example.composedemo.story.input.presentation"
+    namespace = "zhaoyun.example.composedemo.story.input.platform"
     compileSdk = 36
     buildToolsVersion = "36.1.0"
 
@@ -32,8 +32,8 @@ android {
 }
 
 dependencies {
-    api(project(":biz:story:input:domain"))
-    implementation(project(":scaffold:android"))
+    api(project(":biz:story:input:core"))
+    implementation(project(":scaffold:platform"))
 
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.core.ktx)

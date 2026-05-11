@@ -1,4 +1,4 @@
-# Feature — Share Panel Domain（故事分享面板业务）
+# Feature — Share Panel Core（故事分享面板业务）
 
 > 参考：故事页面中的分享面板能力。
 

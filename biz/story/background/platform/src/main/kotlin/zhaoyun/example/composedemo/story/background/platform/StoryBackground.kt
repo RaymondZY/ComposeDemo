@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.background.presentation
+package zhaoyun.example.composedemo.story.background.platform
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable

@@ -49,7 +49,7 @@ analytics?.track("message_click")
 
 ### 2.1 平台无关代码测试（JUnit，JVM 快速运行）
 
-`:scaffold:core`、`:biz:*:domain`、`:service:*:api` 中的代码均为**平台无关**，使用标准 JUnit 测试即可，无需 Robolectric 或模拟器。
+`:scaffold:core`、`:biz:*:core`、`:service:*:api` 中的代码均为**平台无关**，使用标准 JUnit 测试即可，无需 Robolectric 或模拟器。
 
 #### UseCase 单元测试
 
@@ -81,7 +81,7 @@ class MessageUseCaseTest {
 
 ### 2.2 平台相关代码测试（JUnit + androidTest）
 
-`:scaffold:android`、`:biz:*:presentation`、`:app` 中的代码**依赖 Android 平台**，需结合两种测试方式：
+`:scaffold:platform`、`:biz:*:platform`、`:app` 中的代码**依赖 Android 平台**，需结合两种测试方式：
 
 #### ViewModel 测试（JUnit）
 

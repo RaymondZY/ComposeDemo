@@ -1,18 +1,18 @@
-package zhaoyun.example.composedemo.feed.presentation.di
+package zhaoyun.example.composedemo.feed.platform.di
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
-import zhaoyun.example.composedemo.feed.presentation.FeedViewModel
+import zhaoyun.example.composedemo.feed.platform.FeedViewModel
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.service.feed.api.FeedRepository
 import zhaoyun.example.composedemo.service.feed.api.model.FeedCard
 
-class FeedPresentationModuleTest {
+class FeedPlatformModuleTest {
 
     @Test
-    fun `feed modules only expose the presentation module`() {
-        assertEquals(listOf(feedPresentationModule), feedModules)
+    fun `feed modules only expose the platform module`() {
+        assertEquals(listOf(feedPlatformModule), feedModules)
     }
 
     @Test

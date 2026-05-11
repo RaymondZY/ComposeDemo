@@ -1,11 +1,11 @@
-package zhaoyun.example.composedemo.scaffold.android
+package zhaoyun.example.composedemo.scaffold.platform
 
 import org.koin.core.qualifier.named
 
 /**
  * Koin scope qualifiers used by the MVI architecture.
  *
- * Presentation modules should use these constants instead of hard-coding
+ * Platform modules should use these constants instead of hard-coding
  * scope names, so that they depend on the architecture infrastructure
  * rather than specific usage scenarios.
  */

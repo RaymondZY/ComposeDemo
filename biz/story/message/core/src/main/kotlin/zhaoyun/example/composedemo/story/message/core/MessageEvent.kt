@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.message.domain
+package zhaoyun.example.composedemo.story.message.core
 
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiEvent
 

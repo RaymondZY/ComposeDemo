@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.scaffold.android
+package zhaoyun.example.composedemo.scaffold.platform
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle

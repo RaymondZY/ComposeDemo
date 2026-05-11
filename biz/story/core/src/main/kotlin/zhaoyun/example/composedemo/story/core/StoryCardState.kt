@@ -1,11 +1,11 @@
-package zhaoyun.example.composedemo.story.domain
+package zhaoyun.example.composedemo.story.core
 
 import zhaoyun.example.composedemo.scaffold.core.mvi.UiState
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
-import zhaoyun.example.composedemo.story.background.domain.BackgroundState
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarState
-import zhaoyun.example.composedemo.story.input.domain.InputState
-import zhaoyun.example.composedemo.story.message.domain.MessageState
+import zhaoyun.example.composedemo.story.background.core.BackgroundState
+import zhaoyun.example.composedemo.story.infobar.core.InfoBarState
+import zhaoyun.example.composedemo.story.input.core.InputState
+import zhaoyun.example.composedemo.story.message.core.MessageState
 
 data class StoryCardState(
     val background: BackgroundState = BackgroundState(),

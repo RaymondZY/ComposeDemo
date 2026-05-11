@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.sharepanel.presentation
+package zhaoyun.example.composedemo.story.sharepanel.platform
 
 import android.content.ClipData
 import android.content.Context
@@ -51,12 +51,12 @@ import coil.request.SuccessResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.parameter.parametersOf
-import zhaoyun.example.composedemo.scaffold.android.screenViewModel
+import zhaoyun.example.composedemo.scaffold.platform.screenViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
-import zhaoyun.example.composedemo.story.sharepanel.domain.SharePanelEffect
-import zhaoyun.example.composedemo.story.sharepanel.domain.SharePanelEvent
-import zhaoyun.example.composedemo.story.sharepanel.domain.SharePanelState
+import zhaoyun.example.composedemo.story.sharepanel.core.SharePanelEffect
+import zhaoyun.example.composedemo.story.sharepanel.core.SharePanelEvent
+import zhaoyun.example.composedemo.story.sharepanel.core.SharePanelState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

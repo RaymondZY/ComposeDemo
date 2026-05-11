@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.presentation
+package zhaoyun.example.composedemo.story.platform
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -28,18 +28,18 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import org.koin.core.parameter.parametersOf
-import zhaoyun.example.composedemo.scaffold.android.screenViewModel
+import zhaoyun.example.composedemo.scaffold.platform.screenViewModel
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
-import zhaoyun.example.composedemo.story.background.presentation.BackgroundViewModel
-import zhaoyun.example.composedemo.story.background.presentation.StoryBackground
-import zhaoyun.example.composedemo.story.commentpanel.presentation.CommentPanelSheet
-import zhaoyun.example.composedemo.story.infobar.presentation.InfoBarArea
-import zhaoyun.example.composedemo.story.infobar.presentation.InfoBarViewModel
-import zhaoyun.example.composedemo.story.input.presentation.InputArea
-import zhaoyun.example.composedemo.story.input.presentation.InputViewModel
-import zhaoyun.example.composedemo.story.message.presentation.MessageArea
-import zhaoyun.example.composedemo.story.message.presentation.MessageViewModel
-import zhaoyun.example.composedemo.story.sharepanel.presentation.SharePanelSheet
+import zhaoyun.example.composedemo.story.background.platform.BackgroundViewModel
+import zhaoyun.example.composedemo.story.background.platform.StoryBackground
+import zhaoyun.example.composedemo.story.commentpanel.platform.CommentPanelSheet
+import zhaoyun.example.composedemo.story.infobar.platform.InfoBarArea
+import zhaoyun.example.composedemo.story.infobar.platform.InfoBarViewModel
+import zhaoyun.example.composedemo.story.input.platform.InputArea
+import zhaoyun.example.composedemo.story.input.platform.InputViewModel
+import zhaoyun.example.composedemo.story.message.platform.MessageArea
+import zhaoyun.example.composedemo.story.message.platform.MessageViewModel
+import zhaoyun.example.composedemo.story.sharepanel.platform.SharePanelSheet
 
 @Composable
 fun StoryCardPage(

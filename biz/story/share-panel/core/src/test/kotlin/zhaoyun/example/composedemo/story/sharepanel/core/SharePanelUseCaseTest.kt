@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.sharepanel.domain
+package zhaoyun.example.composedemo.story.sharepanel.core
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob

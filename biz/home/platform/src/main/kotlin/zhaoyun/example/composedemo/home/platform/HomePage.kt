@@ -1,13 +1,13 @@
-package zhaoyun.example.composedemo.home.presentation
+package zhaoyun.example.composedemo.home.platform
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import zhaoyun.example.composedemo.feed.presentation.FeedScreen
-import zhaoyun.example.composedemo.home.domain.HomeEvent
-import zhaoyun.example.composedemo.home.domain.HomeState
-import zhaoyun.example.composedemo.home.domain.Tab
+import zhaoyun.example.composedemo.feed.platform.FeedScreen
+import zhaoyun.example.composedemo.home.core.HomeEvent
+import zhaoyun.example.composedemo.home.core.HomeState
+import zhaoyun.example.composedemo.home.core.Tab
 
 @Composable
 fun HomePage(

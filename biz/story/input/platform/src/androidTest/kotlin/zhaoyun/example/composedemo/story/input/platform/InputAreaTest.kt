@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.input.presentation
+package zhaoyun.example.composedemo.story.input.platform
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -12,8 +12,8 @@ import org.junit.Rule
 import org.junit.Test
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
-import zhaoyun.example.composedemo.story.input.domain.InputKeyboardCoordinator
-import zhaoyun.example.composedemo.story.input.domain.InputState
+import zhaoyun.example.composedemo.story.input.core.InputKeyboardCoordinator
+import zhaoyun.example.composedemo.story.input.core.InputState
 
 class InputAreaTest {
 

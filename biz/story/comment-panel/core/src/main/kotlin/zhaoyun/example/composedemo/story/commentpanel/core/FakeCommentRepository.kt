@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.commentpanel.domain
+package zhaoyun.example.composedemo.story.commentpanel.core
 
 class FakeCommentRepository : CommentRepository {
     private val users = listOf(

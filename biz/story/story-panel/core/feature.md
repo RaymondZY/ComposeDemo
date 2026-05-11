@@ -1,4 +1,4 @@
-# Feature — Story Panel Domain（故事详情面板业务）
+# Feature — Story Panel Core（故事详情面板业务）
 
 ---
 

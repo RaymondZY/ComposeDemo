@@ -1,4 +1,4 @@
-# Feature — InfoBar Presentation（故事信息栏界面）
+# Feature — InfoBar Platform（故事信息栏界面）
 
 > 参考：故事作者、点赞、分享、评论和历史操作区域。
 

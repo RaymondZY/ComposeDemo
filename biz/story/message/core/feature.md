@@ -1,4 +1,4 @@
-# Feature — Message Domain（对白业务）
+# Feature — Message Core（对白业务）
 
 > 参考：故事卡片中的角色对白展开和收起状态。
 

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "zhaoyun.example.composedemo.scaffold.android"
+    namespace = "zhaoyun.example.composedemo.scaffold.platform"
     compileSdk = 36
     buildToolsVersion = "36.1.0"
 

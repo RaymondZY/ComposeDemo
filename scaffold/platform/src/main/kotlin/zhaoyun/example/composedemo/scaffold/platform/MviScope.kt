@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.scaffold.android
+package zhaoyun.example.composedemo.scaffold.platform
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider

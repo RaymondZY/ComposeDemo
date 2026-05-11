@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.commentpanel.presentation
+package zhaoyun.example.composedemo.story.commentpanel.platform
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,9 +10,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import org.koin.core.parameter.parametersOf
-import zhaoyun.example.composedemo.scaffold.android.MviScreen
+import zhaoyun.example.composedemo.scaffold.platform.MviScreen
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
-import zhaoyun.example.composedemo.story.commentpanel.domain.CommentPanelState
+import zhaoyun.example.composedemo.story.commentpanel.core.CommentPanelState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,23 +1,23 @@
-package zhaoyun.example.composedemo.story.storypanel.presentation.di
+package zhaoyun.example.composedemo.story.storypanel.platform.di
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.koinApplication
-import zhaoyun.example.composedemo.scaffold.android.MviKoinScopes
+import zhaoyun.example.composedemo.scaffold.platform.MviKoinScopes
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.scaffold.core.spi.ServiceRegistry
-import zhaoyun.example.composedemo.story.storypanel.domain.StoryPanelState
-import zhaoyun.example.composedemo.story.storypanel.presentation.StoryPanelViewModel
+import zhaoyun.example.composedemo.story.storypanel.core.StoryPanelState
+import zhaoyun.example.composedemo.story.storypanel.platform.StoryPanelViewModel
 
-class StoryPanelPresentationModuleTest {
+class StoryPanelPlatformModuleTest {
 
     @Test
     fun `story panel view model resolves from screen scope`() {
         val koin = koinApplication {
-            modules(storyPanelPresentationModule)
+            modules(storyPanelPlatformModule)
         }.koin
         val scope = koin.createScope("story-panel", MviKoinScopes.Screen).also {
             val registry = MutableServiceRegistryImpl()

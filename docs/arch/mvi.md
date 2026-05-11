@@ -65,7 +65,7 @@ interface UiEffect
 示例：
 
 ```kotlin
-// biz/story/message/domain/MessageState.kt
+// biz/story/message/core/MessageState.kt
 data class MessageState(
     val characterName: String = "",
     val characterSubtitle: String = "",
@@ -73,12 +73,12 @@ data class MessageState(
     val isExpanded: Boolean = false,
 ) : UiState
 
-// biz/story/message/domain/MessageEvent.kt
+// biz/story/message/core/MessageEvent.kt
 sealed class MessageEvent : UiEvent {
     data object OnDialogueClicked : MessageEvent()
 }
 
-// biz/story/message/domain/MessageEffect.kt
+// biz/story/message/core/MessageEffect.kt
 sealed class MessageEffect : UiEffect
 ```
 
@@ -188,7 +188,7 @@ open class BaseViewModel<S : UiState, E : UiEvent, F : UiEffect>(
 - 提供 `effect` / `baseEffect` Flow 供 Screen 级收集
 - `onCleared()` 时调用 `autoUnregister` 清理 Registry
 
-> `BaseViewModel` 位于 `:scaffold:android`，是**平台相关**的组件，继承自 `androidx.lifecycle.ViewModel`。
+> `BaseViewModel` 位于 `:scaffold:platform`，是**平台相关**的组件，继承自 `androidx.lifecycle.ViewModel`。
 
 ### 5.5 MviScreen — Screen 级 Composable 作用域
 
@@ -350,7 +350,7 @@ findService<Analytics>()
 | `:scaffold:core`    | `spi/ServiceRegistry.kt`                        | 服务注册表读写接口                                                              |
 | `:scaffold:core`    | `spi/MutableServiceRegistryImpl.kt`             | LinkedMap 实现，支持 parent chain                                           |
 | `:scaffold:core`    | `spi/ServiceRegistryExt.kt`                     | `findService`/`registerService` 扩展、`autoRegister`/`autoUnregister`     |
-| `:scaffold:android` | `BaseViewModel.kt`                              | ViewModel 基类，生命周期桥接                                                    |
-| `:scaffold:android` | `MviScreen.kt`                                  | Screen 级 Composable，创建 Koin Scope + Registry                           |
-| `:scaffold:android` | `MviScope.kt`                                   | 嵌套作用域（`MviScope`、`MviItemScope`）                                       |
-| `:scaffold:android` | `ScreenViewModel.kt`                            | `screenViewModel()` 辅助函数                                               |
+| `:scaffold:platform` | `BaseViewModel.kt`                              | ViewModel 基类，生命周期桥接                                                    |
+| `:scaffold:platform` | `MviScreen.kt`                                  | Screen 级 Composable，创建 Koin Scope + Registry                           |
+| `:scaffold:platform` | `MviScope.kt`                                   | 嵌套作用域（`MviScope`、`MviItemScope`）                                       |
+| `:scaffold:platform` | `ScreenViewModel.kt`                            | `screenViewModel()` 辅助函数                                               |

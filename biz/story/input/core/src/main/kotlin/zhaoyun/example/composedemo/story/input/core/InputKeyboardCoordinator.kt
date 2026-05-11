@@ -1,11 +1,11 @@
-package zhaoyun.example.composedemo.story.input.domain
+package zhaoyun.example.composedemo.story.input.core
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class InputKeyboardCoordinator {
 
-    // 当前持焦 InputArea 在 window 根坐标系下的 bounds（用 4 个 Float 避免 domain 依赖 ui Rect）
+    // 当前持焦 InputArea 在 window 根坐标系下的 bounds（用 4 个 Float 避免 core 依赖 ui Rect）
     data class Bounds(
         val left: Float,
         val top: Float,

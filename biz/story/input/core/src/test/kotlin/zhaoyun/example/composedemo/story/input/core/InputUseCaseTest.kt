@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.input.domain
+package zhaoyun.example.composedemo.story.input.core
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch

@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.commentpanel.domain
+package zhaoyun.example.composedemo.story.commentpanel.core
 
 interface CommentRepository {
     suspend fun loadInitial(cardId: String, pageSize: Int): CommentInitialResult

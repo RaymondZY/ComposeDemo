@@ -1,4 +1,4 @@
-# Feature — Comment Panel Presentation（评论面板展示占位）
+# Feature — Comment Panel Platform（评论面板展示占位）
 
 > 当前阶段按用户要求清空评论面板展示功能，仅保留可打开的空内容占位，后续再重新澄清完整评论面板需求。
 

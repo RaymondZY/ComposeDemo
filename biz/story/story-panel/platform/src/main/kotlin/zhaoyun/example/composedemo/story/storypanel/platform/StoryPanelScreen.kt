@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.storypanel.presentation
+package zhaoyun.example.composedemo.story.storypanel.platform
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -6,10 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import org.koin.core.parameter.parametersOf
-import zhaoyun.example.composedemo.scaffold.android.MviScreen
+import zhaoyun.example.composedemo.scaffold.platform.MviScreen
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
-import zhaoyun.example.composedemo.story.storypanel.domain.StoryPanelEffect
-import zhaoyun.example.composedemo.story.storypanel.domain.StoryPanelState
+import zhaoyun.example.composedemo.story.storypanel.core.StoryPanelEffect
+import zhaoyun.example.composedemo.story.storypanel.core.StoryPanelState
 
 @Composable
 fun StoryPanelScreen(

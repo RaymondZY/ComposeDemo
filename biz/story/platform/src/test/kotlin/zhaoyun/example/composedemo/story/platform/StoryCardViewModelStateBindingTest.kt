@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.presentation
+package zhaoyun.example.composedemo.story.platform
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -6,8 +6,8 @@ import org.junit.Test
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistryImpl
 import zhaoyun.example.composedemo.service.feed.api.model.StoryCard
-import zhaoyun.example.composedemo.story.domain.StoryCardState
-import zhaoyun.example.composedemo.story.message.presentation.MessageViewModel
+import zhaoyun.example.composedemo.story.core.StoryCardState
+import zhaoyun.example.composedemo.story.message.platform.MessageViewModel
 
 class StoryCardViewModelStateBindingTest {
 

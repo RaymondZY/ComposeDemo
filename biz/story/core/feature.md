@@ -1,4 +1,4 @@
-# Feature — Story Domain（故事卡片聚合业务）
+# Feature — Story Core（故事卡片聚合业务）
 
 > 参考：单张故事卡片由背景、对白、信息栏和输入区四个业务片段组成。
 

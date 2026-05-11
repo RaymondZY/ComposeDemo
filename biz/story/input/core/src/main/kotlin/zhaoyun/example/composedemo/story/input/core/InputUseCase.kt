@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.input.domain
+package zhaoyun.example.composedemo.story.input.core
 
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry

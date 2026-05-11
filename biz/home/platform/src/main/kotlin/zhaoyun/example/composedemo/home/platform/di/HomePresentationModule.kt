@@ -1,11 +1,11 @@
-package zhaoyun.example.composedemo.home.presentation.di
+package zhaoyun.example.composedemo.home.platform.di
 
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
-import zhaoyun.example.composedemo.home.presentation.HomeViewModel
-import zhaoyun.example.composedemo.scaffold.android.MviKoinScopes
+import zhaoyun.example.composedemo.home.platform.HomeViewModel
+import zhaoyun.example.composedemo.scaffold.platform.MviKoinScopes
 
-val homePresentationModule = module {
+val homePlatformModule = module {
     scope(MviKoinScopes.Screen) {
         viewModel {
             HomeViewModel(get())
@@ -14,5 +14,5 @@ val homePresentationModule = module {
 }
 
 val homeModules = listOf(
-    homePresentationModule
+    homePlatformModule
 )

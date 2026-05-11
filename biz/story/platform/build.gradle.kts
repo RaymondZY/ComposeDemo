@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "zhaoyun.example.composedemo.story.presentation"
+    namespace = "zhaoyun.example.composedemo.story.platform"
     compileSdk = 36
     buildToolsVersion = "36.1.0"
 
@@ -32,14 +32,14 @@ android {
 }
 
 dependencies {
-    api(project(":biz:story:domain"))
-    implementation(project(":biz:story:background:presentation"))
-    implementation(project(":biz:story:message:presentation"))
-    implementation(project(":biz:story:infobar:presentation"))
-    implementation(project(":biz:story:comment-panel:presentation"))
-    implementation(project(":biz:story:share-panel:presentation"))
-    implementation(project(":biz:story:input:presentation"))
-    implementation(project(":scaffold:android"))
+    api(project(":biz:story:core"))
+    implementation(project(":biz:story:background:platform"))
+    implementation(project(":biz:story:message:platform"))
+    implementation(project(":biz:story:infobar:platform"))
+    implementation(project(":biz:story:comment-panel:platform"))
+    implementation(project(":biz:story:share-panel:platform"))
+    implementation(project(":biz:story:input:platform"))
+    implementation(project(":scaffold:platform"))
 
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.core.ktx)

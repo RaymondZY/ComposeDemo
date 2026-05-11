@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.infobar.domain
+package zhaoyun.example.composedemo.story.infobar.core
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob

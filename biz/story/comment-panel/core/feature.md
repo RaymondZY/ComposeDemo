@@ -1,4 +1,4 @@
-# Feature — Comment Panel Domain（评论面板业务）
+# Feature — Comment Panel Core（评论面板业务）
 
 > 参考：故事评论区底部面板，覆盖评论加载、回复展开、点赞、发送评论等平台无关业务规则。
 

@@ -1,4 +1,4 @@
-# Feature — Share Panel Presentation（故事分享面板界面）
+# Feature — Share Panel Platform（故事分享面板界面）
 
 > 参考：底部分享面板、保存图片、复制链接和系统分享。
 

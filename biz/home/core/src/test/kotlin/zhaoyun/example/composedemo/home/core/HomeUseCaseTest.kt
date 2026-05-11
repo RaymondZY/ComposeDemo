@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.home.domain
+package zhaoyun.example.composedemo.home.core
 
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

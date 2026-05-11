@@ -1,4 +1,4 @@
-# Feature — Story Input Domain（故事输入业务）
+# Feature — Story Input Core（故事输入业务）
 
 > 参考：故事输入的文字、焦点、括号插入和占位操作。
 

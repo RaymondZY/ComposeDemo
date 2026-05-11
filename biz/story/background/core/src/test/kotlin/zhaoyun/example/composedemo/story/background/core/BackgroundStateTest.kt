@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.background.domain
+package zhaoyun.example.composedemo.story.background.core
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

@@ -1,12 +1,12 @@
-package zhaoyun.example.composedemo.home.presentation.di
+package zhaoyun.example.composedemo.home.platform.di
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class HomePresentationModuleTest {
+class HomePlatformModuleTest {
 
     @Test
-    fun `home modules only expose the presentation module`() {
-        assertEquals(listOf(homePresentationModule), homeModules)
+    fun `home modules only expose the platform module`() {
+        assertEquals(listOf(homePlatformModule), homeModules)
     }
 }

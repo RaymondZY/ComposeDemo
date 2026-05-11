@@ -1,4 +1,4 @@
-# Feature — Story Presentation（故事卡片界面）
+# Feature — Story Platform（故事卡片界面）
 
 > 参考：单张故事卡片页面的背景、前景内容、子组件装配和键盘联动。
 

@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.presentation
+package zhaoyun.example.composedemo.story.platform
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

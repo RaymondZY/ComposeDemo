@@ -1,16 +1,16 @@
-package zhaoyun.example.composedemo.story.presentation
+package zhaoyun.example.composedemo.story.platform
 
-import zhaoyun.example.composedemo.scaffold.android.BaseViewModel
+import zhaoyun.example.composedemo.scaffold.platform.BaseViewModel
 import zhaoyun.example.composedemo.scaffold.core.mvi.StateHolder
 import zhaoyun.example.composedemo.scaffold.core.spi.MutableServiceRegistry
-import zhaoyun.example.composedemo.story.background.domain.BackgroundState
-import zhaoyun.example.composedemo.story.domain.StoryCardEffect
-import zhaoyun.example.composedemo.story.domain.StoryCardEvent
-import zhaoyun.example.composedemo.story.domain.StoryCardState
-import zhaoyun.example.composedemo.story.domain.StoryCardUseCase
-import zhaoyun.example.composedemo.story.infobar.domain.InfoBarState
-import zhaoyun.example.composedemo.story.input.domain.InputState
-import zhaoyun.example.composedemo.story.message.domain.MessageState
+import zhaoyun.example.composedemo.story.background.core.BackgroundState
+import zhaoyun.example.composedemo.story.core.StoryCardEffect
+import zhaoyun.example.composedemo.story.core.StoryCardEvent
+import zhaoyun.example.composedemo.story.core.StoryCardState
+import zhaoyun.example.composedemo.story.core.StoryCardUseCase
+import zhaoyun.example.composedemo.story.infobar.core.InfoBarState
+import zhaoyun.example.composedemo.story.input.core.InputState
+import zhaoyun.example.composedemo.story.message.core.MessageState
 
 class StoryCardViewModel(
     stateHolder: StateHolder<StoryCardState>,

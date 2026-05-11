@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.feed.domain
+package zhaoyun.example.composedemo.feed.core
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first

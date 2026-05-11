@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.sharepanel.presentation
+package zhaoyun.example.composedemo.story.sharepanel.platform
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule

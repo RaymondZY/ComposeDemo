@@ -1,4 +1,4 @@
-# Feature — Story Background Presentation（故事背景界面）
+# Feature — Story Background Platform（故事背景界面）
 
 > 参考：故事卡片背景图片展示。
 

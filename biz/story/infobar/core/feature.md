@@ -1,4 +1,4 @@
-# Feature — InfoBar Domain（故事信息栏业务）
+# Feature — InfoBar Core（故事信息栏业务）
 
 > 参考：故事标题、点赞、分享、评论、历史等业务行为。
 

@@ -1,4 +1,4 @@
-package zhaoyun.example.composedemo.story.message.presentation
+package zhaoyun.example.composedemo.story.message.platform
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import zhaoyun.example.composedemo.story.message.domain.MessageEvent
+import zhaoyun.example.composedemo.story.message.core.MessageEvent
 
 @Composable
 fun MessageArea(
