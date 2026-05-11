@@ -14,7 +14,7 @@ startKoin {
     androidContext(this@ComposeDemoApp)
     modules(
         userCenterModule + storageModule +
-            homeModules + feedModules +
+            homePlatformModule + feedPlatformModule +
             listOf(
                 storyPlatformModule,
                 messagePlatformModule,

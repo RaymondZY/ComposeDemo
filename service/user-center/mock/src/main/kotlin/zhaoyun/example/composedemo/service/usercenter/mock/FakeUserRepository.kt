@@ -8,7 +8,7 @@ import zhaoyun.example.composedemo.service.usercenter.api.model.LoginResult
 import zhaoyun.example.composedemo.service.usercenter.api.model.UserInfo
 
 /**
- * 用户中心内存假实现 —— 供各 :domain / :presentation 模块的单元测试共用
+ * 用户中心内存假实现 —— 供各 :core / :platform 模块的单元测试共用
  *
  * 默认合法账号: admin / 123456
  */

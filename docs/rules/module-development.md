@@ -32,7 +32,7 @@ Step 1: core 层
   ├─ 编写 JUnit 单元测试（纯 Kotlin，JVM 快速运行）
   └─ 验证所有 feature.md 需求已覆盖
 
-Step 2: platform（platform）层
+Step 2: platform 层
   ├─ 基于稳定的 core API 开发 ViewModel / Composable
   ├─ 编写 JUnit + androidTest 测试
   └─ 验证所有 feature.md 需求已覆盖
