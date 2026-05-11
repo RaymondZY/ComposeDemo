@@ -530,7 +530,7 @@ Expected: `BUILD SUCCESSFUL`. If this is too slow or environment-blocked, record
 Run:
 
 ```bash
-rg -n ':biz:[^[:space:]`")]*:(domain|presentation)|:scaffold:android|scaffold\.android|PresentationModule|presentationModule' settings.gradle.kts app biz scaffold AGENTS.md docs/arch docs/rules docs/skills docs/superpowers/README.md
+rg -n ':biz:[^[:space:]`")]*:(domain|presentation)|:scaffold:android|scaffold\.android|PresentationModule|presentationModule' settings.gradle.kts app biz scaffold AGENTS.md docs/arch docs/rules docs/skills
 rg -n 'package .*\.domain|package .*\.presentation|import .*\.domain|import .*\.presentation' app biz scaffold
 ```
 
