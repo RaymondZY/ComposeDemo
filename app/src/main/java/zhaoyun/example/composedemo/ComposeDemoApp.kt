@@ -5,8 +5,8 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.dsl.bind
 import org.koin.dsl.module
-import zhaoyun.example.composedemo.feed.platform.di.feedModules
-import zhaoyun.example.composedemo.home.platform.di.homeModules
+import zhaoyun.example.composedemo.feed.platform.di.feedPlatformModule
+import zhaoyun.example.composedemo.home.platform.di.homePlatformModule
 import zhaoyun.example.composedemo.service.feed.api.FeedRepository
 import zhaoyun.example.composedemo.service.feed.mock.FakeFeedRepository
 import zhaoyun.example.composedemo.service.storage.impl.di.storageModule
@@ -33,7 +33,7 @@ class ComposeDemoApp : Application() {
             androidContext(this@ComposeDemoApp)
             modules(
                 userCenterModule + storageModule +
-                homeModules + feedModules +
+                listOf(homePlatformModule, feedPlatformModule) +
                 listOf(
                     storyPlatformModule,
                     messagePlatformModule,
