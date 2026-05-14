@@ -2,6 +2,7 @@ package zhaoyun.example.composedemo.story.commentpanel.platform
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -9,6 +10,9 @@ import androidx.compose.ui.test.performTextInput
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import org.koin.core.context.GlobalContext
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
 import zhaoyun.example.composedemo.story.commentpanel.core.CommentItem
 import zhaoyun.example.composedemo.story.commentpanel.core.CommentPanelState
 import zhaoyun.example.composedemo.story.commentpanel.core.CommentUser
@@ -17,6 +21,7 @@ import zhaoyun.example.composedemo.story.commentpanel.core.LoadStatus
 import zhaoyun.example.composedemo.story.commentpanel.core.PaginationState
 import zhaoyun.example.composedemo.story.commentpanel.core.ReplyItem
 import zhaoyun.example.composedemo.story.commentpanel.core.ReplySectionState
+import zhaoyun.example.composedemo.story.commentpanel.platform.di.commentPanelPlatformModule
 
 class CommentPanelScreenTest {
     @get:Rule
@@ -221,6 +226,35 @@ class CommentPanelScreenTest {
         composeRule.onNodeWithText("发送中").assertIsDisplayed()
         composeRule.onNodeWithText("请输入评论内容").assertIsDisplayed()
         composeRule.onNodeWithText("发送失败，请重试").assertIsDisplayed()
+    }
+
+    @Test
+    fun sheet_loads_fake_comments_after_opening() {
+        stopExistingKoin()
+        startKoin {
+            modules(commentPanelPlatformModule)
+        }
+        try {
+            composeRule.setContent {
+                CommentPanelScreen(cardId = "story-1")
+            }
+
+            composeRule.waitUntil(timeoutMillis = 5_000) {
+                composeRule
+                    .onAllNodesWithText("这个故事很有意思，想继续看后续。")
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
+            }
+            composeRule.onNodeWithText("这个故事很有意思，想继续看后续。").assertIsDisplayed()
+        } finally {
+            stopKoin()
+        }
+    }
+
+    private fun stopExistingKoin() {
+        if (GlobalContext.getOrNull() != null) {
+            stopKoin()
+        }
     }
 
     private fun setContent(
