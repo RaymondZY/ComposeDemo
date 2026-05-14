@@ -153,6 +153,9 @@ fun StoryCardPage(
             CommentPanelSheet(
                 cardId = commentPanelCardId.orEmpty(),
                 onDismissRequest = { commentPanelCardId = null },
+                onDialogueRequested = { _, _ ->
+                    commentPanelCardId = null
+                },
             )
         }
     }
