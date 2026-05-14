@@ -7,12 +7,15 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import zhaoyun.example.composedemo.scaffold.platform.MviItemScope
 import zhaoyun.example.composedemo.story.commentpanel.core.CommentItem
 import zhaoyun.example.composedemo.story.commentpanel.core.CommentPanelState
 import zhaoyun.example.composedemo.story.commentpanel.core.CommentUser
@@ -230,30 +233,57 @@ class CommentPanelScreenTest {
 
     @Test
     fun sheet_loads_fake_comments_after_opening() {
-        stopExistingKoin()
-        startKoin {
-            modules(commentPanelPlatformModule)
+        composeRule.setContent {
+            CommentPanelScreen(cardId = "story-1")
         }
-        try {
-            composeRule.setContent {
-                CommentPanelScreen(cardId = "story-1")
-            }
 
-            composeRule.waitUntil(timeoutMillis = 5_000) {
-                composeRule
-                    .onAllNodesWithText("这个故事很有意思，想继续看后续。")
-                    .fetchSemanticsNodes()
-                    .isNotEmpty()
-            }
-            composeRule.onNodeWithText("这个故事很有意思，想继续看后续。").assertIsDisplayed()
-        } finally {
-            stopKoin()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule
+                .onAllNodesWithText("这个故事很有意思，想继续看后续。")
+                .fetchSemanticsNodes()
+                .isNotEmpty()
         }
+        composeRule.onNodeWithText("这个故事很有意思，想继续看后续。").assertIsDisplayed()
     }
 
-    private fun stopExistingKoin() {
-        if (GlobalContext.getOrNull() != null) {
-            stopKoin()
+    @Test
+    fun sheet_loads_fake_comments_inside_item_scope() {
+        composeRule.setContent {
+            MviItemScope(scopeId = "comment-panel-sheet-test") {
+                CommentPanelSheet(
+                    cardId = "story-1",
+                    onDismissRequest = {},
+                )
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule
+                .onAllNodesWithText("这个故事很有意思，想继续看后续。")
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        composeRule.onNodeWithText("这个故事很有意思，想继续看后续。").assertIsDisplayed()
+    }
+
+    companion object {
+        @JvmStatic
+        @BeforeClass
+        fun setUpKoin() {
+            if (GlobalContext.getOrNull() != null) {
+                stopKoin()
+            }
+            startKoin {
+                modules(commentPanelPlatformModule)
+            }
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun tearDownKoin() {
+            if (GlobalContext.getOrNull() != null) {
+                stopKoin()
+            }
         }
     }
 
