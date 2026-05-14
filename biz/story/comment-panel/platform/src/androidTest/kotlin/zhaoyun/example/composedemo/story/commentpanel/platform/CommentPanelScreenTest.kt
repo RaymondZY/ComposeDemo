@@ -119,6 +119,26 @@ class CommentPanelScreenTest {
     }
 
     @Test
+    fun reply_pagination_error_retry_triggers_load_more_replies() {
+        val events = mutableListOf<String>()
+        setContent(
+            state = successState(
+                firstReplySection = ReplySectionState(
+                    isExpanded = true,
+                    errorMessage = "回复加载失败",
+                    pagination = PaginationState(nextCursor = "reply-cursor", hasMore = true),
+                ),
+            ),
+            onLoadMoreReplies = { events += "moreReplies:$it" },
+        )
+
+        composeRule.onNodeWithText("回复加载失败").assertIsDisplayed()
+        composeRule.onNodeWithText("重试加载回复").performClick()
+
+        assertEquals(listOf("moreReplies:comment-1"), events)
+    }
+
+    @Test
     fun pagination_error_retry_triggers_load_more_comments() {
         var loadMoreCount = 0
         setContent(
@@ -138,19 +158,29 @@ class CommentPanelScreenTest {
     }
 
     @Test
-    fun input_and_send_trigger_callbacks() {
+    fun input_change_triggers_callback_without_local_state_assumption() {
         val inputValues = mutableListOf<String>()
-        var sendCount = 0
         setContent(
             state = successState(),
             onInputChange = { inputValues += it },
-            onSendClick = { sendCount++ },
         )
 
         composeRule.onNodeWithTag(CommentPanelTestTags.InputField).performTextInput("新评论")
-        composeRule.onNodeWithText("发送").performClick()
 
         assertEquals(listOf("新评论"), inputValues)
+    }
+
+    @Test
+    fun send_click_triggers_callback_for_controlled_input_text() {
+        var sendCount = 0
+        setContent(
+            state = successState(inputText = "新评论"),
+            onSendClick = { sendCount++ },
+        )
+
+        composeRule.onNodeWithText("新评论").assertIsDisplayed()
+        composeRule.onNodeWithText("发送").performClick()
+
         assertEquals(1, sendCount)
     }
 
@@ -165,6 +195,7 @@ class CommentPanelScreenTest {
             ),
         )
 
+        composeRule.onNodeWithText("旧评论").assertIsDisplayed()
         composeRule.onNodeWithText("发送中").assertIsDisplayed()
         composeRule.onNodeWithText("请输入评论内容").assertIsDisplayed()
         composeRule.onNodeWithText("发送失败，请重试").assertIsDisplayed()
