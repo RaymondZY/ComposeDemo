@@ -173,7 +173,25 @@ internal fun CommentPanelContent(
             LoadStatus.Loading -> LoadingState()
 
             LoadStatus.Empty -> EmptyState()
-            LoadStatus.Error -> ErrorState(onRetryInitialLoad = onRetryInitialLoad)
+            LoadStatus.Error -> {
+                if (state.comments.isNotEmpty()) {
+                    SuccessState(
+                        state = state,
+                        onDialogueClick = onDialogueClick,
+                        onExpandComment = onExpandComment,
+                        onToggleLike = onToggleLike,
+                        onExpandReplies = onExpandReplies,
+                        onCollapseReplies = onCollapseReplies,
+                        onLoadMoreReplies = onLoadMoreReplies,
+                        onLoadMoreComments = onLoadMoreComments,
+                        refreshErrorMessage = "评论刷新失败",
+                        onRetryRefresh = onRetryInitialLoad,
+                    )
+                } else {
+                    ErrorState(onRetryInitialLoad = onRetryInitialLoad)
+                }
+            }
+
             LoadStatus.Success -> SuccessState(
                 state = state,
                 onDialogueClick = onDialogueClick,
@@ -274,12 +292,23 @@ private fun SuccessState(
     onCollapseReplies: (String) -> Unit,
     onLoadMoreReplies: (String) -> Unit,
     onLoadMoreComments: () -> Unit,
+    refreshErrorMessage: String? = null,
+    onRetryRefresh: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = 420.dp),
     ) {
+        refreshErrorMessage?.let { message ->
+            item {
+                RefreshErrorBanner(
+                    message = message,
+                    onRetryRefresh = onRetryRefresh,
+                )
+            }
+        }
+
         item {
             DialogueEntry(
                 dialogueEntry = state.dialogueEntry,
@@ -309,6 +338,32 @@ private fun SuccessState(
             )
         }
     }
+}
+
+@Composable
+private fun RefreshErrorBanner(
+    message: String,
+    onRetryRefresh: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFFFFF4E6))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFF8A4B00),
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onRetryRefresh) {
+            Text(text = "重新加载")
+        }
+    }
+    Spacer(modifier = Modifier.height(12.dp))
 }
 
 @Composable

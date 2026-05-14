@@ -51,6 +51,21 @@ class CommentPanelScreenTest {
     }
 
     @Test
+    fun error_state_with_existing_comments_keeps_comments_and_retry() {
+        var retryCount = 0
+        setContent(
+            state = successState().copy(initialLoadStatus = LoadStatus.Error),
+            onRetryInitialLoad = { retryCount++ },
+        )
+
+        composeRule.onNodeWithText("评论刷新失败").assertIsDisplayed()
+        composeRule.onNodeWithText("这个故事很有意思，想继续看后续。").assertIsDisplayed()
+        composeRule.onNodeWithText("重新加载").performClick()
+
+        assertEquals(1, retryCount)
+    }
+
+    @Test
     fun success_state_displays_dialogue_entry_comment_and_input() {
         setContent(successState())
 
