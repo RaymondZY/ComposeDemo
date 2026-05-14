@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +57,7 @@ import org.koin.core.parameter.parametersOf
 import zhaoyun.example.composedemo.scaffold.core.mvi.BaseEffect
 import zhaoyun.example.composedemo.scaffold.core.mvi.toStateHolder
 import zhaoyun.example.composedemo.scaffold.platform.MviScreen
+import zhaoyun.example.composedemo.scaffold.platform.screenViewModel
 import zhaoyun.example.composedemo.story.commentpanel.core.CommentItem
 import zhaoyun.example.composedemo.story.commentpanel.core.CommentPanelEffect
 import zhaoyun.example.composedemo.story.commentpanel.core.CommentPanelEvent
@@ -74,13 +76,30 @@ fun CommentPanelSheet(
     onDialogueRequested: (cardId: String, targetId: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val initialState = remember(cardId) {
+        CommentPanelState(cardId = cardId)
+    }
+    val viewModel: CommentPanelViewModel = screenViewModel(cardId) {
+        parametersOf(initialState.toStateHolder())
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.baseEffect.collect { effect ->
+            when (effect) {
+                is BaseEffect.ShowToast -> showToast(effect.message, context)
+                else -> Unit
+            }
+        }
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = rememberModalBottomSheetState(),
         modifier = modifier,
     ) {
-        CommentPanelScreen(
-            cardId = cardId,
+        CommentPanelRoute(
+            viewModel = viewModel,
             onDialogueRequested = onDialogueRequested,
         )
     }
@@ -109,36 +128,49 @@ fun CommentPanelScreen(
         },
         parameters = { parametersOf(initialState.toStateHolder()) },
     ) { viewModel ->
-        val state by viewModel.state.collectAsStateWithLifecycle()
-
-        LaunchedEffect(viewModel) {
-            viewModel.sendEvent(CommentPanelEvent.OnPanelShown)
-        }
-
-        LaunchedEffect(viewModel) {
-            viewModel.effect.collect { effect ->
-                when (effect) {
-                    is CommentPanelEffect.NavigateToDialogue ->
-                        onDialogueRequested(effect.cardId, effect.targetId)
-                }
-            }
-        }
-
-        CommentPanelContent(
-            state = state,
-            onRetryInitialLoad = { viewModel.sendEvent(CommentPanelEvent.OnRetryInitialLoad) },
-            onDialogueClick = { viewModel.sendEvent(CommentPanelEvent.OnDialogueEntryClicked) },
-            onExpandComment = { viewModel.sendEvent(CommentPanelEvent.OnCommentExpanded(it)) },
-            onToggleLike = { viewModel.sendEvent(CommentPanelEvent.OnCommentLikeClicked(it)) },
-            onExpandReplies = { viewModel.sendEvent(CommentPanelEvent.OnRepliesExpanded(it)) },
-            onCollapseReplies = { viewModel.sendEvent(CommentPanelEvent.OnRepliesCollapsed(it)) },
-            onLoadMoreReplies = { viewModel.sendEvent(CommentPanelEvent.OnLoadMoreReplies(it)) },
-            onLoadMoreComments = { viewModel.sendEvent(CommentPanelEvent.OnLoadMoreComments) },
-            onInputChange = { viewModel.sendEvent(CommentPanelEvent.OnInputChanged(it)) },
-            onSendClick = { viewModel.sendEvent(CommentPanelEvent.OnSendClicked) },
+        CommentPanelRoute(
+            viewModel = viewModel,
+            onDialogueRequested = onDialogueRequested,
             modifier = modifier,
         )
     }
+}
+
+@Composable
+private fun CommentPanelRoute(
+    viewModel: CommentPanelViewModel,
+    onDialogueRequested: (cardId: String, targetId: String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(viewModel) {
+        viewModel.sendEvent(CommentPanelEvent.OnPanelShown)
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is CommentPanelEffect.NavigateToDialogue ->
+                    onDialogueRequested(effect.cardId, effect.targetId)
+            }
+        }
+    }
+
+    CommentPanelContent(
+        state = state,
+        onRetryInitialLoad = { viewModel.sendEvent(CommentPanelEvent.OnRetryInitialLoad) },
+        onDialogueClick = { viewModel.sendEvent(CommentPanelEvent.OnDialogueEntryClicked) },
+        onExpandComment = { viewModel.sendEvent(CommentPanelEvent.OnCommentExpanded(it)) },
+        onToggleLike = { viewModel.sendEvent(CommentPanelEvent.OnCommentLikeClicked(it)) },
+        onExpandReplies = { viewModel.sendEvent(CommentPanelEvent.OnRepliesExpanded(it)) },
+        onCollapseReplies = { viewModel.sendEvent(CommentPanelEvent.OnRepliesCollapsed(it)) },
+        onLoadMoreReplies = { viewModel.sendEvent(CommentPanelEvent.OnLoadMoreReplies(it)) },
+        onLoadMoreComments = { viewModel.sendEvent(CommentPanelEvent.OnLoadMoreComments) },
+        onInputChange = { viewModel.sendEvent(CommentPanelEvent.OnInputChanged(it)) },
+        onSendClick = { viewModel.sendEvent(CommentPanelEvent.OnSendClicked) },
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -156,9 +188,11 @@ internal fun CommentPanelContent(
     onSendClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .heightIn(max = screenHeight * 0.75f)
             .imePadding()
             .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 28.dp),
     ) {
@@ -190,6 +224,7 @@ internal fun CommentPanelContent(
                         onLoadMoreComments = onLoadMoreComments,
                         refreshErrorMessage = "评论刷新失败",
                         onRetryRefresh = onRetryInitialLoad,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
                 } else {
                     ErrorState(onRetryInitialLoad = onRetryInitialLoad)
@@ -205,6 +240,7 @@ internal fun CommentPanelContent(
                 onCollapseReplies = onCollapseReplies,
                 onLoadMoreReplies = onLoadMoreReplies,
                 onLoadMoreComments = onLoadMoreComments,
+                modifier = Modifier.weight(1f, fill = false),
             )
         }
 
@@ -298,9 +334,10 @@ private fun SuccessState(
     onLoadMoreComments: () -> Unit,
     refreshErrorMessage: String? = null,
     onRetryRefresh: () -> Unit = {},
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .heightIn(max = 420.dp),
     ) {
@@ -442,6 +479,9 @@ private fun CommentRow(
                     text = comment.user.nickname,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = Color.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
                 if (comment.user.isAuthor) {
                     Spacer(modifier = Modifier.width(6.dp))
@@ -451,7 +491,7 @@ private fun CommentRow(
                     Spacer(modifier = Modifier.width(6.dp))
                     LabelPill(text = "置顶")
                 }
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(6.dp))
                 LikeButton(
                     comment = comment,
                     onToggleLike = onToggleLike,
@@ -548,7 +588,7 @@ private fun LikeButton(
             } else {
                 Icon(
                     imageVector = if (comment.isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = "点赞",
+                    contentDescription = if (comment.isLiked) "取消点赞" else "点赞",
                     tint = if (comment.isLiked) Color(0xFFFF6B6B) else Color.Black.copy(alpha = 0.62f),
                     modifier = Modifier.size(18.dp),
                 )
