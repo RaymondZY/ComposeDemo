@@ -77,6 +77,13 @@ class CommentPanelScreenTest {
     }
 
     @Test
+    fun comment_rows_display_avatar_placeholder() {
+        setContent(successState())
+
+        composeRule.onNodeWithText("读").assertIsDisplayed()
+    }
+
+    @Test
     fun dialogue_entry_click_triggers_callback() {
         var clicks = 0
         setContent(successState(), onDialogueClick = { clicks++ })

@@ -71,6 +71,7 @@ import zhaoyun.example.composedemo.story.commentpanel.core.ReplySectionState
 fun CommentPanelSheet(
     cardId: String,
     onDismissRequest: () -> Unit,
+    onDialogueRequested: (cardId: String, targetId: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     ModalBottomSheet(
@@ -78,7 +79,10 @@ fun CommentPanelSheet(
         sheetState = rememberModalBottomSheetState(),
         modifier = modifier,
     ) {
-        CommentPanelScreen(cardId = cardId)
+        CommentPanelScreen(
+            cardId = cardId,
+            onDialogueRequested = onDialogueRequested,
+        )
     }
 }
 
@@ -424,67 +428,91 @@ private fun CommentRow(
     onCollapseReplies: (String) -> Unit,
     onLoadMoreReplies: (String) -> Unit,
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.Top,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = comment.user.nickname,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = Color.Black,
-            )
-            if (comment.user.isAuthor) {
-                Spacer(modifier = Modifier.width(6.dp))
-                LabelPill(text = "作者")
+        AvatarPlaceholder(nickname = comment.user.nickname)
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = comment.user.nickname,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.Black,
+                )
+                if (comment.user.isAuthor) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    LabelPill(text = "作者")
+                }
+                if (comment.isPinned) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    LabelPill(text = "置顶")
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                LikeButton(
+                    comment = comment,
+                    onToggleLike = onToggleLike,
+                )
             }
-            if (comment.isPinned) {
-                Spacer(modifier = Modifier.width(6.dp))
-                LabelPill(text = "置顶")
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            LikeButton(
-                comment = comment,
-                onToggleLike = onToggleLike,
-            )
-        }
 
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = comment.content,
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Black.copy(alpha = 0.82f),
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = comment.createdAtText,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
-                color = Color.Black.copy(alpha = 0.46f),
+                text = comment.content,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Black.copy(alpha = 0.82f),
+                maxLines = if (comment.isExpanded) Int.MAX_VALUE else 3,
+                overflow = TextOverflow.Ellipsis,
             )
-            if (comment.canExpand && !comment.isExpanded) {
-                Spacer(modifier = Modifier.width(8.dp))
-                TextButton(
-                    onClick = { onExpandComment(comment.commentId) },
-                    modifier = Modifier.height(32.dp),
-                ) {
-                    Text(text = "展开")
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = comment.createdAtText,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
+                    color = Color.Black.copy(alpha = 0.46f),
+                )
+                if (comment.canExpand && !comment.isExpanded) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = { onExpandComment(comment.commentId) },
+                        modifier = Modifier.height(32.dp),
+                    ) {
+                        Text(text = "展开")
+                    }
                 }
             }
-        }
 
-        if (!comment.replySection.isExpanded && comment.replyCount > 0) {
-            TextButton(onClick = { onExpandReplies(comment.commentId) }) {
-                Text(text = "查看 ${comment.replyCount} 条回复")
+            if (!comment.replySection.isExpanded && comment.replyCount > 0) {
+                TextButton(onClick = { onExpandReplies(comment.commentId) }) {
+                    Text(text = "查看 ${comment.replyCount} 条回复")
+                }
             }
-        }
 
-        ReplySection(
-            commentId = comment.commentId,
-            replySection = comment.replySection,
-            onCollapseReplies = onCollapseReplies,
-            onLoadMoreReplies = onLoadMoreReplies,
+            ReplySection(
+                commentId = comment.commentId,
+                replySection = comment.replySection,
+                onCollapseReplies = onCollapseReplies,
+                onLoadMoreReplies = onLoadMoreReplies,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AvatarPlaceholder(nickname: String) {
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(Color(0xFFE9EEF8)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = nickname.trim().firstOrNull()?.toString() ?: "?",
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = Color(0xFF4169E1),
         )
     }
 }
