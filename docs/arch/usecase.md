@@ -59,7 +59,7 @@ class MessageUseCaseTest {
     fun `点击对白切换isExpanded`() = runTest {
         val useCase = MessageUseCase(
             MessageState().toStateHolder(),
-            FakeMutableServiceRegistry()
+            MutableServiceRegistryImpl()
         )
         useCase.receiveEvent(MessageEvent.OnDialogueClicked)
         assertTrue(useCase.currentState.isExpanded)
@@ -114,6 +114,6 @@ class BaseViewModelTest {
 
 | 工具类                          | 用途                     | 位置                                     |
 |------------------------------|------------------------|----------------------------------------|
-| `FakeMutableServiceRegistry` | 测试用的 Registry 假实现      | `scaffold/core/src/test/...`           |
+| `MutableServiceRegistryImpl` | 默认 Registry 实现，可直接用于 UseCase 测试 | `scaffold/core/.../spi/MutableServiceRegistryImpl.kt` |
 | `toStateHolder()`            | 将 State 转为 StateHolder | `scaffold/core/.../mvi/StateHolder.kt` |
 | `MainDispatcherRule`         | 统一调度器到 TestDispatcher  | 测试模块                                   |

@@ -14,7 +14,7 @@ startKoin {
     androidContext(this@ComposeDemoApp)
     modules(
         userCenterModule + storageModule +
-            homePlatformModule + feedPlatformModule +
+            listOf(homePlatformModule, feedPlatformModule) +
             listOf(
                 storyPlatformModule,
                 messagePlatformModule,
@@ -28,7 +28,7 @@ startKoin {
             listOf(
                 module {
                     single { FakeFeedRepository() } bind FeedRepository::class
-                    single { InputKeyboardCoordinator() }
+                    single { zhaoyun.example.composedemo.story.input.core.InputKeyboardCoordinator() }
                 },
             )
     )
@@ -98,9 +98,9 @@ scope.declare<MutableServiceRegistryImpl>(
 | `:biz:story:comment-panel:platform` | `commentPanelPlatformModule` | CommentPanel 底部面板 ViewModel             |
 | `:biz:story:share-panel:platform`   | `sharePanelPlatformModule`   | SharePanel 底部面板 ViewModel               |
 | `:biz:story:story-panel:platform`   | `storyPanelPlatformModule`   | StoryPanel 详情占位页面 ViewModel             |
-| `:biz:feed:platform`                | `feedModules`                    | Feed 页面相关模块                             |
-| `:biz:home:platform`                | `homeModules`                    | Home 页面相关模块                             |
-| `:service:user-center`                  | `userCenterModule`               | 用户中心服务                                  |
-| `:service:storage`                      | `storageModule`                  | 存储服务                                    |
+| `:biz:feed:platform`                | `feedPlatformModule`             | Feed 页面 ViewModel                         |
+| `:biz:home:platform`                | `homePlatformModule`             | Home 页面 ViewModel                         |
+| `:service:user-center:impl`         | `userCenterModule`               | 用户中心服务实现                                |
+| `:service:storage:impl`             | `storageModule`                  | 存储服务实现                                  |
 | `:service:feed:mock`                    | `FakeFeedRepository`             | FeedRepository mock 实现                  |
 | `:biz:story:input:core`               | `InputKeyboardCoordinator`       | 输入框焦点与键盘协调服务                            |

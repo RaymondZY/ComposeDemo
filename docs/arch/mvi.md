@@ -94,13 +94,14 @@ sealed interface BaseEffect : UiEffect {
     data class ShowToast(val message: String) : BaseEffect
     data class ShowDialog(val title: String, val message: String) : BaseEffect
     data object NavigateBack : BaseEffect
+    data class ShowSnackbar(val message: String, val actionLabel: String? = null) : BaseEffect
 }
 ```
 
-| 类型             | 用途                     | 收集位置                     |
-|----------------|------------------------|--------------------------|
-| `UiEffect` 子类型 | 业务级一次性事件（导航、打开面板）      | 按 Screen 各自收集            |
-| `BaseEffect`   | 框架级事件（Toast、Dialog、返回） | `MviScreen` 统一收集，未处理会抛异常 |
+| 类型             | 用途                                | 收集位置                                    |
+|----------------|-----------------------------------|-----------------------------------------|
+| `UiEffect` 子类型 | 业务级一次性事件（导航、打开面板）                 | 按 Screen 各自收集                           |
+| `BaseEffect`   | 框架级事件（Toast、Dialog、返回、Snackbar） | `MviScreen` 统一收集；Snackbar 内置处理，其他未处理会抛异常 |
 
 ---
 
@@ -340,7 +341,7 @@ findService<Analytics>()
 | 模块                  | 文件                                              | 说明                                                                     |
 |---------------------|-------------------------------------------------|------------------------------------------------------------------------|
 | `:scaffold:core`    | `mvi/UiState.kt` / `UiEvent.kt` / `UiEffect.kt` | 三要素标记接口                                                                |
-| `:scaffold:core`    | `mvi/BaseEffect.kt`                             | 通用副作用定义（Toast、Dialog、NavigateBack）                                     |
+| `:scaffold:core`    | `mvi/BaseEffect.kt`                             | 通用副作用定义（Toast、Dialog、NavigateBack、Snackbar）                            |
 | `:scaffold:core`    | `mvi/StateHolder.kt`                            | `StateHolder` 接口、`StateHolderImpl`、`DeriveStateFlow`、`toStateHolder()` |
 | `:scaffold:core`    | `mvi/EffectDispatcher.kt`                       | Effect 分发器，基于 Channel                                                  |
 | `:scaffold:core`    | `mvi/EventReceiver.kt`                          | Event 接收器，带日志打印                                                        |
